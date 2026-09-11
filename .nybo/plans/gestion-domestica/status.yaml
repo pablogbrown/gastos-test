@@ -1,5 +1,5 @@
 feature: gestion-domestica
-status: approved
+status: in-progress
 kind: multi_spec
 profile: code
 action_type: ADD
@@ -10,8 +10,9 @@ pr_url: https://github.com/pablogbrown/gastos-test/pull/1
 pr_number: 1
 specs:
   - id: casas-miembros
-    status: approved
+    status: verified
     branch: feat/gestion-domestica--casas-miembros
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/2
     shipped_at: null
   - id: gastos
     status: approved
