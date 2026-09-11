@@ -1,0 +1,15 @@
+version: 4.0.0-okf-v2
+edition: lite
+mode: greenfield
+adapters:
+  active:
+    - claude
+memory:
+  core_max_lines: 50
+trust:
+  level: semi-autonomous
+  auto_evaluate: false
+dashboard:
+  enabled: false
+maintenance:
+  last_reviewed: '2026-09-11'

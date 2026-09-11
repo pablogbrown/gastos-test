@@ -1,0 +1,25 @@
+{
+  "_readme": "Test users for bearer token generation. Safe to commit — never store raw credentials.",
+  "secretEnvVar": "AUTH_SECRET",
+  "expiresInDays": 90,
+  "users": [
+    {
+      "role": "admin",
+      "userId": "your-admin-user-id",
+      "email": "admin@test.local",
+      "scopes": ["admin"]
+    },
+    {
+      "role": "manager",
+      "userId": "your-manager-user-id",
+      "email": "manager@test.local",
+      "scopes": ["manager"]
+    },
+    {
+      "role": "user",
+      "userId": "your-user-id",
+      "email": "user@test.local",
+      "scopes": []
+    }
+  ]
+}

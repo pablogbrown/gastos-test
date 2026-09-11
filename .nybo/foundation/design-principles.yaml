@@ -1,0 +1,7 @@
+designPrinciples:
+  - name: Clarity
+    description: Keep code and specs clear
+  - name: Consistency
+    description: Match existing patterns
+  - name: OOP
+    description: Prefer class-based design where it fits the domain

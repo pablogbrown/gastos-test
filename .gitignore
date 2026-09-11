@@ -1,0 +1,6 @@
+# nybo runtime telemetry — high-frequency append-only log, not source
+.nybo/events.jsonl
+
+# contains a live MCP bearer token — never commit secrets
+.mcp.json
+.nybo/foundation/integrations.yaml

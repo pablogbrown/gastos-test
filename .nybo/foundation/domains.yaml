@@ -1,0 +1,11 @@
+domains:
+  - name: frontend
+    description: frontend domain
+  - name: api
+    description: api domain
+  - name: services
+    description: services domain
+  - name: db
+    description: db domain
+  - name: auth
+    description: auth domain

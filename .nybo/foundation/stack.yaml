@@ -1,0 +1,40 @@
+appKind: fullstack
+frontend: React
+backend: Python
+database: PostgreSQL
+hosting: AWS
+framework: react
+language: python
+monorepo:
+  is_monorepo: false
+  subprojects:
+    - name: root
+      path: .
+dev_runbook:
+  discovered_at: '2026-09-11'
+  subprojects:
+    - name: root
+      path: .
+      run_targets: []
+      test_commands: {}
+      auth:
+        found: false
+quality_tools:
+  coverage:
+    tool: null
+    checkedAt: '2026-09-11'
+  lint:
+    tool: null
+    checkedAt: '2026-09-11'
+  complexity:
+    tool: null
+    checkedAt: '2026-09-11'
+  duplication:
+    tool: jscpd
+    checkedAt: '2026-09-11'
+  security:
+    tool: null
+    checkedAt: '2026-09-11'
+  mutation:
+    tool: null
+    checkedAt: '2026-09-11'

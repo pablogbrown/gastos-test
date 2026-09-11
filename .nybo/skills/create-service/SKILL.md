@@ -1,0 +1,36 @@
+---
+name: create-service
+description: Create a new service in this project — tailored to its actual stack and conventions.
+schema_version: '1'
+surface: claude
+---
+# create-service
+> Added: 2026-09-11 | Feature: project-derived | Usage count: 0
+> Last updated: 2026-09-11
+
+## When to Apply
+Use when creating a new service that encapsulates business logic — data access, third-party integrations, or domain-specific rules. This is a suggested starting point based on your stack — not a pattern discovered in your existing code. Adjust it as your project's actual convention emerges.
+
+## Pattern
+Plain class per service, one concern per module, dependencies passed via `__init__`.
+
+## Reference Implementation
+file: (none yet — set this to a concrete example in your codebase once one exists)
+
+## Template
+```python
+# services/{{service_name}}.py
+class {{ServiceName}}Service:
+    def __init__(self, deps):
+        self.deps = deps
+
+    def find_by_id(self, id):
+        # implementation
+        pass
+```
+
+## Validation Steps
+1. File lives under `services/`
+2. One class per file, one concern per service
+3. Dependencies are passed in, not constructed internally
+4. A companion test file exists

@@ -1,0 +1,29 @@
+{
+  "_nybo_managed": true,
+  "_nybo_managed_keys": [
+    "permissions.deny[]=Read(./node_modules/**)",
+    "permissions.deny[]=Read(./dist/**)",
+    "permissions.deny[]=Read(./build/**)",
+    "permissions.deny[]=Read(./coverage/**)",
+    "permissions.deny[]=Read(./.next/**)",
+    "permissions.deny[]=Read(./vendor/**)",
+    "permissions.deny[]=Read(./*.lock)",
+    "permissions.deny[]=Read(./**/*.min.js)",
+    "permissions.deny[]=Read(./.venv/**)",
+    "permissions.deny[]=Read(./**/__pycache__/**)"
+  ],
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./coverage/**)",
+      "Read(./.next/**)",
+      "Read(./vendor/**)",
+      "Read(./*.lock)",
+      "Read(./**/*.min.js)",
+      "Read(./.venv/**)",
+      "Read(./**/__pycache__/**)"
+    ]
+  }
+}

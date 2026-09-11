@@ -1,0 +1,43 @@
+---
+name: create-component
+description: Create a new UI component in this project — tailored to its actual stack and conventions.
+schema_version: '1'
+surface: claude
+---
+# create-component
+> Added: 2026-09-11 | Feature: project-derived | Usage count: 0
+> Last updated: 2026-09-11
+
+## When to Apply
+Use when creating a new UI component. Keeps prop typing and test coverage consistent. This is a suggested starting point based on your stack — not a pattern discovered in your existing code. Adjust it as your project's actual convention emerges.
+
+## Pattern
+React functional component with a typed props interface and a companion test file.
+
+## Reference Implementation
+file: (none yet — set this to a concrete example in your codebase once one exists)
+
+## Template
+```tsx
+// src/components/{{ComponentName}}/{{ComponentName}}.tsx
+export interface {{ComponentName}}Props {
+  /** Brief description of each prop */
+  title: string;
+  onAction?: () => void;
+}
+
+export function {{ComponentName}}({ title, onAction }: {{ComponentName}}Props) {
+  return (
+    <div className="{{component_name}}">
+      <h2>{title}</h2>
+      {onAction && <button onClick={onAction}>Action</button>}
+    </div>
+  );
+}
+```
+
+## Validation Steps
+1. Component file is under `src/components/` using PascalCase directory and filename
+2. Props interface is exported
+3. A companion test file exists (co-located or under `tests/components/`)
+4. Tests cover rendering with required props and any interaction handlers

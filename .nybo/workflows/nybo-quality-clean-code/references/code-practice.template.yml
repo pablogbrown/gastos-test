@@ -1,0 +1,29 @@
+# code-practice.template.yml — accumulating org knowledge base.
+# Agent-readable. Keep entries compact. Long rationale lives in commit messages or a linked ADR file, not here.
+
+schema_version: 1
+tier: org                        # org | project
+updated_at: <ISO-8601>
+
+# project tier adds: last_run, history (managed by skill — see SKILL.md)
+
+conventions:                     # enforce these by default
+  - id: di-prisma-via-port
+    rule: dip-inject
+    enforce: auto-fix            # auto-fix | advisory | off
+    applies_to: all-projects
+    note: PrismaClient never new-ed in business logic.
+
+  - id: param-object-over-4
+    rule: long-parameter-list
+    enforce: auto-fix
+    applies_to: all-projects
+    note: "> 4 positional params → param object."
+
+waivers:                         # silently skip
+  # - id: legacy-srp
+  #   rule: srp-split
+  #   glob: src/legacy/**
+  #   applies_to: all-projects
+  #   expires: null               # null = permanent
+  #   note: legacy rewrite scheduled
