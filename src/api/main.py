@@ -7,9 +7,11 @@ hermanas (`gastos`, `tareas-puntos`) agregarán su propio router aquí.
 from fastapi import FastAPI
 
 from src.api.routes.casas import casas_router
+from src.api.routes.tareas import tareas_router
 
 app = FastAPI(title="taskia API")
 app.include_router(casas_router)
+app.include_router(tareas_router)
 
 
 @app.get("/health")

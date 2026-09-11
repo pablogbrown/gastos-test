@@ -1,0 +1,6 @@
+decisions: []
+# No open blocking or non-blocking decisions. Every judgment call made
+# during this build stayed within builder authority at trust level
+# semi-autonomous (spec-deviation class) — see cycle-1/build-results.md's
+# Judgment section for the full list and rationale. Nothing here needs a
+# human call before this sub-spec's PR can be reviewed.
