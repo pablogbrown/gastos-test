@@ -8,6 +8,11 @@ export default defineConfig({
   build: {
     outDir: "dist",
   },
+  server: {
+    proxy: {
+      "/casas": "http://127.0.0.1:8000",
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,
