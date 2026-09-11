@@ -15,6 +15,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.db.models.historial_actividad import TipoActividadEnum
+from src.db.models.usuario import Usuario
 from src.services.actividad_service import obtener_actividad
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
@@ -27,6 +28,9 @@ _MIGRACIONES = (
     "0002_gastos",
     "0003_tareas",
     "0004_historial_actividad",
+    # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
+    # Usuario real (por email) para vincular al nuevo Miembro.
+    "0005_usuarios",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -36,6 +40,20 @@ _SERVICIOS_CON_SESSION = (
     "tarea_service",
     "actividad_service",
 )
+
+
+def _crear_usuario_de_prueba(session_factory, email):
+    """Inserta un Usuario real (spec `usuarios-auth`): `agregar_miembro`
+    ahora exige que el email vinculado ya exista."""
+    session = session_factory()
+    try:
+        usuario = Usuario(id=uuid.uuid4(), email=email, password_hash="hash-de-prueba")
+        session.add(usuario)
+        session.commit()
+        session.refresh(usuario)
+        return usuario
+    finally:
+        session.close()
 
 
 @pytest.fixture()
@@ -55,8 +73,9 @@ def db_session(monkeypatch):
 
 
 def test_registrar_gasto_agrega_entrada_de_actividad(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
     categoria = crear_categoria(casa.id, "Supermercado", admin_id)
 
     registrar_gasto(
@@ -77,8 +96,9 @@ def test_registrar_gasto_agrega_entrada_de_actividad(db_session):
 
 
 def test_crear_tarea_agrega_entrada_de_actividad(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
 
     crear_tarea(casa.id, "Sacar la basura", 5, actor=admin_id)
 
@@ -89,9 +109,11 @@ def test_crear_tarea_agrega_entrada_de_actividad(db_session):
 
 
 def test_completar_tarea_agrega_entradas_de_tarea_completada_y_puntos(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
-    ana = agregar_miembro(casa.id, "Ana", "ANA1", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
+    ana_usuario = _crear_usuario_de_prueba(db_session, "ana@example.com")
+    ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, admin_id)
     tarea = crear_tarea(casa.id, "Lavar los platos", 8, actor=admin_id)
 
     completar_tarea(tarea.id, ana.id, ana.id)
@@ -109,8 +131,9 @@ def test_completar_tarea_agrega_entradas_de_tarea_completada_y_puntos(db_session
 
 
 def test_actividad_ordenada_de_mas_reciente_a_mas_antigua(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
     crear_tarea(casa.id, "Tarea 1", 1, actor=admin_id)
     crear_tarea(casa.id, "Tarea 2", 2, actor=admin_id)
 

@@ -2,7 +2,8 @@
 
 Cubre que `GET /casas/{id}/inicio` y `GET /casas/{id}/actividad`
 responden 200 con la estructura esperada, incluso sobre una casa sin
-gastos ni tareas (TC-002), y 404 sobre una casa inexistente.
+gastos ni tareas (TC-002), 404 sobre una casa inexistente, y la
+migración a JWT de `usuarios-auth` (reemplaza `X-Usuario-Id`).
 """
 import importlib
 import uuid
@@ -17,6 +18,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.api.routes.dashboard import dashboard_router
+from src.db.models.usuario import Usuario
+from src.services.auth_service import emitir_token
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.gasto_service import registrar_gasto
@@ -28,6 +31,9 @@ _MIGRACIONES = (
     "0002_gastos",
     "0003_tareas",
     "0004_historial_actividad",
+    # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
+    # Usuario real (por email), y las rutas requieren JWT.
+    "0005_usuarios",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -39,6 +45,22 @@ _SERVICIOS_CON_SESSION = (
     "balance_service",
     "actividad_service",
 )
+
+
+def _crear_usuario_de_prueba(session_factory, email):
+    session = session_factory()
+    try:
+        usuario = Usuario(id=uuid.uuid4(), email=email, password_hash="hash-de-prueba")
+        session.add(usuario)
+        session.commit()
+        session.refresh(usuario)
+        return usuario
+    finally:
+        session.close()
+
+
+def _bearer(usuario_id):
+    return {"Authorization": f"Bearer {emitir_token(usuario_id)}"}
 
 
 @pytest.fixture()
@@ -57,19 +79,22 @@ def client(monkeypatch):
 
     app = FastAPI()
     app.include_router(dashboard_router)
-    return TestClient(app)
+    client = TestClient(app)
+    client._session_factory = TestSession
+    return client
 
 
 def _crear_casa_directo(nombre="Casa Brown"):
-    admin_id = uuid.uuid4()
-    casa = crear_casa(nombre, admin_id)
-    return casa, admin_id
+    usuario_id = uuid.uuid4()
+    casa = crear_casa(nombre, usuario_id)
+    admin_id = casa.miembros[0].id
+    return casa, usuario_id, admin_id
 
 
 def test_inicio_de_casa_vacia_responde_200_con_secciones_vacias(client):
-    casa, admin_id = _crear_casa_directo()
+    casa, usuario_id, _admin_id = _crear_casa_directo()
 
-    resp = client.get(f"/casas/{casa.id}/inicio", headers={"X-Usuario-Id": str(admin_id)})
+    resp = client.get(f"/casas/{casa.id}/inicio", headers=_bearer(usuario_id))
 
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -80,16 +105,32 @@ def test_inicio_de_casa_vacia_responde_200_con_secciones_vacias(client):
     assert body["ranking"] == []
 
 
+def test_inicio_sin_jwt_devuelve_401(client):
+    casa, _usuario_id, _admin_id = _crear_casa_directo()
+    resp = client.get(f"/casas/{casa.id}/inicio")
+    assert resp.status_code == 401
+
+
 def test_inicio_de_casa_inexistente_devuelve_404(client):
     resp = client.get(
-        f"/casas/{uuid.uuid4()}/inicio", headers={"X-Usuario-Id": str(uuid.uuid4())}
+        f"/casas/{uuid.uuid4()}/inicio", headers=_bearer(uuid.uuid4())
     )
     assert resp.status_code == 404
 
 
+def test_usuario_no_miembro_de_la_casa_recibe_403(client):
+    """TC-009 (`usuarios-auth`)."""
+    casa, _usuario_id, _admin_id = _crear_casa_directo()
+    usuario_ajeno = uuid.uuid4()
+
+    resp = client.get(f"/casas/{casa.id}/inicio", headers=_bearer(usuario_ajeno))
+    assert resp.status_code == 403
+
+
 def test_inicio_de_casa_refleja_gastos_tareas_y_ranking(client):
-    casa, admin_id = _crear_casa_directo()
-    ana = agregar_miembro(casa.id, "Ana", "ANA1", admin_id)
+    casa, usuario_id, admin_id = _crear_casa_directo()
+    ana_usuario = _crear_usuario_de_prueba(client._session_factory, "ana@example.com")
+    ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, admin_id)
     categoria = crear_categoria(casa.id, "Supermercado", admin_id)
     registrar_gasto(
         casa.id,
@@ -103,7 +144,7 @@ def test_inicio_de_casa_refleja_gastos_tareas_y_ranking(client):
     tarea = crear_tarea(casa.id, "Lavar los platos", 8, actor=admin_id)
     completar_tarea(tarea.id, ana.id, ana.id)
 
-    resp = client.get(f"/casas/{casa.id}/inicio", headers={"X-Usuario-Id": str(admin_id)})
+    resp = client.get(f"/casas/{casa.id}/inicio", headers=_bearer(usuario_id))
 
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -114,9 +155,9 @@ def test_inicio_de_casa_refleja_gastos_tareas_y_ranking(client):
 
 
 def test_actividad_de_casa_vacia_responde_200_lista_vacia(client):
-    casa, admin_id = _crear_casa_directo()
+    casa, usuario_id, _admin_id = _crear_casa_directo()
 
-    resp = client.get(f"/casas/{casa.id}/actividad", headers={"X-Usuario-Id": str(admin_id)})
+    resp = client.get(f"/casas/{casa.id}/actividad", headers=_bearer(usuario_id))
 
     assert resp.status_code == 200, resp.text
     assert resp.json() == []
@@ -124,17 +165,17 @@ def test_actividad_de_casa_vacia_responde_200_lista_vacia(client):
 
 def test_actividad_de_casa_inexistente_devuelve_404(client):
     resp = client.get(
-        f"/casas/{uuid.uuid4()}/actividad", headers={"X-Usuario-Id": str(uuid.uuid4())}
+        f"/casas/{uuid.uuid4()}/actividad", headers=_bearer(uuid.uuid4())
     )
     assert resp.status_code == 404
 
 
 def test_actividad_lista_eventos_de_mas_reciente_a_mas_antiguo(client):
-    casa, admin_id = _crear_casa_directo()
+    casa, usuario_id, admin_id = _crear_casa_directo()
     crear_tarea(casa.id, "Tarea 1", 1, actor=admin_id)
     crear_tarea(casa.id, "Tarea 2", 2, actor=admin_id)
 
-    resp = client.get(f"/casas/{casa.id}/actividad", headers={"X-Usuario-Id": str(admin_id)})
+    resp = client.get(f"/casas/{casa.id}/actividad", headers=_bearer(usuario_id))
 
     assert resp.status_code == 200, resp.text
     body = resp.json()

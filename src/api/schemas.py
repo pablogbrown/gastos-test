@@ -12,8 +12,13 @@ class CasaCreate(BaseModel):
 
 
 class MiembroCreate(BaseModel):
+    """Spec `usuarios-auth` (REQ-004): `email` reemplaza el id de miembro
+    arbitrario que el cliente podía enviar antes — el nuevo Miembro se
+    vincula al Usuario ya registrado con ese email (404 si no existe)."""
+
     nombre: str
     identificacion: str
+    email: str
 
 
 class MiembroActivoUpdate(BaseModel):
