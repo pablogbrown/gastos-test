@@ -7,6 +7,9 @@ approved_at: '2026-09-11'
 task_count: 4
 domains_referenced: []
 domain: frontend
+branch: feat/ui-modernization
+pr_url: https://github.com/pablogbrown/gastos-test/pull/7
+pr_number: 7
 kind: single_spec
 notes: |
   Single spec: un solo concern (restyle visual), sin boundary de
