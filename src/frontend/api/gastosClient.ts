@@ -1,6 +1,6 @@
 // Cliente HTTP delgado sobre la API de T3 (categorías, gastos, balance).
 // No contiene lógica de negocio: solo arma requests y tipa las respuestas.
-import { ApiError, esApiError } from "./casasClient";
+import { ApiError, esApiError, formatErrorDetail } from "./casasClient";
 
 export type { ApiError };
 export { esApiError };
@@ -62,7 +62,7 @@ async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
     let detail = resp.statusText;
     try {
       const body = await resp.json();
-      detail = body.detail ?? detail;
+      detail = formatErrorDetail(body.detail) ?? detail;
     } catch {
       // cuerpo no-JSON o vacío: se mantiene resp.statusText
     }

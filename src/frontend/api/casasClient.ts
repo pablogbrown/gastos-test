@@ -26,12 +26,33 @@ export interface ApiError {
 
 const API_BASE = "/casas";
 
+/** Normaliza `detail` de una respuesta de error a un string legible.
+ *
+ * FastAPI devuelve `detail` como string para los errores de negocio
+ * (`HTTPException(detail=str(exc))`, ver rutas de la API), pero un 422
+ * de validación de Pydantic lo devuelve como un array de objetos
+ * `{loc, msg, type}` — sin este chequeo, ese array se propaga tal cual
+ * y cualquier pantalla que hace `<Alert>{error.detail}</Alert>` crashea
+ * con "Objects are not valid as a React child" (sin error boundary). */
+export function formatErrorDetail(raw: unknown): string | undefined {
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw)) {
+    const mensajes = raw
+      .map((item) =>
+        item && typeof item === "object" && "msg" in item ? String((item as { msg: unknown }).msg) : null
+      )
+      .filter((mensaje): mensaje is string => mensaje !== null);
+    if (mensajes.length > 0) return mensajes.join("; ");
+  }
+  return undefined;
+}
+
 async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
   if (!resp.ok) {
     let detail = resp.statusText;
     try {
       const body = await resp.json();
-      detail = body.detail ?? detail;
+      detail = formatErrorDetail(body.detail) ?? detail;
     } catch {
       // cuerpo no-JSON o vacío: se mantiene resp.statusText
     }
