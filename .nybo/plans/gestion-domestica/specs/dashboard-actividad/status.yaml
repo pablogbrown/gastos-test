@@ -1,9 +1,10 @@
 feature: dashboard-actividad
-status: approved
+status: verified
 profile: code
 action_type: ADD
 created_at: '2026-09-11'
 approved_at: '2026-09-11'
+verified_at: '2026-09-11'
 task_count: 4
 domains_referenced: []
 parent:

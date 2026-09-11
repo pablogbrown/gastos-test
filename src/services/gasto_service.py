@@ -17,7 +17,9 @@ from src.db.base import get_session
 from src.db.models.casa import Casa
 from src.db.models.categoria import Categoria
 from src.db.models.gasto import Gasto, GastoParticipante
+from src.db.models.historial_actividad import TipoActividadEnum
 from src.db.models.miembro import Miembro
+from src.services.actividad_service import registrar_actividad
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 from src.services.miembro_service import requiere_membresia_activa
 
@@ -102,6 +104,19 @@ def registrar_gasto(
         session.commit()
         session.refresh(gasto)
         _ = gasto.participantes  # fuerza la carga antes de cerrar la sesión
+
+        # Hook de actividad (REQ-002/TC-003, spec `dashboard-actividad`):
+        # se dispara recién después del commit de arriba, nunca antes,
+        # para que la entrada de actividad no describa un gasto que en
+        # definitiva no llegó a confirmarse.
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.GASTO_REGISTRADO,
+            pagado_por,
+            f"{pagador.nombre} registró un gasto de ${importe_decimal} "
+            f"({gasto.descripcion}).",
+        )
+
         return gasto
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
