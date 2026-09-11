@@ -1,0 +1,39 @@
+suggestions:
+  - id: adopt-alembic-before-third-migration
+    area: db
+    observation: >
+      `casas-miembros` flagged adopting Alembic once a second migration
+      landed (`adopt-alembic-on-second-migration`). This spec adds
+      `0002_gastos.py`, still hand-rolled (`upgrade(bind)`/`downgrade(bind)`
+      over `Base.metadata`), consistent with that spec's existing pattern.
+      A third migration (`tareas-puntos`, building concurrently off the
+      same `feat/gestion-domestica` base) is about to land too. Recommend
+      deciding — at the feature-level integration point, not per
+      sub-spec — whether to introduce Alembic now or explicitly adopt
+      the hand-rolled pattern as a lasting convention.
+    suggested_when: gestion-domestica feature-level integration (after
+      tareas-puntos also merges).
+  - id: shared-session-per-request-still-open
+    area: services
+    observation: >
+      `casas-miembros` flagged introducing a request-scoped SQLAlchemy
+      session before a sibling spec needs to combine calls across
+      services in one transaction. `gasto_service`/`balance_service`/
+      `categoria_service` in this spec still each open/close their own
+      session via `get_session()`, same as casas-miembros — no cross-spec
+      transaction was required by any test case here, so the suggestion
+      was not acted upon, only reconfirmed as still applicable.
+    suggested_when: a future spec needs an atomic multi-service write
+      (e.g. registering a gasto that also affects tareas-puntos).
+  - id: shared-frontend-http-helper
+    area: frontend
+    observation: >
+      `gastosClient.ts` imports `ApiError`/`esApiError` from
+      `casasClient.ts` instead of redeclaring them, but `parseJsonOrThrow`
+      is duplicated verbatim across both client files (it isn't exported
+      by `casasClient.ts`). Once a third client module exists
+      (`tareas-puntos`), consider extracting a shared
+      `src/frontend/api/http.ts` with `parseJsonOrThrow`/`ApiError`/
+      `esApiError` for all clients to import.
+    suggested_when: tareas-puntos build, or the next frontend API client
+      added to the project.
