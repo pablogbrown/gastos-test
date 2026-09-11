@@ -6,6 +6,8 @@ action_type: ADD
 created_at: '2026-09-11'
 approved_at: '2026-09-11'
 branch: feat/gestion-domestica
+pr_url: https://github.com/pablogbrown/gastos-test/pull/1
+pr_number: 1
 specs:
   - id: casas-miembros
     status: approved
@@ -23,9 +25,6 @@ specs:
     status: approved
     branch: feat/gestion-domestica--dashboard-actividad
     shipped_at: null
-exceptions:
-  - code: NO_GIT_REPO
-    detail: "El proyecto no tiene un repositorio git inicializado — no se ejecutó commit/push ni se creó PR (borrador) para ningún branch listado arriba. Ejecutar 'git init' (y configurar el remoto) antes de correr /nybo-build u /nybo-orchestrate."
 notes: |
   Rationale completa en plan.md (Split Rationale).
   Fuente: documento funcional en la raíz del repo.

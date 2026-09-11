@@ -15,6 +15,3 @@ dependencies:
   blocks:
     - gastos
     - tareas-puntos
-exceptions:
-  - code: NO_GIT_REPO
-    detail: "El directorio no es un repositorio git — no se ejecutó commit/push ni se abrió PR. Ejecutar 'git init' antes de /nybo-build."
