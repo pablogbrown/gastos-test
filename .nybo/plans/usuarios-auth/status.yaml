@@ -6,6 +6,8 @@ action_type: UPD
 created_at: '2026-09-11'
 approved_at: '2026-09-11'
 branch: feat/usuarios-auth
+pr_url: https://github.com/pablogbrown/gastos-test/pull/8
+pr_number: 8
 specs:
   - id: auth-backend
     status: approved
