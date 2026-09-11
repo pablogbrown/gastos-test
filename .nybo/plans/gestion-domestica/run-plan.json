@@ -1,0 +1,74 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gestion-domestica",
+  "tasks": [
+    {
+      "id": "casas-miembros",
+      "task_file": ".nybo/plans/gestion-domestica/specs/casas-miembros/spec.md",
+      "files_touched": ["src/db/models/casa.py", "src/db/models/miembro.py", "src/db/migrations/0001_casas_miembros.py", "src/services/casa_service.py", "src/services/miembro_service.py", "src/services/permisos.py", "src/api/routes/casas.py", "src/frontend/pages/CrearCasa.tsx", "src/frontend/pages/Miembros.tsx", "src/frontend/api/casasClient.ts"],
+      "deps": [],
+      "est_minutes": 120,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La spec casas-miembros entrega la fundación de Casa/Miembro/roles sobre la que operan gastos y tareas.",
+        "postcondition": "Todas las TC-001..TC-009 de casas-miembros/feat/10-verify.md están en verde.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": ".nybo/plans/gestion-domestica/specs/casas-miembros/feat/10-verify.md",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "gastos",
+      "task_file": ".nybo/plans/gestion-domestica/specs/gastos/spec.md",
+      "files_touched": ["src/db/models/gasto.py", "src/db/models/categoria.py", "src/db/migrations/0002_gastos.py", "src/services/gasto_service.py", "src/services/balance_service.py", "src/services/categoria_service.py", "src/api/routes/gastos.py", "src/frontend/pages/Gastos.tsx", "src/frontend/pages/Balance.tsx", "src/frontend/api/gastosClient.ts"],
+      "deps": ["casas-miembros"],
+      "est_minutes": 140,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La spec gastos entrega registro, división y balance de gastos compartidos.",
+        "postcondition": "Todas las TC-001..TC-010 de gastos/feat/10-verify.md están en verde.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": ".nybo/plans/gestion-domestica/specs/gastos/feat/10-verify.md",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "tareas-puntos",
+      "task_file": ".nybo/plans/gestion-domestica/specs/tareas-puntos/spec.md",
+      "files_touched": ["src/db/models/tarea.py", "src/db/models/historial_tarea.py", "src/db/migrations/0003_tareas.py", "src/services/tarea_service.py", "src/services/ranking_service.py", "src/api/routes/tareas.py", "src/frontend/pages/Tareas.tsx", "src/frontend/pages/Ranking.tsx", "src/frontend/api/tareasClient.ts"],
+      "deps": ["casas-miembros"],
+      "est_minutes": 140,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La spec tareas-puntos entrega gestión de tareas domésticas con sistema de puntos y ranking.",
+        "postcondition": "Todas las TC-001..TC-010 de tareas-puntos/feat/10-verify.md están en verde.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": ".nybo/plans/gestion-domestica/specs/tareas-puntos/feat/10-verify.md",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "dashboard-actividad",
+      "task_file": ".nybo/plans/gestion-domestica/specs/dashboard-actividad/spec.md",
+      "files_touched": ["src/db/models/historial_actividad.py", "src/db/migrations/0004_historial_actividad.py", "src/services/actividad_service.py", "src/services/dashboard_service.py", "src/api/routes/dashboard.py", "src/frontend/pages/InicioCasa.tsx", "src/frontend/pages/HistorialActividad.tsx", "src/frontend/api/dashboardClient.ts"],
+      "deps": ["gastos", "tareas-puntos"],
+      "est_minutes": 110,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La spec dashboard-actividad entrega la vista general de la casa y el historial de actividad transversal.",
+        "postcondition": "Todas las TC-001..TC-005 de dashboard-actividad/feat/10-verify.md están en verde.",
+        "verifiability": "UNIT+INTEGRATION+E2E",
+        "test_file": ".nybo/plans/gestion-domestica/specs/dashboard-actividad/feat/10-verify.md",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

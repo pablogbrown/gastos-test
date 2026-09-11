@@ -1,0 +1,92 @@
+{
+  "$schema_version": "2",
+  "feature_id": "tareas-puntos",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gestion-domestica/specs/tareas-puntos/feat/01-plan-01-data-layer.md",
+      "files_touched": ["src/db/models/tarea.py", "src/db/models/historial_tarea.py", "src/db/migrations/0003_tareas.py"],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": ["TC-003"],
+      "interfaces_produced": [
+        {"name": "Tarea", "signature": "class Tarea(id, casa_id, nombre, descripcion, puntos, responsable_id, fecha_prevista, estado, recurrente, frecuencia)", "kind": "class"},
+        {"name": "HistorialTarea", "signature": "class HistorialTarea(id, tarea_id, miembro_id, completada_en, puntos_obtenidos)", "kind": "class"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El esquema de Tarea persiste con estado por defecto Pendiente.",
+        "postcondition": "Una tarea insertada sin estado explícito queda en 'pendiente'.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/db/tarea.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gestion-domestica/specs/tareas-puntos/feat/01-plan-02-service-layer.md",
+      "files_touched": ["src/services/tarea_service.py", "src/services/ranking_service.py"],
+      "deps": ["T1"],
+      "est_minutes": 60,
+      "test_cases": ["TC-001", "TC-002", "TC-004", "TC-005", "TC-006", "TC-007", "TC-008", "TC-009"],
+      "interfaces_produced": [
+        {"name": "crear_tarea", "signature": "(casa_id, nombre, puntos, descripcion, responsable_id, fecha_prevista, recurrente, frecuencia, actor) -> Tarea", "kind": "function"},
+        {"name": "completar_tarea", "signature": "(tarea_id: UUID, miembro_id: UUID, actor: UUID) -> HistorialTarea", "kind": "function"},
+        {"name": "calcular_ranking", "signature": "(casa_id: UUID) -> {miembroId, puntos}[]", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "Tarea"},
+        {"from": "T1", "name": "HistorialTarea"}
+      ],
+      "contract": {
+        "statement": "Completar una tarea otorga puntos exactamente una vez y el ranking refleja los puntos acumulados.",
+        "postcondition": "Un segundo intento de completar la misma finalización no inserta un HistorialTarea adicional; calcular_ranking ordena de mayor a menor puntaje.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/services/tarea_service.test.py,tests/unit/services/ranking_service.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gestion-domestica/specs/tareas-puntos/feat/01-plan-03-api-routes.md",
+      "files_touched": ["src/api/routes/tareas.py"],
+      "deps": ["T2"],
+      "est_minutes": 25,
+      "test_cases": ["TC-010"],
+      "interfaces_produced": [
+        {"name": "tareas_router", "signature": "APIRouter", "kind": "export"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "crear_tarea"},
+        {"from": "T2", "name": "completar_tarea"},
+        {"from": "T2", "name": "calcular_ranking"}
+      ],
+      "contract": {
+        "statement": "El historial de tareas expuesto por la API conserva registros de miembros desactivados.",
+        "postcondition": "GET /casas/{id}/tareas/historial incluye HistorialTarea cuyo miembro_id referencia a un miembro con activo=false.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/tareas_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gestion-domestica/specs/tareas-puntos/feat/01-plan-04-ui.md",
+      "files_touched": ["src/frontend/pages/Tareas.tsx", "src/frontend/pages/Ranking.tsx", "src/frontend/api/tareasClient.ts"],
+      "deps": ["T3"],
+      "est_minutes": 30,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T3", "name": "tareas_router"}
+      ],
+      "contract": {
+        "statement": "La UI permite crear y completar tareas, y consultar ranking/historial contra la API real.",
+        "postcondition": "El flujo crear tarea → completar → ranking → historial se completa sin error de build ni de tipos.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tareas.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

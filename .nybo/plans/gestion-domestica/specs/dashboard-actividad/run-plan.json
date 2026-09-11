@@ -1,0 +1,89 @@
+{
+  "$schema_version": "2",
+  "feature_id": "dashboard-actividad",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gestion-domestica/specs/dashboard-actividad/feat/01-plan-01-data-layer.md",
+      "files_touched": ["src/db/models/historial_actividad.py", "src/db/migrations/0004_historial_actividad.py"],
+      "deps": [],
+      "est_minutes": 15,
+      "test_cases": [],
+      "interfaces_produced": [
+        {"name": "HistorialActividad", "signature": "class HistorialActividad(id, casa_id, tipo, miembro_id, fecha, descripcion)", "kind": "class"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El esquema de HistorialActividad persiste eventos y permite leerlos ordenados por fecha.",
+        "postcondition": "Una consulta ordenada por fecha descendente devuelve el evento más reciente primero.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/db/historial_actividad.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gestion-domestica/specs/dashboard-actividad/feat/01-plan-02-service-layer.md",
+      "files_touched": ["src/services/actividad_service.py", "src/services/dashboard_service.py"],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-002", "TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        {"name": "registrar_actividad", "signature": "(casa_id, tipo, miembro_id, descripcion) -> HistorialActividad", "kind": "function"},
+        {"name": "obtener_actividad", "signature": "(casa_id: UUID) -> HistorialActividad[]", "kind": "function"},
+        {"name": "armar_dashboard", "signature": "(casa_id: UUID) -> DashboardCasa", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "HistorialActividad"}
+      ],
+      "contract": {
+        "statement": "El dashboard se arma sin error sobre datos vacíos y el registro de actividad se dispara desde gastos y tareas.",
+        "postcondition": "armar_dashboard sobre una casa sin gastos/tareas devuelve secciones vacías sin lanzar excepción.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": "tests/unit/services/dashboard_service.test.py,tests/integration/services/actividad_service.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gestion-domestica/specs/dashboard-actividad/feat/01-plan-03-api-routes.md",
+      "files_touched": ["src/api/routes/dashboard.py"],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        {"name": "dashboard_router", "signature": "APIRouter", "kind": "export"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "armar_dashboard"},
+        {"from": "T2", "name": "obtener_actividad"}
+      ],
+      "contract": {
+        "statement": "Las rutas de dashboard/actividad devuelven 200 con la estructura esperada, incluso sin datos.",
+        "postcondition": "GET /casas/{id}/inicio sobre una casa vacía responde 200 con secciones vacías, no un error.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/dashboard_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gestion-domestica/specs/dashboard-actividad/feat/01-plan-04-ui.md",
+      "files_touched": ["src/frontend/pages/InicioCasa.tsx", "src/frontend/pages/HistorialActividad.tsx", "src/frontend/api/dashboardClient.ts"],
+      "deps": ["T3"],
+      "est_minutes": 30,
+      "test_cases": ["TC-001"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T3", "name": "dashboard_router"}
+      ],
+      "contract": {
+        "statement": "La pantalla principal refleja fielmente el ejemplo de uso del documento fuente.",
+        "postcondition": "Ejecutando el escenario de §19 del documento, la UI muestra los montos, tareas y ranking esperados.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/InicioCasa.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
