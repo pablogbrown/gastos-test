@@ -12,6 +12,9 @@ domain: auth
 parent:
   feature: usuarios-auth
   branch: feat/usuarios-auth--auth-backend
+pr_url: https://github.com/pablogbrown/gastos-test/pull/10
+pr_number: 10
+pr_base: feat/usuarios-auth
 kind: single_spec
 dependencies:
   blocking: []
