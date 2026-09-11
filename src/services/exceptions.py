@@ -17,3 +17,10 @@ class PermissionDeniedError(Exception):
 
 class NotFoundError(Exception):
     """La casa o el miembro referenciado no existe."""
+
+
+class ConflictError(Exception):
+    """La operación entra en conflicto con el estado actual del recurso
+    (p. ej. completar una tarea que ya está Completada — TC-006). Se
+    distingue de `ValidationError` porque las rutas de la API (T3) la
+    mapean a 409 en vez de 400."""

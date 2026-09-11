@@ -1,0 +1,36 @@
+suggestions:
+  - id: adopt-alembic-on-second-migration
+    area: db
+    observation: >
+      Carried forward from `casas-miembros`'s own suggestion: this spec
+      adds `0003_tareas.py` as a second hand-rolled migration module
+      (`upgrade(bind)`/`downgrade(bind)` over `Base.metadata`), with
+      `0002` reserved for the concurrently-built `gastos` sub-spec. Now
+      that the project has (or will shortly have) three migration files
+      hand-written this way, introducing Alembic (or an equivalent) for
+      real incremental migrations is worth doing before a fourth spec
+      needs one.
+    suggested_when: next sub-spec that needs a schema change, or a
+      dedicated db-tooling pass after gestion-domestica ships.
+  - id: member-picker-ui-for-tareas
+    area: frontend
+    observation: >
+      `Tareas.tsx`'s create-task form accepts `responsableId` as free
+      text (a raw member id), and the Ranking/Historial tables display
+      raw member ids rather than names, because this sub-spec's contract
+      (`calcular_ranking`/`listar_historial`) only returns ids and T4's
+      file scope didn't include a member-selection component. A richer
+      picker (backed by `casasClient.listarMiembros`, resolving ids to
+      names for display) would meaningfully improve usability.
+    suggested_when: dashboard-actividad sub-spec build (it already plans
+      to integrate Tareas/Ranking into the app's navigation).
+  - id: shared-exceptions-module-growth
+    area: services
+    observation: >
+      `src/services/exceptions.py` now holds exception classes from two
+      sub-specs (`casas-miembros`'s ValidationError/PermissionDeniedError/
+      NotFoundError, and this spec's added ConflictError). This worked
+      cleanly via a simple Edit, but as more sub-specs land it's worth
+      confirming this file should keep growing as one shared module
+      (current pattern) rather than being split per domain.
+    suggested_when: a third sub-spec needs a new domain exception class.
