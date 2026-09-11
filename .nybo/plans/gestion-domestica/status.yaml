@@ -1,5 +1,6 @@
 feature: gestion-domestica
-status: in-progress
+status: verified
+ship_eligible: true
 kind: multi_spec
 profile: code
 action_type: ADD
@@ -25,8 +26,9 @@ specs:
     pr_url: https://github.com/pablogbrown/gastos-test/pull/4
     shipped_at: null
   - id: dashboard-actividad
-    status: approved
+    status: verified
     branch: feat/gestion-domestica--dashboard-actividad
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/5
     shipped_at: null
 notes: |
   Rationale completa en plan.md (Split Rationale).

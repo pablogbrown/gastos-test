@@ -1,0 +1,13 @@
+[
+  {
+    "spec": "dashboard-actividad",
+    "worktree": ".claude/worktrees/feat-gestion-domestica--dashboard-actividad",
+    "branch": "feat/gestion-domestica--dashboard-actividad",
+    "base_commit": "7429d73",
+    "dispatched_at": "2026-09-11T19:15:00Z",
+    "completed_at": "2026-09-11T19:34:00Z",
+    "outcome": "verified",
+    "verified": { "new_commits": true, "status_advanced_past_in_progress": true },
+    "pr_url": "https://github.com/pablogbrown/gastos-test/pull/5"
+  }
+]
