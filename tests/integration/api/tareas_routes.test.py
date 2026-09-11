@@ -27,14 +27,20 @@ def client(monkeypatch):
     )
     migracion_casas = importlib.import_module("src.db.migrations.0001_casas_miembros")
     migracion_tareas = importlib.import_module("src.db.migrations.0003_tareas")
+    # 0004 (spec `dashboard-actividad`): `crear_tarea`/`completar_tarea`
+    # disparan un hook a `actividad_service.registrar_actividad`, que
+    # requiere la tabla `historial_actividad`.
+    migracion_actividad = importlib.import_module("src.db.migrations.0004_historial_actividad")
     migracion_casas.upgrade(engine)
     migracion_tareas.upgrade(engine)
+    migracion_actividad.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.miembro_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.tarea_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.ranking_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
 
     app = FastAPI()
     app.include_router(tareas_router)

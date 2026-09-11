@@ -12,9 +12,11 @@ from uuid import UUID
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
+from src.db.models.historial_actividad import TipoActividadEnum
 from src.db.models.historial_tarea import HistorialTarea
 from src.db.models.miembro import Miembro, RolEnum
 from src.db.models.tarea import EstadoTareaEnum, Tarea
+from src.services.actividad_service import registrar_actividad
 from src.services.exceptions import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
 from src.services.miembro_service import requiere_membresia_activa
 
@@ -79,6 +81,18 @@ def crear_tarea(
         session.add(tarea)
         session.commit()
         session.refresh(tarea)
+
+        # Hook de actividad (REQ-002/TC-004, spec `dashboard-actividad`):
+        # disparado recién después del commit de arriba.
+        actor_miembro = _obtener_miembro(session, casa_id, actor)
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.TAREA_CREADA,
+            actor,
+            f"{actor_miembro.nombre if actor_miembro else actor} creó la tarea "
+            f"'{tarea.nombre}'.",
+        )
+
         return tarea
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
@@ -139,6 +153,24 @@ def completar_tarea(tarea_id: UUID, miembro_id: UUID, actor: UUID) -> HistorialT
         tarea.estado = EstadoTareaEnum.COMPLETADA
         session.commit()
         session.refresh(historial)
+
+        # Hooks de actividad (REQ-002/TC-004, spec `dashboard-actividad`):
+        # dos entradas — la finalización de la tarea y los puntos
+        # obtenidos — disparadas recién después del commit de arriba.
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.TAREA_COMPLETADA,
+            miembro_id,
+            f"{beneficiario.nombre} completó la tarea '{tarea.nombre}'.",
+        )
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.PUNTOS_OBTENIDOS,
+            miembro_id,
+            f"{beneficiario.nombre} obtuvo {historial.puntos_obtenidos} puntos "
+            f"por '{tarea.nombre}'.",
+        )
+
         return historial
     except (ValidationError, PermissionDeniedError, NotFoundError, ConflictError):
         session.rollback()

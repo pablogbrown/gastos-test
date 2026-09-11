@@ -28,14 +28,20 @@ def db_session(monkeypatch):
     )
     migration_casas = importlib.import_module("src.db.migrations.0001_casas_miembros")
     migration_gastos = importlib.import_module("src.db.migrations.0002_gastos")
+    # 0004 (spec `dashboard-actividad`): `registrar_gasto` dispara un hook
+    # a `actividad_service.registrar_actividad`, que requiere la tabla
+    # `historial_actividad`.
+    migration_actividad = importlib.import_module("src.db.migrations.0004_historial_actividad")
     migration_casas.upgrade(engine)
     migration_gastos.upgrade(engine)
+    migration_actividad.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.miembro_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.categoria_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.gasto_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
     yield TestSession
 
 
