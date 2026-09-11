@@ -2,6 +2,8 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+import { getApiProxyTarget } from "./src/frontend/config/apiProxyTarget";
+
 export default defineConfig({
   plugins: [react()],
   root: ".",
@@ -10,7 +12,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/casas": "http://127.0.0.1:8000",
+      "/casas": getApiProxyTarget(),
     },
   },
   test: {

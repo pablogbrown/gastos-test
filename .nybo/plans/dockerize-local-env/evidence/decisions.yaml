@@ -1,0 +1,17 @@
+decisions: []
+# No open blocking or non-blocking decisions. Every judgment call made
+# during this build stayed within builder authority at trust level
+# semi-autonomous (spec-deviation class) — see evidence/1/build-results.md's
+# Judgment section for the full list and rationale.
+#
+# Two items are NOT decisions but are worth flagging explicitly for
+# human attention before/at review (see the build's final report):
+# - TC-005 was verified for its HTTP proxy leg only (frontend Vite dev
+#   server -> backend, over real HTTP through docker-compose) — no
+#   automated browser drove the actual "Crear casa" form. A human (or an
+#   e2e run) should confirm the UI flow itself.
+# - 10-verify.md's own gate table marks "Revisión de que el Makefile
+#   documentado en el README coincide con los targets reales" as
+#   [HUMAN] by design (not [AUTO]) — Makefile and README were kept
+#   consistent during this build, but per the spec's own verify plan
+#   this specific criterion is meant for human eyes, not a bot.

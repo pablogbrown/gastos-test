@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+
+# VCS / tooling
+.git/
+.github/
+.claude/
+.nybo/
+
+# Misc
+*.md
+.env

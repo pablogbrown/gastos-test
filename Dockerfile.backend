@@ -1,0 +1,16 @@
+# Backend image for local Docker development (taskia API).
+# Not used in production deploys (see .nybo/foundation/stack.yaml) — this
+# image exists solely to run the FastAPI backend + its dependencies inside
+# docker-compose, with hot-reload via a bind-mounted source volume.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--reload"]
