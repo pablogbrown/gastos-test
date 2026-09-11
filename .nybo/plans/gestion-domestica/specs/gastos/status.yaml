@@ -10,6 +10,9 @@ domains_referenced: []
 parent:
   feature: gestion-domestica
   branch: feat/gestion-domestica--gastos
+pr_url: https://github.com/pablogbrown/gastos-test/pull/3
+pr_number: 3
+pr_base: feat/gestion-domestica
 kind: single_spec
 dependencies:
   blocking:
