@@ -1,5 +1,5 @@
 feature: usuarios-auth
-status: approved
+status: in-progress
 kind: multi_spec
 profile: code
 action_type: UPD
@@ -10,8 +10,9 @@ pr_url: https://github.com/pablogbrown/gastos-test/pull/8
 pr_number: 8
 specs:
   - id: auth-backend
-    status: approved
+    status: verified
     branch: feat/usuarios-auth--auth-backend
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/10
     shipped_at: null
   - id: auth-frontend
     status: approved
