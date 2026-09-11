@@ -7,6 +7,9 @@ approved_at: '2026-09-11'
 task_count: 4
 domains_referenced: []
 domain: infra
+branch: feat/dockerize-local-env
+pr_url: https://github.com/pablogbrown/gastos-test/pull/6
+pr_number: 6
 kind: single_spec
 notes: |
   Single spec: un solo concern (entorno de desarrollo local), sin
