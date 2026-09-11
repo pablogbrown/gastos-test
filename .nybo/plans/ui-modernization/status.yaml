@@ -1,0 +1,13 @@
+feature: ui-modernization
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+task_count: 4
+domains_referenced: []
+domain: frontend
+kind: single_spec
+notes: |
+  Single spec: un solo concern (restyle visual), sin boundary de
+  actor/superficie que justifique un split entre pantallas.
