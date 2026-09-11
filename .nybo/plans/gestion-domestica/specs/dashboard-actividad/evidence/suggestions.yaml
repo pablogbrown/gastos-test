@@ -1,0 +1,62 @@
+suggestions:
+  - id: activity-log-hook-pattern
+    area: services
+    observation: >
+      This spec establishes a concrete pattern for cross-cutting event
+      logging: a direct `registrar_actividad(casa_id, tipo, miembro_id,
+      descripcion)` call placed immediately after the triggering
+      service's own `session.commit()`/`session.refresh(...)`, using its
+      own separate session/transaction rather than joining the caller's.
+      Chosen deliberately over an event bus per `00-overview.md`'s own
+      Tradeoffs section (domestic scale, avoid unjustified
+      infrastructure). Worth documenting explicitly as a domain
+      convention (`.nybo/memory/domains/services.md` or similar) so a
+      future spec adding a new tracked action type knows to hook in the
+      same way instead of re-deriving the "after commit, own
+      transaction, never before" rule from scratch.
+    suggested_when: the next spec that introduces a new
+      `TipoActividadEnum` value or another cross-cutting side effect
+      needing this same hook shape.
+  - id: unused-miembro-agregado-activity-type
+    area: services
+    observation: >
+      `TipoActividadEnum.MIEMBRO_AGREGADO` is defined (per T1's schema
+      and REQ-002's requirement text, which lists "miembro agregado"
+      among tracked actions) but no hook triggers it — T2's own Changes
+      text commissions hooks only in `gasto_service.registrar_gasto` and
+      `tarea_service.crear_tarea`/`completar_tarea`, and
+      `miembro_service.py` (owned by the already-merged `casas-miembros`
+      spec) was out of this sub-spec's stated edit scope. Recommend a
+      deliberate decision: either extend `miembro_service.agregar_miembro`
+      with the same hook pattern (see `activity-log-hook-pattern` above),
+      or drop the unused enum value if "miembro agregado" activity
+      tracking is no longer desired.
+    suggested_when: the next spec/fix that touches `miembro_service.py`,
+      or a dedicated follow-up once a human reviews this gap.
+  - id: shared-session-per-request-still-open
+    area: services
+    observation: >
+      Flagged by `casas-miembros` and reconfirmed by `gastos`; this spec
+      adds `actividad_service.py` as a fourth service that opens/closes
+      its own SQLAlchemy session per call via `get_session()`. The new
+      activity-log hooks make the absence of a request-scoped/shared
+      transaction slightly more visible: a gasto/tarea write and its
+      activity-log entry are two separate commits, not one atomic
+      transaction (acceptable at this domestic scale, but worth resolving
+      before a fifth service repeats the pattern).
+    suggested_when: a future spec needs an atomic multi-service write, or
+      a general services-layer refactor is scheduled.
+  - id: adopt-alembic-before-fourth-migration
+    area: db
+    observation: >
+      `casas-miembros` and `gastos` both flagged adopting Alembic once a
+      second/third hand-rolled migration landed. This spec adds
+      `0004_historial_actividad.py`, the fourth `upgrade(bind)`/
+      `downgrade(bind)`-over-`Base.metadata` migration in the project,
+      still following the same pattern. As the last sub-spec of
+      `gestion-domestica`, this is a natural point to decide — at the
+      feature-level ship/distill step — whether to introduce Alembic now
+      or explicitly adopt the hand-rolled pattern as the project's
+      lasting convention, rather than deferring again.
+    suggested_when: gestion-domestica ship/distill, or the next feature
+      that needs its own migration.

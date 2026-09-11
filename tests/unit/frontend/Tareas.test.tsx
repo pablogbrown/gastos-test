@@ -1,0 +1,144 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { Tareas } from "../../../src/frontend/pages/Tareas";
+
+const CASA_ID = "11111111-1111-1111-1111-111111111111";
+const ADMIN_ID = "22222222-2222-2222-2222-222222222222";
+const ANA_ID = "33333333-3333-3333-3333-333333333333";
+const BRUNO_ID = "44444444-4444-4444-4444-444444444444";
+
+function tareaSinResponsable() {
+  return {
+    id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    casa_id: CASA_ID,
+    nombre: "Sacar la basura",
+    descripcion: null,
+    puntos: 5,
+    responsableId: null,
+    fechaPrevista: null,
+    estado: "pendiente",
+    recurrente: false,
+    frecuencia: null,
+  };
+}
+
+function tareaConResponsable(responsableId: string) {
+  return {
+    id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    casa_id: CASA_ID,
+    nombre: "Pagar servicios",
+    descripcion: null,
+    puntos: 8,
+    responsableId,
+    fechaPrevista: null,
+    estado: "pendiente",
+    recurrente: false,
+    frecuencia: null,
+  };
+}
+
+function mockFetch(tareas: unknown[], historial: unknown[] = []) {
+  return vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/historial")) {
+      return { ok: true, json: async () => historial };
+    }
+    if (url.includes("/tareas")) {
+      return { ok: true, json: async () => tareas };
+    }
+    return { ok: true, json: async () => [] };
+  });
+}
+
+describe("Tareas", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("muestra el listado de tareas y el historial", async () => {
+    vi.stubGlobal("fetch", mockFetch([tareaSinResponsable()], []));
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+
+    expect(await screen.findByText("Sacar la basura")).toBeInTheDocument();
+    expect(screen.getByText("Historial de tareas")).toBeInTheDocument();
+  });
+
+  it("muestra 'Marcar completada' para una tarea sin responsable a cualquier miembro", async () => {
+    vi.stubGlobal("fetch", mockFetch([tareaSinResponsable()], []));
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Marcar completada" })).toBeInTheDocument()
+    );
+  });
+
+  it("oculta 'Marcar completada' si el miembro no es el responsable asignado (TC-004)", async () => {
+    vi.stubGlobal("fetch", mockFetch([tareaConResponsable(ANA_ID)], []));
+
+    render(<Tareas casaId={CASA_ID} usuarioId={BRUNO_ID} rolUsuarioActual="member" />);
+
+    await screen.findByText("Pagar servicios");
+    expect(screen.queryByRole("button", { name: "Marcar completada" })).not.toBeInTheDocument();
+  });
+
+  it("muestra 'Marcar completada' al propio responsable asignado", async () => {
+    vi.stubGlobal("fetch", mockFetch([tareaConResponsable(ANA_ID)], []));
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Marcar completada" })).toBeInTheDocument()
+    );
+  });
+
+  it("crea una tarea y refresca el listado", async () => {
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => tareaSinResponsable() })
+      .mockResolvedValueOnce({ ok: true, json: async () => [tareaSinResponsable()] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    await screen.findByLabelText("Crear tarea");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Nombre"), "Sacar la basura");
+    await user.type(screen.getByLabelText("Puntos"), "5");
+    await user.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    expect(await screen.findByText("Sacar la basura")).toBeInTheDocument();
+  });
+
+  it("muestra un error devuelto por la API al completar una tarea ya completada (TC-006)", async () => {
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [tareaSinResponsable()] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        statusText: "Conflict",
+        json: async () => ({ detail: "La tarea ya fue completada." }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+    await screen.findByText("Sacar la basura");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Marcar completada" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/ya fue completada/i);
+  });
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+});

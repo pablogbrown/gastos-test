@@ -1,0 +1,93 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gestion-domestica/specs/gastos/feat/01-plan-01-data-layer.md",
+      "files_touched": ["src/db/models/gasto.py", "src/db/models/categoria.py", "src/db/migrations/0002_gastos.py"],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        {"name": "Gasto", "signature": "class Gasto(id, casa_id, descripcion, importe, fecha, pagado_por, categoria_id)", "kind": "class"},
+        {"name": "Categoria", "signature": "class Categoria(id, casa_id, nombre)", "kind": "class"},
+        {"name": "GastoParticipante", "signature": "class GastoParticipante(gasto_id, miembro_id, monto_correspondiente)", "kind": "class"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El esquema de Gasto/Categoria/GastoParticipante persiste datos válidos y mantiene integridad referencial.",
+        "postcondition": "La suma de monto_correspondiente de los participantes de un gasto puede compararse contra su importe total.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/db/gasto.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gestion-domestica/specs/gastos/feat/01-plan-02-service-layer.md",
+      "files_touched": ["src/services/gasto_service.py", "src/services/balance_service.py", "src/services/categoria_service.py"],
+      "deps": ["T1"],
+      "est_minutes": 60,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-007", "TC-008", "TC-009"],
+      "interfaces_produced": [
+        {"name": "registrar_gasto", "signature": "(casa_id, descripcion, importe, fecha, categoria_id, pagado_por, participantes, actor) -> Gasto", "kind": "function"},
+        {"name": "calcular_balance", "signature": "(casa_id: UUID) -> BalancePorMiembro[]", "kind": "function"},
+        {"name": "sugerir_transferencias", "signature": "(balance: BalancePorMiembro[]) -> Transferencia[]", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "Gasto"},
+        {"from": "T1", "name": "Categoria"},
+        {"from": "T1", "name": "GastoParticipante"}
+      ],
+      "contract": {
+        "statement": "El registro de gastos divide correctamente el importe entre participantes y el cálculo de balance refleja pagos vs. montos correspondientes.",
+        "postcondition": "Para un gasto de $40.000 entre 4 participantes, cada uno debe exactamente $10.000; el balance de un miembro es pagado - correspondiente.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/services/gasto_service.test.py,tests/unit/services/balance_service.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gestion-domestica/specs/gastos/feat/01-plan-03-api-routes.md",
+      "files_touched": ["src/api/routes/gastos.py"],
+      "deps": ["T2"],
+      "est_minutes": 25,
+      "test_cases": ["TC-010"],
+      "interfaces_produced": [
+        {"name": "gastos_router", "signature": "APIRouter", "kind": "export"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "registrar_gasto"},
+        {"from": "T2", "name": "calcular_balance"}
+      ],
+      "contract": {
+        "statement": "Las rutas de gastos exponen el historial completo, incluyendo gastos de miembros desactivados.",
+        "postcondition": "GET /casas/{id}/gastos incluye registros cuyo pagado_por referencia a un miembro con activo=false.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gestion-domestica/specs/gastos/feat/01-plan-04-ui.md",
+      "files_touched": ["src/frontend/pages/Gastos.tsx", "src/frontend/pages/Balance.tsx", "src/frontend/api/gastosClient.ts"],
+      "deps": ["T3"],
+      "est_minutes": 30,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T3", "name": "gastos_router"}
+      ],
+      "contract": {
+        "statement": "La UI permite registrar un gasto y consultar balance/historial contra la API real.",
+        "postcondition": "El flujo registrar gasto → ver balance → ver historial se completa sin error de build ni de tipos.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Gastos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

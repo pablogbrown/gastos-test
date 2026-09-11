@@ -1,0 +1,36 @@
+feature: gestion-domestica
+status: shipped
+shipped_at: '2026-09-11T19:45:00Z'
+ship_eligible: true
+kind: multi_spec
+profile: code
+action_type: ADD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+branch: feat/gestion-domestica
+pr_url: https://github.com/pablogbrown/gastos-test/pull/1
+pr_number: 1
+specs:
+  - id: casas-miembros
+    status: verified
+    branch: feat/gestion-domestica--casas-miembros
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/2
+    shipped_at: '2026-09-11T19:45:00Z'
+  - id: gastos
+    status: verified
+    branch: feat/gestion-domestica--gastos
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/3
+    shipped_at: '2026-09-11T19:45:00Z'
+  - id: tareas-puntos
+    status: verified
+    branch: feat/gestion-domestica--tareas-puntos
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/4
+    shipped_at: '2026-09-11T19:45:00Z'
+  - id: dashboard-actividad
+    status: verified
+    branch: feat/gestion-domestica--dashboard-actividad
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/5
+    shipped_at: '2026-09-11T19:45:00Z'
+notes: |
+  Rationale completa en plan.md (Split Rationale).
+  Fuente: documento funcional en la raíz del repo.

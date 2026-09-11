@@ -1,0 +1,22 @@
+feature: casas-miembros
+status: shipped
+shipped_at: '2026-09-11T19:45:00Z'
+profile: code
+action_type: ADD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+verified_at: '2026-09-11'
+task_count: 4
+domains_referenced: []
+parent:
+  feature: gestion-domestica
+  branch: feat/gestion-domestica--casas-miembros
+pr_url: https://github.com/pablogbrown/gastos-test/pull/2
+pr_number: 2
+pr_base: feat/gestion-domestica
+kind: single_spec
+dependencies:
+  blocking: []
+  blocks:
+    - gastos
+    - tareas-puntos

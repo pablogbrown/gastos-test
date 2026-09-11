@@ -1,0 +1,25 @@
+"""Punto de entrada de la API. Ejecutar con: uvicorn src.api.main:app --reload
+
+No forma parte del scope de T3 de `casas-miembros` (que solo produce
+`casas_router`), pero es el mínimo necesario para que la API sea
+arrancable end-to-end. Las specs `gastos` y `tareas-puntos` agregan aquí
+sus propios routers; `dashboard-actividad` agrega el suyo por el mismo
+motivo (es la última de las cuatro sub-specs de la feature).
+"""
+from fastapi import FastAPI
+
+from src.api.routes.casas import casas_router
+from src.api.routes.dashboard import dashboard_router
+from src.api.routes.gastos import gastos_router
+from src.api.routes.tareas import tareas_router
+
+app = FastAPI(title="taskia API")
+app.include_router(casas_router)
+app.include_router(gastos_router)
+app.include_router(tareas_router)
+app.include_router(dashboard_router)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

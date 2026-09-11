@@ -1,0 +1,173 @@
+"""Rutas HTTP de Categorías, Gastos y Balance — adaptadores delgados
+sobre T2 (`categoria_service`, `gasto_service`, `balance_service`).
+
+Ninguna regla de negocio vive aquí: cada handler valida forma (vía
+Pydantic), delega en el servicio correspondiente y traduce las
+excepciones de dominio a códigos HTTP, siguiendo el mismo patrón que
+`src/api/routes/casas.py` (`casas-miembros`).
+
+Los esquemas Pydantic de este router viven en este mismo archivo (en vez
+de `src/api/schemas.py`) porque el scope de esta spec, fijado por
+`run-plan.json`, solo declara `src/api/routes/gastos.py`.
+
+Nota de diseño (pagado_por): el contrato HTTP documentado en
+`00-overview.md` no incluye un campo `pagadoPor` explícito en el body de
+`POST .../gastos` — solo `descripcion, importe, fecha, categoriaId,
+participantes?`. Se interpreta que, por defecto, quien registra el gasto
+(`actor`, resuelto del header `X-Usuario-Id`) es también quien lo pagó;
+`pagado_por` queda como campo opcional para permitir que un Administrador
+registre un gasto en nombre de otro miembro sin romper el contrato
+documentado.
+"""
+from datetime import date
+from decimal import Decimal
+from typing import List, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Header, HTTPException, status
+from pydantic import BaseModel, Field
+
+from src.services.balance_service import calcular_balance, sugerir_transferencias
+from src.services.categoria_service import crear_categoria, listar_categorias
+from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
+from src.services.gasto_service import listar_gastos, registrar_gasto
+
+gastos_router = APIRouter(prefix="/casas", tags=["gastos"])
+
+
+class CategoriaCreate(BaseModel):
+    nombre: str
+
+
+class CategoriaOut(BaseModel):
+    id: UUID
+    casa_id: UUID
+    nombre: str
+
+    class Config:
+        orm_mode = True
+
+
+class GastoCreate(BaseModel):
+    descripcion: str
+    importe: Decimal
+    fecha: date
+    # Optional a nivel de esquema (en vez de requerido) para que un
+    # payload sin `categoria_id` llegue al servicio y sea rechazado con
+    # 400 vía `ValidationError` (TC-002), en vez de un 422 genérico de
+    # validación de Pydantic.
+    categoria_id: Optional[UUID] = None
+    pagado_por: Optional[UUID] = None
+    participantes: Optional[List[UUID]] = None
+
+
+class ParticipanteOut(BaseModel):
+    miembro_id: UUID
+    monto_correspondiente: Decimal
+
+    class Config:
+        orm_mode = True
+
+
+class GastoOut(BaseModel):
+    id: UUID
+    casa_id: UUID
+    descripcion: str
+    importe: Decimal
+    fecha: date
+    pagado_por: UUID
+    categoria_id: UUID
+    participantes: List[ParticipanteOut] = Field(default_factory=list)
+
+    class Config:
+        orm_mode = True
+
+
+class BalancePorMiembroOut(BaseModel):
+    miembro_id: UUID
+    nombre: str
+    pago: Decimal
+    correspondia: Decimal
+    balance: Decimal
+
+    class Config:
+        orm_mode = True
+
+
+class TransferenciaOut(BaseModel):
+    deudor_id: UUID
+    acreedor_id: UUID
+    monto: Decimal
+
+    class Config:
+        orm_mode = True
+
+
+class BalanceResponse(BaseModel):
+    balances: List[BalancePorMiembroOut]
+    transferencias: List[TransferenciaOut]
+
+
+@gastos_router.post(
+    "/{casa_id}/categorias", response_model=CategoriaOut, status_code=status.HTTP_201_CREATED
+)
+def crear_categoria_endpoint(
+    casa_id: UUID, payload: CategoriaCreate, actor: UUID = Header(..., alias="X-Usuario-Id")
+):
+    try:
+        return crear_categoria(casa_id, payload.nombre, actor)
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@gastos_router.get("/{casa_id}/categorias", response_model=List[CategoriaOut])
+def listar_categorias_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+    try:
+        return listar_categorias(casa_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@gastos_router.post("/{casa_id}/gastos", response_model=GastoOut, status_code=status.HTTP_201_CREATED)
+def registrar_gasto_endpoint(
+    casa_id: UUID, payload: GastoCreate, actor: UUID = Header(..., alias="X-Usuario-Id")
+):
+    try:
+        return registrar_gasto(
+            casa_id,
+            payload.descripcion,
+            payload.importe,
+            payload.fecha,
+            payload.categoria_id,
+            payload.pagado_por or actor,
+            actor,
+            participantes=payload.participantes,
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@gastos_router.get("/{casa_id}/gastos", response_model=List[GastoOut])
+def listar_gastos_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+    try:
+        return listar_gastos(casa_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@gastos_router.get("/{casa_id}/balance", response_model=BalanceResponse)
+def obtener_balance_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+    try:
+        balances = calcular_balance(casa_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    transferencias = sugerir_transferencias(balances)
+    return BalanceResponse(balances=balances, transferencias=transferencias)

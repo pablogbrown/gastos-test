@@ -1,0 +1,93 @@
+{
+  "$schema_version": "2",
+  "feature_id": "casas-miembros",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gestion-domestica/specs/casas-miembros/feat/01-plan-01-data-layer.md",
+      "files_touched": ["src/db/models/casa.py", "src/db/models/miembro.py", "src/db/migrations/0001_casas_miembros.py"],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": ["TC-004"],
+      "interfaces_produced": [
+        {"name": "Casa", "signature": "class Casa(id, nombre, creado_en)", "kind": "class"},
+        {"name": "Miembro", "signature": "class Miembro(id, casa_id, nombre, identificacion, rol, activo)", "kind": "class"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El esquema de Casa y Miembro persiste datos válidos y rechaza identificación duplicada dentro de la misma casa.",
+        "postcondition": "Insertar dos miembros con igual identificacion en la misma casa_id lanza una violación de constraint.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/db/casa_miembro.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gestion-domestica/specs/casas-miembros/feat/01-plan-02-service-layer.md",
+      "files_touched": ["src/services/casa_service.py", "src/services/miembro_service.py", "src/services/permisos.py"],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-005", "TC-006", "TC-007", "TC-008", "TC-009"],
+      "interfaces_produced": [
+        {"name": "crear_casa", "signature": "(nombre: str, usuario_creador: UUID) -> Casa", "kind": "function"},
+        {"name": "agregar_miembro", "signature": "(casa_id: UUID, nombre: str, identificacion: str, actor: UUID) -> Miembro", "kind": "function"},
+        {"name": "desactivar_miembro", "signature": "(casa_id: UUID, miembro_id: UUID, actor: UUID) -> Miembro", "kind": "function"},
+        {"name": "requiere_membresia_activa", "signature": "(casa_id: UUID, usuario_id: UUID) -> bool", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "Casa"},
+        {"from": "T1", "name": "Miembro"}
+      ],
+      "contract": {
+        "statement": "Los servicios de casa y miembro aplican las reglas de creación, alta, baja y permisos por rol.",
+        "postcondition": "crear_casa asigna rol admin al creador; agregar_miembro/desactivar_miembro rechazan actores sin rol admin.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": "tests/unit/services/casa_service.test.py,tests/integration/services/miembro_service.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gestion-domestica/specs/casas-miembros/feat/01-plan-03-api-routes.md",
+      "files_touched": ["src/api/routes/casas.py"],
+      "deps": ["T2"],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        {"name": "casas_router", "signature": "APIRouter", "kind": "export"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "crear_casa"},
+        {"from": "T2", "name": "agregar_miembro"},
+        {"from": "T2", "name": "desactivar_miembro"}
+      ],
+      "contract": {
+        "statement": "Las rutas de casas/miembros exponen los servicios de T2 con los códigos HTTP correctos por rol.",
+        "postcondition": "Una petición sin permisos suficientes responde 403; una petición inválida responde 400.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/casas_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gestion-domestica/specs/casas-miembros/feat/01-plan-04-ui.md",
+      "files_touched": ["src/frontend/pages/CrearCasa.tsx", "src/frontend/pages/Miembros.tsx", "src/frontend/api/casasClient.ts"],
+      "deps": ["T3"],
+      "est_minutes": 30,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T3", "name": "casas_router"}
+      ],
+      "contract": {
+        "statement": "La UI permite crear una casa y gestionar miembros contra la API real.",
+        "postcondition": "El flujo crear casa → agregar miembro se completa sin error de tipos ni de build.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "spec": "casas-miembros",
+    "worktree": ".claude/worktrees/feat-gestion-domestica--casas-miembros",
+    "branch": "feat/gestion-domestica--casas-miembros",
+    "base_commit": "af99562203a96e8209737a23e9b5147e7c75eb5b",
+    "dispatched_at": "2026-09-11T18:13:22Z",
+    "completed_at": "2026-09-11T18:27:36Z",
+    "outcome": "verified",
+    "verified": {
+      "new_commits": true,
+      "status_advanced_past_in_progress": true
+    },
+    "pr_url": "https://github.com/pablogbrown/gastos-test/pull/2"
+  }
+]
