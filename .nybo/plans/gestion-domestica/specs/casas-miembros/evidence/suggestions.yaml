@@ -1,0 +1,34 @@
+suggestions:
+  - id: adopt-alembic-on-second-migration
+    area: db
+    observation: >
+      This spec introduces a hand-rolled migration module
+      (`upgrade(bind)`/`downgrade(bind)` over `Base.metadata`) because it's
+      the first migration in the project and a full migration engine
+      would be premature. Once `gastos` (migration 0002) and
+      `tareas-puntos` (migration 0003) land, the project should introduce
+      Alembic (or an equivalent) for incremental migrations instead of
+      hand-writing `create_all`/`drop_all` per file.
+    suggested_when: gastos or tareas-puntos sub-spec build.
+  - id: shared-session-per-request
+    area: services
+    observation: >
+      Each service function (crear_casa, agregar_miembro,
+      desactivar_miembro, requiere_membresia_activa) opens and closes its
+      own SQLAlchemy session via `get_session()`. This is fine for single
+      writes but will not compose well once a sibling spec needs to
+      combine a casas-miembros call with its own writes in one
+      transaction (e.g. "register an expense AND touch a member's
+      points" in tareas-puntos). Consider a request-scoped session
+      (FastAPI dependency) before that need arises.
+    suggested_when: gastos or tareas-puntos sub-spec build.
+  - id: python-lint-tool-undetected
+    area: quality
+    observation: >
+      `.nybo/foundation/stack.yaml`'s `quality_tools.lint` is null for
+      Python; only the frontend has ESLint wired via `npm run lint`.
+      Backend correctness currently depends on `pytest` + `py_compile`
+      only. Recommend running `/nybo-brownfield-bootstrap --quality` or
+      adding `ruff`/`flake8` explicitly once the backend surface grows
+      past this foundational spec.
+    suggested_when: next sub-spec build or a dedicated quality pass.
