@@ -4,3 +4,14 @@
 # contains a live MCP bearer token — never commit secrets
 .mcp.json
 .nybo/foundation/integrations.yaml
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+
+# Frontend
+node_modules/
+dist/
