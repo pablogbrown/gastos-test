@@ -1,0 +1,13 @@
+feature: dockerize-local-env
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+task_count: 4
+domains_referenced: []
+domain: infra
+kind: single_spec
+notes: |
+  Single spec: un solo concern (entorno de desarrollo local), sin
+  boundary de actor/superficie que justifique un split.
