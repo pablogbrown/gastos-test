@@ -1,0 +1,24 @@
+[
+  {
+    "spec": "gastos",
+    "worktree": ".claude/worktrees/feat-gestion-domestica--gastos",
+    "branch": "feat/gestion-domestica--gastos",
+    "base_commit": "d6747dd",
+    "dispatched_at": "2026-09-11T18:40:00Z",
+    "completed_at": "2026-09-11T18:56:00Z",
+    "outcome": "verified",
+    "verified": { "new_commits": true, "status_advanced_past_in_progress": true },
+    "pr_url": "https://github.com/pablogbrown/gastos-test/pull/3"
+  },
+  {
+    "spec": "tareas-puntos",
+    "worktree": ".claude/worktrees/feat-gestion-domestica--tareas-puntos",
+    "branch": "feat/gestion-domestica--tareas-puntos",
+    "base_commit": "d6747dd",
+    "dispatched_at": "2026-09-11T18:40:00Z",
+    "completed_at": "2026-09-11T18:58:00Z",
+    "outcome": "verified",
+    "verified": { "new_commits": true, "status_advanced_past_in_progress": true },
+    "pr_url": "https://github.com/pablogbrown/gastos-test/pull/4"
+  }
+]

@@ -15,12 +15,14 @@ specs:
     pr_url: https://github.com/pablogbrown/gastos-test/pull/2
     shipped_at: null
   - id: gastos
-    status: approved
+    status: verified
     branch: feat/gestion-domestica--gastos
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/3
     shipped_at: null
   - id: tareas-puntos
-    status: approved
+    status: verified
     branch: feat/gestion-domestica--tareas-puntos
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/4
     shipped_at: null
   - id: dashboard-actividad
     status: approved
