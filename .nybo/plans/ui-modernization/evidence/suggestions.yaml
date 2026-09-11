@@ -1,0 +1,37 @@
+questions_for_the_human:
+  - id: S001
+    status: open
+    text: >-
+      TC-006 (E2E, viewport 360x800 in a real browser) could not be
+      observed in this build environment — no Playwright/Chromium or
+      other browser automation tool was available, and none was
+      installed given this was a UI-only restyle spec. A responsive CSS
+      review was done instead (see cycle-1/build-results.md Judgment
+      #4). Please confirm visually on a real device/browser (or via
+      /nybo-e2e-write) before considering TC-006 satisfied.
+  - id: S002
+    status: open
+    text: >-
+      MUI's `Stack` component type-checked incorrectly in this project's
+      installed @mui/material@9.4.0 (rejected `alignItems`/`gap` props
+      without an explicit `component` prop). Worked around by using
+      `Box` with `sx={{ display: "flex", ... }}` everywhere instead of
+      `Stack`. Worth a quick look (dependency dedupe, or a real API
+      change in this MUI major) if `Stack` is wanted going forward.
+
+quick_wins: []
+
+future_enhancements:
+  - id: S003
+    status: open
+    text: >-
+      The category select in Gastos.tsx and the frequency select in
+      Tareas.tsx use MUI's `Select native` variant (real `<option>`
+      elements) rather than the richer popup Select, specifically to
+      keep the existing `getByRole("option", ...)` test assertions
+      working without opening the dropdown in tests. If those tests are
+      ever rewritten to interact with an open dropdown, the popup
+      Select could replace the native one for a more consistent MUI look
+      (search/filter, richer item rendering).
+
+technical_debt: []

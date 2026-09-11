@@ -1,3 +1,17 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { agregarMiembro, desactivarMiembro, esApiError, listarMiembros, Miembro, Rol } from "../api/casasClient";
@@ -62,61 +76,92 @@ export function Miembros({ casaId, usuarioId, rolUsuarioActual }: MiembrosProps)
   }
 
   return (
-    <section aria-label="Miembros">
-      {error && <p role="alert">{error}</p>}
+    <Box component="section" aria-label="Miembros" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Typography variant="h5" component="h2">
+        Miembros
+      </Typography>
+
+      {error && <Alert severity="error">{error}</Alert>}
 
       {puedeGestionar && (
-        <form onSubmit={handleAlta} aria-label="Agregar miembro">
-          <label htmlFor="nombre-miembro">Nombre</label>
-          <input
-            id="nombre-miembro"
-            value={nombre}
-            onChange={(event) => setNombre(event.target.value)}
-          />
-          <label htmlFor="identificacion-miembro">Identificación</label>
-          <input
-            id="identificacion-miembro"
-            value={identificacion}
-            onChange={(event) => setIdentificacion(event.target.value)}
-          />
-          <button type="submit">Agregar miembro</button>
-        </form>
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Box
+            component="form"
+            onSubmit={handleAlta}
+            aria-label="Agregar miembro"
+            sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-start" }}
+          >
+            <TextField
+              id="nombre-miembro"
+              label="Nombre"
+              value={nombre}
+              onChange={(event) => setNombre(event.target.value)}
+              size="small"
+            />
+            <TextField
+              id="identificacion-miembro"
+              label="Identificación"
+              value={identificacion}
+              onChange={(event) => setIdentificacion(event.target.value)}
+              size="small"
+            />
+            <Button type="submit" variant="contained">
+              Agregar miembro
+            </Button>
+          </Box>
+        </Paper>
       )}
 
       {cargando ? (
-        <p>Cargando miembros...</p>
+        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1 }}>
+          <CircularProgress size={20} />
+          <Typography>Cargando miembros...</Typography>
+        </Box>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Identificación</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              {puedeGestionar && <th>Acciones</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {miembros.map((miembro) => (
-              <tr key={miembro.id}>
-                <td>{miembro.nombre}</td>
-                <td>{miembro.identificacion}</td>
-                <td>{miembro.rol}</td>
-                <td>{miembro.activo ? "Activo" : "Inactivo"}</td>
-                {puedeGestionar && (
-                  <td>
-                    {miembro.activo && (
-                      <button type="button" onClick={() => handleDesactivar(miembro.id)}>
-                        Desactivar
-                      </button>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TableContainer component={Paper} variant="outlined">
+          <Table sx={{ minWidth: 320 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Identificación</TableCell>
+                <TableCell>Rol</TableCell>
+                <TableCell>Estado</TableCell>
+                {puedeGestionar && <TableCell>Acciones</TableCell>}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {miembros.map((miembro) => (
+                <TableRow key={miembro.id}>
+                  <TableCell>{miembro.nombre}</TableCell>
+                  <TableCell>{miembro.identificacion}</TableCell>
+                  <TableCell>{miembro.rol}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={miembro.activo ? "Activo" : "Inactivo"}
+                      color={miembro.activo ? "success" : "default"}
+                      size="small"
+                    />
+                  </TableCell>
+                  {puedeGestionar && (
+                    <TableCell>
+                      {miembro.activo && (
+                        <Button
+                          type="button"
+                          size="small"
+                          color="error"
+                          onClick={() => handleDesactivar(miembro.id)}
+                        >
+                          Desactivar
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </section>
+    </Box>
   );
 }

@@ -1,3 +1,21 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormGroup from "@mui/material/FormGroup";
+import InputLabel from "@mui/material/InputLabel";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { Miembro } from "../api/casasClient";
@@ -102,105 +120,149 @@ export function Gastos({ casaId, usuarioId, miembros }: GastosProps) {
   }
 
   return (
-    <section aria-label="Gastos">
-      {error && <p role="alert">{error}</p>}
+    <Box component="section" aria-label="Gastos" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Typography variant="h5" component="h2">
+        Gastos
+      </Typography>
 
-      <form onSubmit={handleCrearCategoria} aria-label="Nueva categoría">
-        <label htmlFor="nueva-categoria">Nueva categoría</label>
-        <input
-          id="nueva-categoria"
-          value={nuevaCategoria}
-          onChange={(event) => setNuevaCategoria(event.target.value)}
-        />
-        <button type="submit">Crear categoría</button>
-      </form>
+      {error && <Alert severity="error">{error}</Alert>}
 
-      <form onSubmit={handleRegistrarGasto} aria-label="Nuevo gasto">
-        <label htmlFor="descripcion-gasto">Descripción</label>
-        <input
-          id="descripcion-gasto"
-          value={descripcion}
-          onChange={(event) => setDescripcion(event.target.value)}
-        />
-
-        <label htmlFor="importe-gasto">Importe</label>
-        <input
-          id="importe-gasto"
-          type="number"
-          value={importe}
-          onChange={(event) => setImporte(event.target.value)}
-        />
-
-        <label htmlFor="fecha-gasto">Fecha</label>
-        <input
-          id="fecha-gasto"
-          type="date"
-          value={fecha}
-          onChange={(event) => setFecha(event.target.value)}
-        />
-
-        <label htmlFor="categoria-gasto">Categoría</label>
-        <select
-          id="categoria-gasto"
-          value={categoriaId}
-          onChange={(event) => setCategoriaId(event.target.value)}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Box
+          component="form"
+          onSubmit={handleCrearCategoria}
+          aria-label="Nueva categoría"
+          sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-start" }}
         >
-          <option value="">Seleccionar categoría</option>
-          {categorias.map((categoria) => (
-            <option key={categoria.id} value={categoria.id}>
-              {categoria.nombre}
-            </option>
-          ))}
-        </select>
-
-        <label htmlFor="todos-los-miembros">
-          <input
-            id="todos-los-miembros"
-            type="checkbox"
-            checked={todosLosMiembros}
-            onChange={(event) => setTodosLosMiembros(event.target.checked)}
+          <TextField
+            id="nueva-categoria"
+            label="Nueva categoría"
+            value={nuevaCategoria}
+            onChange={(event) => setNuevaCategoria(event.target.value)}
+            size="small"
           />
-          Todos los miembros
-        </label>
+          <Button type="submit" variant="outlined">
+            Crear categoría
+          </Button>
+        </Box>
+      </Paper>
 
-        {!todosLosMiembros && (
-          <fieldset aria-label="Participantes">
-            {miembros.map((miembro) => (
-              <label key={miembro.id}>
-                <input
-                  type="checkbox"
-                  checked={seleccionados.includes(miembro.id)}
-                  onChange={() => toggleParticipante(miembro.id)}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Box
+          component="form"
+          onSubmit={handleRegistrarGasto}
+          aria-label="Nuevo gasto"
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            <TextField
+              id="descripcion-gasto"
+              label="Descripción"
+              value={descripcion}
+              onChange={(event) => setDescripcion(event.target.value)}
+              size="small"
+            />
+
+            <TextField
+              id="importe-gasto"
+              label="Importe"
+              type="number"
+              value={importe}
+              onChange={(event) => setImporte(event.target.value)}
+              size="small"
+            />
+
+            <TextField
+              id="fecha-gasto"
+              label="Fecha"
+              type="date"
+              value={fecha}
+              onChange={(event) => setFecha(event.target.value)}
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel htmlFor="categoria-gasto" shrink>
+                Categoría
+              </InputLabel>
+              <Select
+                native
+                id="categoria-gasto"
+                label="Categoría"
+                value={categoriaId}
+                onChange={(event) => setCategoriaId(event.target.value)}
+              >
+                <option value="">Seleccionar categoría</option>
+                {categorias.map((categoria) => (
+                  <option key={categoria.id} value={categoria.id}>
+                    {categoria.nombre}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  id="todos-los-miembros"
+                  checked={todosLosMiembros}
+                  onChange={(event) => setTodosLosMiembros(event.target.checked)}
                 />
-                {miembro.nombre}
-              </label>
+              }
+              label="Todos los miembros"
+            />
+          </FormGroup>
+
+          {!todosLosMiembros && (
+            <FormGroup aria-label="Participantes">
+              {miembros.map((miembro) => (
+                <FormControlLabel
+                  key={miembro.id}
+                  control={
+                    <Checkbox
+                      checked={seleccionados.includes(miembro.id)}
+                      onChange={() => toggleParticipante(miembro.id)}
+                    />
+                  }
+                  label={miembro.nombre}
+                />
+              ))}
+            </FormGroup>
+          )}
+
+          <Box>
+            <Button type="submit" variant="contained">
+              Registrar gasto
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+
+      <TableContainer component={Paper} variant="outlined">
+        <Table aria-label="Historial de gastos" sx={{ minWidth: 320 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Fecha</TableCell>
+              <TableCell>Descripción</TableCell>
+              <TableCell>Importe</TableCell>
+              <TableCell>Categoría</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {gastos.map((gasto) => (
+              <TableRow key={gasto.id}>
+                <TableCell>{gasto.fecha}</TableCell>
+                <TableCell>{gasto.descripcion}</TableCell>
+                <TableCell>{gasto.importe}</TableCell>
+                <TableCell>{nombreCategoria(gasto.categoria_id)}</TableCell>
+              </TableRow>
             ))}
-          </fieldset>
-        )}
-
-        <button type="submit">Registrar gasto</button>
-      </form>
-
-      <table aria-label="Historial de gastos">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Descripción</th>
-            <th>Importe</th>
-            <th>Categoría</th>
-          </tr>
-        </thead>
-        <tbody>
-          {gastos.map((gasto) => (
-            <tr key={gasto.id}>
-              <td>{gasto.fecha}</td>
-              <td>{gasto.descripcion}</td>
-              <td>{gasto.importe}</td>
-              <td>{nombreCategoria(gasto.categoria_id)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 }

@@ -1,3 +1,16 @@
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import StarIcon from "@mui/icons-material/Star";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { Actividad, esApiError, obtenerActividad } from "../api/dashboardClient";
@@ -13,6 +26,14 @@ const ETIQUETAS_TIPO: Record<Actividad["tipo"], string> = {
   tarea_completada: "Tarea completada",
   puntos_obtenidos: "Puntos",
   miembro_agregado: "Miembro agregado",
+};
+
+const ICONOS_TIPO: Record<Actividad["tipo"], JSX.Element> = {
+  gasto_registrado: <AttachMoneyIcon />,
+  tarea_creada: <TaskAltIcon />,
+  tarea_completada: <CheckCircleIcon />,
+  puntos_obtenidos: <StarIcon />,
+  miembro_agregado: <PersonAddIcon />,
 };
 
 /** Pantalla "Historial de actividad" (REQ-002, REQ-003): lista
@@ -39,22 +60,28 @@ export function HistorialActividad({ casaId, usuarioId }: HistorialActividadProp
   }, [cargar]);
 
   return (
-    <section aria-label="Historial de actividad">
-      {error && <p role="alert">{error}</p>}
+    <Box component="section" aria-label="Historial de actividad" sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <Typography variant="h5" component="h2">
+        Actividad
+      </Typography>
+
+      {error && <Alert severity="error">{error}</Alert>}
       {cargando ? (
-        <p>Cargando historial...</p>
+        <Typography>Cargando historial...</Typography>
       ) : actividad.length === 0 ? (
-        <p>Todavía no hay actividad registrada.</p>
+        <Typography color="text.secondary">Todavía no hay actividad registrada.</Typography>
       ) : (
-        <ul>
+        <List component={Paper} variant="outlined" sx={{ p: 0 }}>
           {actividad.map((entrada) => (
-            <li key={entrada.id}>
-              <strong>{ETIQUETAS_TIPO[entrada.tipo]}</strong> — {entrada.descripcion} (
-              {entrada.fecha})
-            </li>
+            <ListItem key={entrada.id} divider>
+              <ListItemIcon>{ICONOS_TIPO[entrada.tipo]}</ListItemIcon>
+              <ListItemText
+                primary={`${ETIQUETAS_TIPO[entrada.tipo]} — ${entrada.descripcion} (${entrada.fecha})`}
+              />
+            </ListItem>
           ))}
-        </ul>
+        </List>
       )}
-    </section>
+    </Box>
   );
 }

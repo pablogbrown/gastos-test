@@ -72,7 +72,7 @@
         "statement": "La suite de tests de frontend adaptada a los selectores de MUI sigue verificando el mismo comportamiento que antes del restyle.",
         "postcondition": "npm run test pasa completo (0 fallos) tras la adaptación de selectores.",
         "verifiability": "UNIT",
-        "test_file": "tests/unit/frontend/*.test.tsx",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx,tests/unit/frontend/Gastos.test.tsx,tests/unit/frontend/Tareas.test.tsx,tests/unit/frontend/InicioCasa.test.tsx,tests/unit/frontend/HistorialActividad.test.tsx,tests/unit/frontend/AppShell.test.tsx,tests/unit/frontend/MuiRestyle.test.tsx",
         "is_regression_gate": true
       }
     }

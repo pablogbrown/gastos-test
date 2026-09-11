@@ -1,9 +1,16 @@
 feature: ui-modernization
-status: approved
+status: ready
 profile: code
 action_type: UPD
 created_at: '2026-09-11'
 approved_at: '2026-09-11'
+run_at: '2026-09-11T21:50:00.000Z'
+run_completed_at: '2026-09-11T21:50:00.000Z'
+run_duration: 5400
+verified_at: '2026-09-11T21:53:31.948Z'
+verified_duration: 210
+curated_at: '2026-09-11T21:58:00.000Z'
+curated_duration: 268
 task_count: 4
 domains_referenced: []
 domain: frontend
@@ -14,3 +21,15 @@ kind: single_spec
 notes: |
   Single spec: un solo concern (restyle visual), sin boundary de
   actor/superficie que justifique un split entre pantallas.
+
+  Build cycle 1: T1-T4 implemented (MUI restyle of all 8 screens + theme
+  + responsive nav shell). npm run build/lint/test all green (31/31
+  tests). TC-001-005 automated and passing. TC-006 (E2E, real browser at
+  360x800) could NOT be observed live — no browser automation tool
+  available in this sandbox; deferred to a human or a session with real
+  browser tooling (see evidence/suggestions.yaml S001 and
+  feat/99-progress.md's Outcome Smoke Test section) — this does not
+  block the ready exit since TC-006 is [E2E] (BUILD never executes
+  E2E/MANUAL cases; they ride out deferred to the human). Curate ran
+  once, narrow: 4 conventions/patterns/gotchas written to
+  .nybo/memory/domains/frontend.md.

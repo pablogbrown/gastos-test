@@ -1,3 +1,18 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { BalanceResponse, esApiError, obtenerBalance } from "../api/gastosClient";
@@ -28,11 +43,11 @@ export function Balance({ casaId, usuarioId }: BalanceProps) {
   }, [cargar]);
 
   if (error) {
-    return <p role="alert">{error}</p>;
+    return <Alert severity="error">{error}</Alert>;
   }
 
   if (!balance) {
-    return <p>Cargando balance...</p>;
+    return <Typography>Cargando balance...</Typography>;
   }
 
   function nombreDe(miembroId: string): string {
@@ -40,41 +55,54 @@ export function Balance({ casaId, usuarioId }: BalanceProps) {
   }
 
   return (
-    <section aria-label="Balance">
-      <table>
-        <thead>
-          <tr>
-            <th>Miembro</th>
-            <th>Pagó</th>
-            <th>Le correspondía</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {balance.balances.map((miembro) => (
-            <tr key={miembro.miembro_id}>
-              <td>{miembro.nombre}</td>
-              <td>{miembro.pago}</td>
-              <td>{miembro.correspondia}</td>
-              <td>{miembro.balance}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <Box component="section" aria-label="Balance" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Typography variant="h5" component="h2">
+        Balance
+      </Typography>
 
-      <h3>Transferencias sugeridas</h3>
-      {balance.transferencias.length === 0 ? (
-        <p>No hay transferencias pendientes.</p>
-      ) : (
-        <ul>
-          {balance.transferencias.map((transferencia, indice) => (
-            <li key={indice}>
-              {nombreDe(transferencia.deudor_id)} debe transferir {transferencia.monto} a{" "}
-              {nombreDe(transferencia.acreedor_id)}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+      <TableContainer component={Paper} variant="outlined">
+        <Table sx={{ minWidth: 320 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Miembro</TableCell>
+              <TableCell>Pagó</TableCell>
+              <TableCell>Le correspondía</TableCell>
+              <TableCell>Balance</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {balance.balances.map((miembro) => (
+              <TableRow key={miembro.miembro_id}>
+                <TableCell>{miembro.nombre}</TableCell>
+                <TableCell>{miembro.pago}</TableCell>
+                <TableCell>{miembro.correspondia}</TableCell>
+                <TableCell>{miembro.balance}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Transferencias sugeridas
+          </Typography>
+          {balance.transferencias.length === 0 ? (
+            <Typography color="text.secondary">No hay transferencias pendientes.</Typography>
+          ) : (
+            <List dense>
+              {balance.transferencias.map((transferencia, indice) => (
+                <ListItem key={indice} disableGutters>
+                  <ListItemText
+                    primary={`${nombreDe(transferencia.deudor_id)} debe transferir ${transferencia.monto} a ${nombreDe(transferencia.acreedor_id)}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
 }
