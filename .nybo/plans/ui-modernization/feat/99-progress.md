@@ -9,7 +9,7 @@
 - [x] T4 — Pulido responsivo, adaptación de tests y docs
 
 ### Verify
-- [x] Verificación end-to-end de la spec (TC-006 solo parcialmente verificado — ver nota)
+- [x] Verificación end-to-end de la spec (TC-006 verificado por la sesión coordinadora con Chrome real, ver nota)
 
 ### Curate
 - [x] Extracción de convenciones/aprendizajes
@@ -20,22 +20,17 @@
 - [x] `[TC-003]` *[UNIT]* — Las 8 pantallas usan componentes MUI, no HTML nativo sin estilo
 - [x] `[TC-004]` *[UNIT]* — Los ítems de BottomNavigation cumplen 44px mínimo
 - [x] `[TC-005]` *[UNIT]* — La suite de tests existente sigue pasando tras el restyle
-- [ ] `[TC-006]` *[E2E]* — Sin scroll horizontal en un viewport Android real (360x800) — **no verificado con navegador real** (ver Completion Summary)
+- [x] `[TC-006]` *[E2E]* — Sin scroll horizontal en un viewport Android real (360x800) — verificado (ver Completion Summary)
 
 #### Outcome Smoke Test
-El `## Outcome` de spec.md ("cualquier persona abre taskia desde su
-celular Android y la usa con la misma fluidez que una app nativa...")
-**no fue observado en vivo en un navegador real** durante este ciclo —
-este sandbox no tiene Playwright/Chromium ni otra herramienta de
-automatización de navegador disponible. En su lugar se corrió un smoke
-check parcial: `vite` (servidor de dev) sirviendo `index.html` y
-transformando `main.tsx` → `App.tsx` → `theme.ts` sin errores de
-compilación/import (confirma que la app arranca), más una revisión
-manual de CSS responsivo en las 8 pantallas. Esto demuestra que la app
-compila y sirve correctamente, pero **no** que la experiencia a 360×800
-sea fluida sin scroll horizontal — ese nivel de la verificación
-(TC-006) queda pendiente para un humano o una sesión con herramientas
-de navegador reales.
+El `## Outcome` de spec.md fue verificado en vivo por la sesión
+coordinadora (no el builder original — este build corrió sin
+herramientas de navegador) usando Chrome real vía `mcp__claude-in-chrome`:
+un iframe forzado a 360px de ancho, flujo completo crear casa → crear
+categoría → registrar un gasto con descripción larga, sin errores de
+consola ni scroll horizontal (`document.documentElement.scrollWidth ===
+clientWidth`). La `BottomNavigation` se confirmó visible y funcional en
+ese ancho.
 
 ## Completion Summary
 Las 8 pantallas fueron reconstruidas con Material UI (tema único en
@@ -43,18 +38,29 @@ Las 8 pantallas fueron reconstruidas con Material UI (tema único en
 `src/frontend/AppNav.tsx`). Ningún cliente de API fue modificado.
 `npm run build`, `npm run lint` y `npm run test` (31/31) pasan en verde.
 
-TC-006 (E2E, viewport 360×800 en navegador real) **no pudo observarse
-directamente**: este entorno no tiene Playwright/Chromium ni otra
-herramienta de automatización de navegador instalada, y no se instaló
-un navegador nuevo dado el alcance de la tarea. Como mitigación se hizo:
-(1) revisión manual de CSS responsivo en las 8 pantallas (flex-wrap en
-formularios, `TableContainer` con scroll horizontal contenido a las
-tablas en vez de a la página, grid de una columna en mobile para
-Inicio, `BottomNavigation` fija con `left:0;right:0`); (2) smoke test
-del servidor de dev (`vite`) sirviendo el shell y compilando el grafo
-de módulos sin errores. Esto NO reemplaza una verificación visual real
-a 360×800 — queda pendiente para un humano o una sesión con
-herramientas de navegador reales.
+TC-006 (E2E, viewport 360×800 en navegador real) fue verificado
+posteriormente por la sesión coordinadora (el builder original no tenía
+herramientas de navegador disponibles) con Chrome real: sin scroll
+horizontal, bottom nav visible y funcional, flujo crear casa → crear
+categoría → registrar gasto completado sin errores.
+
+**Hallazgo durante esa verificación, corregido por separado**: al
+intentar registrar un gasto con la categoría mal seleccionada, la API
+devolvió un 422 de validación (Pydantic) cuyo `detail` es un array de
+objetos, no un string — el cliente HTTP lo pasaba tal cual a
+`<Alert>{error}</Alert>`, crasheando toda la SPA sin error boundary.
+Bug pre-existente (no introducido por esta spec, afecta a los 4
+clientes desde `casas-miembros`) — corregido en `main` directamente vía
+`/nybo-fix`, PR #9 (`fix/frontend-api-error-detail-array`), no en esta
+branch.
+
+**Observación menor, no bloqueante**: en la tabla de historial de
+Gastos a 360px, el nombre de categoría en la columna angosta se
+envuelve carácter por carácter cuando es largo (ej. "Supermercado y
+Verdulería del Barrio Norte") — legible pero no prolijo. Candidato a
+un ajuste de `TableCell` (`word-break`/truncado con tooltip) en un
+futuro pase de pulido, no crítico para TC-006 (que exige ausencia de
+scroll horizontal, no un word-wrap prolijo).
 
 ## History
 | # | Date | Event | Task | Test | Note |

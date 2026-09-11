@@ -24,12 +24,12 @@ notes: |
 
   Build cycle 1: T1-T4 implemented (MUI restyle of all 8 screens + theme
   + responsive nav shell). npm run build/lint/test all green (31/31
-  tests). TC-001-005 automated and passing. TC-006 (E2E, real browser at
-  360x800) could NOT be observed live — no browser automation tool
-  available in this sandbox; deferred to a human or a session with real
-  browser tooling (see evidence/suggestions.yaml S001 and
-  feat/99-progress.md's Outcome Smoke Test section) — this does not
-  block the ready exit since TC-006 is [E2E] (BUILD never executes
-  E2E/MANUAL cases; they ride out deferred to the human). Curate ran
-  once, narrow: 4 conventions/patterns/gotchas written to
-  .nybo/memory/domains/frontend.md.
+  tests). TC-001-005 automated and passing.
+
+  TC-006 verified post-build by the coordinating session (real Chrome,
+  360px iframe): no horizontal scroll, bottom nav functional, full
+  create-casa/create-categoria/registrar-gasto flow completes. Found and
+  fixed separately (not on this branch): a pre-existing crash when the
+  API returns a Pydantic 422 (detail as an array, not a string) — see
+  PR #9 on main. Curate ran once, narrow: 4 conventions/patterns/gotchas
+  written to .nybo/memory/domains/frontend.md.
