@@ -1,0 +1,18 @@
+feature: auth-backend
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+task_count: 4
+test_case_count: 10
+domains_referenced: []
+domain: auth
+parent:
+  feature: usuarios-auth
+  branch: feat/usuarios-auth--auth-backend
+kind: single_spec
+dependencies:
+  blocking: []
+  blocks:
+    - auth-frontend

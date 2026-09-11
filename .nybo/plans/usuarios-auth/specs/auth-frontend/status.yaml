@@ -1,0 +1,21 @@
+feature: auth-frontend
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+task_count: 4
+domains_referenced: []
+domain: frontend
+parent:
+  feature: usuarios-auth
+  branch: feat/usuarios-auth--auth-frontend
+kind: single_spec
+dependencies:
+  blocking:
+    - auth-backend
+  blocks: []
+notes: |
+  Además de auth-backend (dependencia del DAG de esta feature), requiere
+  que ui-modernization esté mergeada (dependencia externa, otra feature)
+  para reutilizar su tema/shell — ver plan.md.

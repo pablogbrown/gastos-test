@@ -1,0 +1,86 @@
+{
+  "$schema_version": "2",
+  "feature_id": "auth-frontend",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-frontend/feat/01-plan-01-login-registro-screens.md",
+      "files_touched": ["src/frontend/pages/Login.tsx", "src/frontend/pages/Registro.tsx", "src/frontend/api/authClient.ts"],
+      "deps": [],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [
+        {"name": "login", "signature": "(email: string, password: string) => Promise<{access_token: string}>", "kind": "function"},
+        {"name": "registrar", "signature": "(nombre: string, email: string, password: string) => Promise<{id: string, email: string}>", "kind": "function"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Sin sesión se muestra Login; un registro válido llama al backend y vuelve a Login.",
+        "postcondition": "Renderizar la app sin un JWT en localStorage muestra el componente Login, no el shell.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Login.test.tsx,tests/unit/frontend/Registro.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-frontend/feat/01-plan-02-session-jwt.md",
+      "files_touched": ["src/frontend/api/authClient.ts", "src/frontend/api/casasClient.ts", "src/frontend/api/gastosClient.ts", "src/frontend/api/tareasClient.ts", "src/frontend/api/dashboardClient.ts", "src/frontend/App.tsx"],
+      "deps": ["T1"],
+      "est_minutes": 60,
+      "test_cases": ["TC-003", "TC-004"],
+      "interfaces_produced": [
+        {"name": "guardarSesion", "signature": "(token: string) => void", "kind": "function"},
+        {"name": "obtenerToken", "signature": "() => string | null", "kind": "function"},
+        {"name": "cerrarSesion", "signature": "() => void", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "login"}
+      ],
+      "contract": {
+        "statement": "Todos los clientes de API envían el JWT en vez de X-Usuario-Id, y un 401 dispara logout automático.",
+        "postcondition": "Ningún cliente en src/frontend/api/*.ts envía el header X-Usuario-Id; una respuesta 401 de cualquiera de ellos borra la sesión guardada.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/authClient.test.ts",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-frontend/feat/01-plan-03-selector-casas-shell-gate.md",
+      "files_touched": ["src/frontend/pages/SelectorCasas.tsx", "src/frontend/App.tsx"],
+      "deps": ["T2"],
+      "est_minutes": 45,
+      "test_cases": ["TC-005", "TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "cerrarSesion"},
+        {"from": "T2", "name": "obtenerToken"}
+      ],
+      "contract": {
+        "statement": "Un usuario con múltiples casas ve un selector antes del shell; cerrar sesión vuelve a Login.",
+        "postcondition": "Con GET /casas/mias devolviendo 2+ casas, se renderiza SelectorCasas antes que el shell existente.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/SelectorCasas.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-frontend/feat/01-plan-04-tests-docs.md",
+      "files_touched": ["tests/unit/frontend/Miembros.test.tsx", "tests/unit/frontend/Gastos.test.tsx", "tests/unit/frontend/Tareas.test.tsx", "tests/unit/frontend/InicioCasa.test.tsx", "tests/unit/frontend/HistorialActividad.test.tsx", "README.md"],
+      "deps": ["T3"],
+      "est_minutes": 40,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La suite de tests de frontend, adaptada al flujo de sesión JWT, sigue verificando el mismo comportamiento.",
+        "postcondition": "npm run test pasa completo tras adaptar los mocks de identidad al nuevo flujo de sesión.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/*.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

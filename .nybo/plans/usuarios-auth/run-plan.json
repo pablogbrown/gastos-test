@@ -1,0 +1,40 @@
+{
+  "$schema_version": "2",
+  "feature_id": "usuarios-auth",
+  "tasks": [
+    {
+      "id": "auth-backend",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-backend/spec.md",
+      "files_touched": ["src/db/models/usuario.py", "src/db/models/miembro.py", "src/db/migrations/0005_usuarios.py", "requirements.txt", "src/services/auth_service.py", "src/services/exceptions.py", "src/api/routes/auth.py", "src/api/routes/casas.py", "src/api/routes/gastos.py", "src/api/routes/tareas.py", "src/api/routes/dashboard.py", "src/api/main.py", "src/api/dependencies.py", "src/services/casa_service.py", "src/services/miembro_service.py", "src/api/schemas.py"],
+      "deps": [],
+      "est_minutes": 180,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La spec auth-backend entrega Usuario global, JWT, y migra las 4 rutas existentes a autenticación real.",
+        "postcondition": "Todas las TC-001..TC-010 de auth-backend/feat/10-verify.md están en verde.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": ".nybo/plans/usuarios-auth/specs/auth-backend/feat/10-verify.md",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "auth-frontend",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-frontend/spec.md",
+      "files_touched": ["src/frontend/pages/Login.tsx", "src/frontend/pages/Registro.tsx", "src/frontend/pages/SelectorCasas.tsx", "src/frontend/api/authClient.ts", "src/frontend/api/casasClient.ts", "src/frontend/api/gastosClient.ts", "src/frontend/api/tareasClient.ts", "src/frontend/api/dashboardClient.ts", "src/frontend/App.tsx"],
+      "deps": ["auth-backend"],
+      "est_minutes": 190,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La spec auth-frontend entrega login/registro y reemplaza el usuarioId aleatorio por una sesión JWT real.",
+        "postcondition": "Todas las TC-001..TC-007 de auth-frontend/feat/10-verify.md están en verde.",
+        "verifiability": "UNIT+E2E",
+        "test_file": ".nybo/plans/usuarios-auth/specs/auth-frontend/feat/10-verify.md",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
