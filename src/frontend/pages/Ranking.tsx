@@ -12,10 +12,12 @@ import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
+import { Miembro } from "../api/casasClient";
 import { esApiError, obtenerRanking, RankingEntry } from "../api/tareasClient";
 
 export interface RankingProps {
   casaId: string;
+  miembros: Miembro[];
 }
 
 const MEDALLAS = ["#FFD700", "#C0C0C0", "#CD7F32"];
@@ -24,8 +26,11 @@ const MEDALLAS = ["#FFD700", "#C0C0C0", "#CD7F32"];
  * totales de mayor a menor, tal como la devuelve `calcular_ranking` — no
  * se reordena en el cliente para no divergir del criterio del servicio.
  * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
- * no recibe `usuarioId` como prop. */
-export function Ranking({ casaId }: RankingProps) {
+ * no recibe `usuarioId` como prop. Spec
+ * `fix-nombres-miembro-ranking-dashboard`: recibe `miembros` para
+ * resolver el nombre del miembro por id — mismo patrón que
+ * `Gastos.tsx`/`Balance.tsx`, con el id crudo como fallback. */
+export function Ranking({ casaId, miembros }: RankingProps) {
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -44,6 +49,10 @@ export function Ranking({ casaId }: RankingProps) {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  function nombreDe(miembroId: string): string {
+    return miembros.find((m) => m.id === miembroId)?.nombre ?? miembroId;
+  }
 
   return (
     <Box component="section" aria-label="Ranking" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -71,7 +80,7 @@ export function Ranking({ casaId }: RankingProps) {
                       {indice < 3 && (
                         <EmojiEventsIcon fontSize="small" sx={{ color: MEDALLAS[indice] }} />
                       )}
-                      {entrada.miembroId}
+                      {nombreDe(entrada.miembroId)}
                     </Box>
                   </TableCell>
                   <TableCell>

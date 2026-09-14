@@ -15,10 +15,12 @@ dev_runbook:
   subprojects:
     - name: root
       path: .
-      run_targets: []
+      run_targets:
+        - 'make up  # docker compose up --build — db+backend(:8000)+frontend(:5173)'
       test_commands: {}
       auth:
-        found: false
+        found: true
+        how_to: 'POST /auth/registro then POST /auth/login (or via the Login/Registro screens) — no seeded test users'
 quality_tools:
   coverage:
     tool: null

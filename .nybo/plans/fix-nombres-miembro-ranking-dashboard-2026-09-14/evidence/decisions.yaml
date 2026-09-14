@@ -1,0 +1,12 @@
+- id: D001
+  class: execution-observation
+  blocking: false
+  status: open
+  summary: >-
+    No coverage tool and no integration-test config recorded for this
+    project (`.nybo/foundation/stack.yaml` quality_tools.coverage.tool:
+    null; testing.integration absent). Coverage carried as
+    "unavailable — not configured"; integration suite carried as
+    "not-configured". Neither blocks this cycle's verified verdict.
+  recommendation: Run `/nybo-brownfield-bootstrap --quality` before the next build to pick and validate a coverage/integration toolchain.
+  recorded_at: '2026-09-14'
