@@ -1,5 +1,5 @@
 feature: fix-membresia-duplicada-actor-2026-09-14
-status: in-progress
+status: ready
 action_type: FIX
 profile: code
 created: '2026-09-14'
@@ -23,3 +23,7 @@ run_started_at: '2026-09-14T16:00:00Z'
 run_at: '2026-09-14T16:31:53Z'
 run_completed_at: '2026-09-14T16:31:53Z'
 run_duration: 1913
+verified_at: '2026-09-14T16:38:08Z'
+verified_duration: 375
+curated_at: '2026-09-14T16:42:13Z'
+curated_duration: 245
