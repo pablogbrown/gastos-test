@@ -1,0 +1,29 @@
+{
+  "$schema_version": "2",
+  "feature_id": "fix-nombres-miembro-ranking-dashboard-2026-09-14",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/fix-nombres-miembro-ranking-dashboard-2026-09-14/feat/01-plan-01-resolver-nombres.md",
+      "files_touched": [
+        "src/frontend/App.tsx",
+        "src/frontend/pages/Ranking.tsx",
+        "src/frontend/pages/InicioCasa.tsx",
+        "tests/unit/frontend/Ranking.test.tsx",
+        "tests/unit/frontend/InicioCasa.test.tsx"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": ["TC-001", "TC-002", "TC-003"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Ranking e InicioCasa muestran el nombre del miembro en vez de su UUID crudo.",
+        "postcondition": "Dada una lista de miembros con un id conocido, la fila/línea correspondiente muestra el nombre; un id ausente de la lista cae al UUID crudo sin lanzar una excepción de render.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Ranking.test.tsx,tests/unit/frontend/InicioCasa.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

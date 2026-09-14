@@ -26,6 +26,18 @@ frontend domain
   **zero selector changes** when every screen was restyled from plain
   HTML to Material UI components — keep writing tests this way.
 
+<!-- [FRON-01] added: 2026-09-14 | feature: fix-nombres-miembro-ranking-dashboard | confidence: high | verified: 2026-09-14 -->
+- [FRON-01] When a screen renders an entity by a foreign id it doesn't
+  own directly (e.g. a Miembro's `miembroId`/`miembro_id`), resolve the
+  display name via `lista.find((x) => x.id === id)?.nombre ?? id` —
+  nullish fallback (`??`, never `||`: an empty name is still a valid,
+  non-falsy-in-intent name) to the raw id so a deleted/missing referent
+  still renders instead of breaking the row. Established in
+  `Gastos.tsx`/`Balance.tsx`; the same helper (`nombreDe`) was added to
+  `Ranking.tsx` and `InicioCasa.tsx` (its "Tareas completadas
+  recientes" list and its own inline "Ranking" card) — any new screen
+  facing the same shape should reuse this, not re-derive it.
+
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 

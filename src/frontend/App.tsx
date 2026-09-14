@@ -109,7 +109,7 @@ export function App() {
           overflowX: "hidden",
         }}
       >
-        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} />}
+        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} miembros={miembros} />}
         {pantalla === "miembros" && (
           <Miembros casaId={casaActual.id} rolUsuarioActual={rolUsuarioActual} />
         )}
@@ -122,7 +122,7 @@ export function App() {
             rolUsuarioActual={rolUsuarioActual}
           />
         )}
-        {pantalla === "ranking" && <Ranking casaId={casaActual.id} />}
+        {pantalla === "ranking" && <Ranking casaId={casaActual.id} miembros={miembros} />}
         {pantalla === "actividad" && <HistorialActividad casaId={casaActual.id} />}
       </Box>
     </Box>

@@ -1,5 +1,9 @@
 # Domain: testing
 
+## Conventions
+<!-- Each convention has metadata as an HTML comment -->
+<!-- added: YYYY-MM-DD | feature: feature-name | confidence: high|medium|low | verified: YYYY-MM-DD -->
+
 ## [TEST-01] Live/dev environment — dockerized backend+db+frontend
 - **What**: local dev stack runs via `make up` (`docker compose up --build`) — services `db` (Postgres 16), `backend` (FastAPI/uvicorn, `--reload`, bind-mounts `./src` and `./tests`), `frontend` (Vite, bind-mounts `./src/frontend`).
 - **Reach it**: backend at `http://localhost:8000` (OpenAPI at `/openapi.json`, docs at `/docs`); frontend at `http://localhost:5173`. `docker ps` to confirm containers are up before assuming a cold start is needed — `backend`'s `--reload` picks up source edits live, no rebuild needed for a Python-only change.

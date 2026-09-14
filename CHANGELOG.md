@@ -39,3 +39,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - fix(services): un Usuario ya no puede terminar con más de una membresía activa en la misma casa — evita que un crash `MultipleResultsFound` (500) rompa cualquier request autenticado de ese usuario a esa casa.
 - fix(services): agregar o desactivar un miembro ahora queda registrado en el Historial de actividad de la casa (antes ninguna de las dos acciones dejaba rastro).
+- fix(frontend): Ranking y el inicio de la casa muestran el nombre del miembro en vez de su UUID crudo, tanto en la tabla completa de Ranking como en el mini-ranking de la pantalla de Inicio.
