@@ -1,10 +1,11 @@
 feature: fix-validacion-puntos-tarea-2026-09-14
-status: verified
+status: ready
 action_type: FIX
 profile: code
 created: '2026-09-14'
 approved_at: '2026-09-14'
 verified_at: '2026-09-14'
+curated_at: '2026-09-14'
 task_count: 1
 test_case_count: 2
 domain: frontend
