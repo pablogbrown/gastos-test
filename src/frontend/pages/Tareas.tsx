@@ -1,9 +1,28 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import InputLabel from "@mui/material/InputLabel";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import Switch from "@mui/material/Switch";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { Rol } from "../api/casasClient";
 import {
   completarTarea,
   crearTarea,
+  EstadoTarea,
   esApiError,
   HistorialTarea,
   listarHistorial,
@@ -18,6 +37,12 @@ export interface TareasProps {
 }
 
 const FRECUENCIAS = ["diaria", "semanal", "quincenal"] as const;
+
+const ESTADO_COLOR: Record<EstadoTarea, "default" | "warning" | "success"> = {
+  pendiente: "warning",
+  en_curso: "default",
+  completada: "success",
+};
 
 /** Visible solo para quien puede completar `tarea` (REQ-003, TC-004):
  * cualquiera si no tiene responsable, el propio responsable, o un
@@ -104,127 +129,169 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
   }
 
   return (
-    <section aria-label="Tareas">
-      {error && <p role="alert">{error}</p>}
+    <Box component="section" aria-label="Tareas" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Typography variant="h5" component="h2">
+        Tareas
+      </Typography>
 
-      <form onSubmit={handleCrear} aria-label="Crear tarea">
-        <label htmlFor="nombre-tarea">Nombre</label>
-        <input id="nombre-tarea" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      {error && <Alert severity="error">{error}</Alert>}
 
-        <label htmlFor="puntos-tarea">Puntos</label>
-        <input
-          id="puntos-tarea"
-          type="number"
-          value={puntos}
-          onChange={(e) => setPuntos(e.target.value)}
-        />
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Box
+          component="form"
+          onSubmit={handleCrear}
+          aria-label="Crear tarea"
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            <TextField
+              id="nombre-tarea"
+              label="Nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              size="small"
+            />
 
-        <label htmlFor="descripcion-tarea">Descripción</label>
-        <input
-          id="descripcion-tarea"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
-        />
+            <TextField
+              id="puntos-tarea"
+              label="Puntos"
+              type="number"
+              value={puntos}
+              onChange={(e) => setPuntos(e.target.value)}
+              size="small"
+            />
 
-        <label htmlFor="responsable-tarea">Responsable (opcional)</label>
-        <input
-          id="responsable-tarea"
-          value={responsableId}
-          onChange={(e) => setResponsableId(e.target.value)}
-        />
+            <TextField
+              id="descripcion-tarea"
+              label="Descripción"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              size="small"
+            />
 
-        <label htmlFor="fecha-tarea">Fecha prevista</label>
-        <input
-          id="fecha-tarea"
-          type="date"
-          value={fechaPrevista}
-          onChange={(e) => setFechaPrevista(e.target.value)}
-        />
+            <TextField
+              id="responsable-tarea"
+              label="Responsable (opcional)"
+              value={responsableId}
+              onChange={(e) => setResponsableId(e.target.value)}
+              size="small"
+            />
 
-        <label htmlFor="recurrente-tarea">
-          <input
-            id="recurrente-tarea"
-            type="checkbox"
-            checked={recurrente}
-            onChange={(e) => setRecurrente(e.target.checked)}
+            <TextField
+              id="fecha-tarea"
+              label="Fecha prevista"
+              type="date"
+              value={fechaPrevista}
+              onChange={(e) => setFechaPrevista(e.target.value)}
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                id="recurrente-tarea"
+                checked={recurrente}
+                onChange={(e) => setRecurrente(e.target.checked)}
+              />
+            }
+            label="Recurrente"
           />
-          Recurrente
-        </label>
 
-        {recurrente && (
-          <>
-            <label htmlFor="frecuencia-tarea">Frecuencia</label>
-            <select
-              id="frecuencia-tarea"
-              value={frecuencia}
-              onChange={(e) => setFrecuencia(e.target.value)}
-            >
-              {FRECUENCIAS.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+          {recurrente && (
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel htmlFor="frecuencia-tarea" shrink>
+                Frecuencia
+              </InputLabel>
+              <Select
+                native
+                id="frecuencia-tarea"
+                label="Frecuencia"
+                value={frecuencia}
+                onChange={(e) => setFrecuencia(e.target.value)}
+              >
+                {FRECUENCIAS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
-        <button type="submit">Crear tarea</button>
-      </form>
+          <Box>
+            <Button type="submit" variant="contained">
+              Crear tarea
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
 
       {cargando ? (
-        <p>Cargando tareas...</p>
+        <Typography>Cargando tareas...</Typography>
       ) : (
-        <table aria-label="Listado de tareas">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Puntos</th>
-              <th>Estado</th>
-              <th>Responsable</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tareas.map((tarea) => (
-              <tr key={tarea.id}>
-                <td>{tarea.nombre}</td>
-                <td>{tarea.puntos}</td>
-                <td>{tarea.estado}</td>
-                <td>{tarea.responsableId ?? "Cualquiera"}</td>
-                <td>
-                  {puedeCompletar(tarea, usuarioId, rolUsuarioActual) && (
-                    <button type="button" onClick={() => handleCompletar(tarea.id)}>
-                      Marcar completada
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TableContainer component={Paper} variant="outlined">
+          <Table aria-label="Listado de tareas" sx={{ minWidth: 320 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Puntos</TableCell>
+                <TableCell>Estado</TableCell>
+                <TableCell>Responsable</TableCell>
+                <TableCell>Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {tareas.map((tarea) => (
+                <TableRow key={tarea.id}>
+                  <TableCell>{tarea.nombre}</TableCell>
+                  <TableCell>{tarea.puntos}</TableCell>
+                  <TableCell>
+                    <Chip label={tarea.estado} color={ESTADO_COLOR[tarea.estado]} size="small" />
+                  </TableCell>
+                  <TableCell>{tarea.responsableId ?? "Cualquiera"}</TableCell>
+                  <TableCell>
+                    {puedeCompletar(tarea, usuarioId, rolUsuarioActual) && (
+                      <Button type="button" size="small" onClick={() => handleCompletar(tarea.id)}>
+                        Marcar completada
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      <h3>Historial de tareas</h3>
-      <table aria-label="Historial de tareas">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Miembro</th>
-            <th>Tarea</th>
-            <th>Puntos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {historial.map((registro) => (
-            <tr key={registro.id}>
-              <td>{registro.completada_en}</td>
-              <td>{registro.miembro_id}</td>
-              <td>{registro.tarea_id}</td>
-              <td>{registro.puntos_obtenidos}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Typography variant="h6" component="h3">
+          Historial de tareas
+        </Typography>
+        <TableContainer component={Paper} variant="outlined">
+          <Table aria-label="Historial de tareas" sx={{ minWidth: 320 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Fecha</TableCell>
+                <TableCell>Miembro</TableCell>
+                <TableCell>Tarea</TableCell>
+                <TableCell>Puntos</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {historial.map((registro) => (
+                <TableRow key={registro.id}>
+                  <TableCell>{registro.completada_en}</TableCell>
+                  <TableCell>{registro.miembro_id}</TableCell>
+                  <TableCell>{registro.tarea_id}</TableCell>
+                  <TableCell>{registro.puntos_obtenidos}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    </Box>
   );
 }

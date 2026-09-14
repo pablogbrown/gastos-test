@@ -1,5 +1,9 @@
+import Box from "@mui/material/Box";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 
+import { AppNav, Pantalla } from "./AppNav";
 import { Casa, Miembro, listarMiembros } from "./api/casasClient";
 import { Balance } from "./pages/Balance";
 import { CrearCasa } from "./pages/CrearCasa";
@@ -9,15 +13,6 @@ import { InicioCasa } from "./pages/InicioCasa";
 import { Miembros } from "./pages/Miembros";
 import { Ranking } from "./pages/Ranking";
 import { Tareas } from "./pages/Tareas";
-
-type Pantalla =
-  | "inicio"
-  | "miembros"
-  | "gastos"
-  | "balance"
-  | "tareas"
-  | "ranking"
-  | "actividad";
 
 /** Composición de las pantallas de las cuatro sub-specs de
  * `gestion-domestica` (`casas-miembros`, `gastos`, `tareas-puntos` y
@@ -31,6 +26,9 @@ function usuarioIdDeSesion(): string {
 }
 
 export function App() {
+  const theme = useTheme();
+  const esDesktop = useMediaQuery(theme.breakpoints.up("sm"));
+
   const [usuarioId] = useState(usuarioIdDeSesion);
   const [casaActual, setCasaActual] = useState<Casa | null>(null);
   const [pantalla, setPantalla] = useState<Pantalla>("inicio");
@@ -50,46 +48,42 @@ export function App() {
   }
 
   return (
-    <div>
-      <nav aria-label="Navegación">
-        <button type="button" onClick={() => setPantalla("inicio")}>
-          Inicio
-        </button>
-        <button type="button" onClick={() => setPantalla("miembros")}>
-          Miembros
-        </button>
-        <button type="button" onClick={() => setPantalla("gastos")}>
-          Gastos
-        </button>
-        <button type="button" onClick={() => setPantalla("balance")}>
-          Balance
-        </button>
-        <button type="button" onClick={() => setPantalla("tareas")}>
-          Tareas
-        </button>
-        <button type="button" onClick={() => setPantalla("ranking")}>
-          Ranking
-        </button>
-        <button type="button" onClick={() => setPantalla("actividad")}>
-          Actividad
-        </button>
-      </nav>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        bgcolor: "background.default",
+      }}
+    >
+      <AppNav pantalla={pantalla} onChange={setPantalla} />
 
-      {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} usuarioId={usuarioId} />}
-      {pantalla === "miembros" && (
-        <Miembros casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
-      )}
-      {pantalla === "gastos" && (
-        <Gastos casaId={casaActual.id} usuarioId={usuarioId} miembros={miembros} />
-      )}
-      {pantalla === "balance" && <Balance casaId={casaActual.id} usuarioId={usuarioId} />}
-      {pantalla === "tareas" && (
-        <Tareas casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
-      )}
-      {pantalla === "ranking" && <Ranking casaId={casaActual.id} usuarioId={usuarioId} />}
-      {pantalla === "actividad" && (
-        <HistorialActividad casaId={casaActual.id} usuarioId={usuarioId} />
-      )}
-    </div>
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3 },
+          pb: esDesktop ? 3 : 9,
+          maxWidth: "100%",
+          overflowX: "hidden",
+        }}
+      >
+        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} usuarioId={usuarioId} />}
+        {pantalla === "miembros" && (
+          <Miembros casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
+        )}
+        {pantalla === "gastos" && (
+          <Gastos casaId={casaActual.id} usuarioId={usuarioId} miembros={miembros} />
+        )}
+        {pantalla === "balance" && <Balance casaId={casaActual.id} usuarioId={usuarioId} />}
+        {pantalla === "tareas" && (
+          <Tareas casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
+        )}
+        {pantalla === "ranking" && <Ranking casaId={casaActual.id} usuarioId={usuarioId} />}
+        {pantalla === "actividad" && (
+          <HistorialActividad casaId={casaActual.id} usuarioId={usuarioId} />
+        )}
+      </Box>
+    </Box>
   );
 }

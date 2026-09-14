@@ -1,3 +1,11 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { DashboardCasa, esApiError, obtenerDashboard } from "../api/dashboardClient";
@@ -32,102 +40,138 @@ export function InicioCasa({ casaId, usuarioId }: InicioCasaProps) {
   }, [cargar]);
 
   if (error) {
-    return <p role="alert">{error}</p>;
+    return <Alert severity="error">{error}</Alert>;
   }
 
   if (cargando || !dashboard) {
-    return <p>Cargando inicio...</p>;
+    return <Typography>Cargando inicio...</Typography>;
   }
 
   return (
-    <section aria-label="Inicio de la casa">
-      <section aria-label="Miembros">
-        <h3>Miembros</h3>
-        {dashboard.miembros.length === 0 ? (
-          <p>Todavía no hay miembros activos.</p>
-        ) : (
-          <ul>
-            {dashboard.miembros.map((miembro) => (
-              <li key={miembro.id}>{miembro.nombre}</li>
-            ))}
-          </ul>
-        )}
-      </section>
+    <Box
+      component="section"
+      aria-label="Inicio de la casa"
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+        gap: 2,
+      }}
+    >
+      <Card component="section" aria-label="Miembros" variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Miembros
+          </Typography>
+          {dashboard.miembros.length === 0 ? (
+            <Typography color="text.secondary">Todavía no hay miembros activos.</Typography>
+          ) : (
+            <List dense>
+              {dashboard.miembros.map((miembro) => (
+                <ListItem key={miembro.id} disableGutters>
+                  <ListItemText primary={miembro.nombre} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
 
-      <section aria-label="Gastos recientes">
-        <h3>Gastos recientes</h3>
-        {dashboard.gastosRecientes.length === 0 ? (
-          <p>Todavía no hay gastos registrados.</p>
-        ) : (
-          <ul>
-            {dashboard.gastosRecientes.map((gasto) => (
-              <li key={gasto.id}>
-                {gasto.descripcion} — ${gasto.importe}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Card component="section" aria-label="Gastos recientes" variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Gastos recientes
+          </Typography>
+          {dashboard.gastosRecientes.length === 0 ? (
+            <Typography color="text.secondary">Todavía no hay gastos registrados.</Typography>
+          ) : (
+            <List dense>
+              {dashboard.gastosRecientes.map((gasto) => (
+                <ListItem key={gasto.id} disableGutters>
+                  <ListItemText primary={`${gasto.descripcion} — $${gasto.importe}`} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
 
-      <section aria-label="Balance">
-        <h3>Balance</h3>
-        {dashboard.balance.length === 0 ? (
-          <p>Todavía no hay balance para mostrar.</p>
-        ) : (
-          <ul>
-            {dashboard.balance.map((entrada) => (
-              <li key={entrada.miembro_id}>
-                {entrada.nombre}: {entrada.balance}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Card component="section" aria-label="Balance" variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Balance
+          </Typography>
+          {dashboard.balance.length === 0 ? (
+            <Typography color="text.secondary">Todavía no hay balance para mostrar.</Typography>
+          ) : (
+            <List dense>
+              {dashboard.balance.map((entrada) => (
+                <ListItem key={entrada.miembro_id} disableGutters>
+                  <ListItemText primary={`${entrada.nombre}: ${entrada.balance}`} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
 
-      <section aria-label="Tareas pendientes">
-        <h3>Tareas pendientes</h3>
-        {dashboard.tareasPendientes.length === 0 ? (
-          <p>No hay tareas pendientes.</p>
-        ) : (
-          <ul>
-            {dashboard.tareasPendientes.map((tarea) => (
-              <li key={tarea.id}>
-                {tarea.nombre} ({tarea.puntos} pts)
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Card component="section" aria-label="Tareas pendientes" variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Tareas pendientes
+          </Typography>
+          {dashboard.tareasPendientes.length === 0 ? (
+            <Typography color="text.secondary">No hay tareas pendientes.</Typography>
+          ) : (
+            <List dense>
+              {dashboard.tareasPendientes.map((tarea) => (
+                <ListItem key={tarea.id} disableGutters>
+                  <ListItemText primary={`${tarea.nombre} (${tarea.puntos} pts)`} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
 
-      <section aria-label="Tareas completadas recientes">
-        <h3>Tareas completadas recientes</h3>
-        {dashboard.tareasCompletadasRecientes.length === 0 ? (
-          <p>Todavía no se completó ninguna tarea.</p>
-        ) : (
-          <ul>
-            {dashboard.tareasCompletadasRecientes.map((registro) => (
-              <li key={registro.id}>
-                {registro.miembro_id} completó una tarea (+{registro.puntos_obtenidos} pts)
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Card component="section" aria-label="Tareas completadas recientes" variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Tareas completadas recientes
+          </Typography>
+          {dashboard.tareasCompletadasRecientes.length === 0 ? (
+            <Typography color="text.secondary">Todavía no se completó ninguna tarea.</Typography>
+          ) : (
+            <List dense>
+              {dashboard.tareasCompletadasRecientes.map((registro) => (
+                <ListItem key={registro.id} disableGutters>
+                  <ListItemText
+                    primary={`${registro.miembro_id} completó una tarea (+${registro.puntos_obtenidos} pts)`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
 
-      <section aria-label="Ranking">
-        <h3>Ranking</h3>
-        {dashboard.ranking.length === 0 ? (
-          <p>Todavía no hay puntos acumulados.</p>
-        ) : (
-          <ol>
-            {dashboard.ranking.map((entrada) => (
-              <li key={entrada.miembroId}>
-                {entrada.miembroId}: {entrada.puntos} pts
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-    </section>
+      <Card component="section" aria-label="Ranking" variant="outlined">
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            Ranking
+          </Typography>
+          {dashboard.ranking.length === 0 ? (
+            <Typography color="text.secondary">Todavía no hay puntos acumulados.</Typography>
+          ) : (
+            <List dense>
+              {dashboard.ranking.map((entrada) => (
+                <ListItem key={entrada.miembroId} disableGutters>
+                  <ListItemText primary={`${entrada.miembroId}: ${entrada.puntos} pts`} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
 }
