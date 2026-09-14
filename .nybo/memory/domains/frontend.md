@@ -65,3 +65,14 @@ frontend domain
   implementation inside the Vitest worker so jsdom's real `Storage`
   (the one actually being tested) takes effect. Keep this flag if the
   Vitest `poolOptions` config is ever touched again.
+
+<!-- added: 2026-09-14 | feature: fix-validacion-puntos-tarea-2026-09-14 | confidence: medium | verified: 2026-09-14 -->
+- When a numeric form field maps to a backend `Optional[int] = None`
+  whose *absence* (not `0`) intentionally triggers a business-rule
+  validation (see `src/api/schemas.py`'s comment on `puntos`), never
+  build the request body with `Number(value)` directly on an empty
+  string — `Number("")` is `0`, a valid value, so the field is never
+  actually absent and the backend rule never fires. Convert explicitly:
+  `value === "" ? undefined : Number(value)`, so `JSON.stringify` omits
+  the key. `Tareas.tsx`'s `handleCrear` had this bug for `puntos`; check
+  any other optional-numeric form field against the same pattern.
