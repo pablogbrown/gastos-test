@@ -13,3 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - feat(gestion-domestica): gestión de tareas domésticas con estados, asignación, recurrencia, sistema de puntos y ranking de participación.
 - feat(gestion-domestica): pantalla principal de la casa (miembros, gastos recientes, balance, tareas pendientes/completadas, ranking) e historial general de actividad.
 - feat(dockerize-local-env): entorno local dockerizado (PostgreSQL, backend, frontend con hot-reload) más un Makefile (`up`/`down`/`build`/`logs`/`test`/`migrate`) — baja la fricción de onboarding y acerca el desarrollo local a producción.
+
+### Changed
+
+- feat(ui-modernization): las 8 pantallas y la navegación se rediseñaron con Material UI — bottom tab bar en mobile, barra superior en desktop, sin cambiar ningún comportamiento funcional existente.
