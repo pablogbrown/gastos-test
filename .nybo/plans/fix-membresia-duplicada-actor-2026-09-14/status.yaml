@@ -1,5 +1,5 @@
 feature: fix-membresia-duplicada-actor-2026-09-14
-status: approved
+status: in-progress
 action_type: FIX
 profile: code
 created: '2026-09-14'
@@ -19,3 +19,7 @@ notes: |
   incident (member deactivated an admin, 200 instead of 403) that
   happened in the same QA session immediately after this exact crash —
   see spec.md Intention.
+run_started_at: '2026-09-14T16:00:00Z'
+run_at: '2026-09-14T16:31:53Z'
+run_completed_at: '2026-09-14T16:31:53Z'
+run_duration: 1913

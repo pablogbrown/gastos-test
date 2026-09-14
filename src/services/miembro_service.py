@@ -82,6 +82,26 @@ def agregar_miembro(
                 f"No existe un Usuario registrado con el email {email_normalizado!r}."
             )
 
+        # Fix `fix-membresia-duplicada-actor` (REQ-001): un mismo Usuario no
+        # puede tener más de una fila Miembro activa en la misma casa — esto
+        # es lo que antes permitía que `resolver_actor_en_casa` encontrara
+        # más de una fila y crasheara con `MultipleResultsFound` (500).
+        # `.one_or_none()` es correcto acá (a diferencia de T2): antes de
+        # este fix nunca puede existir más de una fila activa para este
+        # (casa_id, usuario_id), justo porque esta validación recién se está
+        # agregando.
+        membresia_existente = (
+            session.query(Miembro)
+            .filter(
+                Miembro.casa_id == casa_id,
+                Miembro.usuario_id == usuario.id,
+                Miembro.activo.is_(True),
+            )
+            .one_or_none()
+        )
+        if membresia_existente is not None:
+            raise ValidationError("El usuario ya es miembro activo de esta casa.")
+
         duplicado = (
             session.query(Miembro)
             .filter(Miembro.casa_id == casa_id, Miembro.identificacion == identificacion)
@@ -206,6 +226,18 @@ def resolver_actor_en_casa(casa_id: UUID, usuario_id: UUID) -> UUID:
         if session.get(Casa, casa_id) is None:
             raise NotFoundError(f"La casa {casa_id} no existe.")
 
+        # Fix `fix-membresia-duplicada-actor` (REQ-002): `.one_or_none()`
+        # asume que nunca hay más de una fila Miembro activa para este
+        # (casa_id, usuario_id) — T1 impide que se CREEN nuevas duplicadas,
+        # pero un dato preexistente a este fix (o cualquier vía no
+        # anticipada) puede seguir violando esa asunción. `.first()` nunca
+        # lanza `MultipleResultsFound`: devuelve `None` si no hay filas, o
+        # la primera según `order_by`, sin importar cuántas existan.
+        # `Miembro` no tiene columna de fecha de creación (no se agrega una
+        # solo para este caso defensivo) — `order_by(Miembro.id)` da un
+        # orden estable y determinístico (mismo resultado en cada corrida),
+        # aunque arbitrario respecto a cuál membresía es la "correcta": el
+        # objetivo acá es eliminar el 500, no arbitrar intención de negocio.
         miembro = (
             session.query(Miembro)
             .filter(
@@ -213,7 +245,8 @@ def resolver_actor_en_casa(casa_id: UUID, usuario_id: UUID) -> UUID:
                 Miembro.usuario_id == usuario_id,
                 Miembro.activo.is_(True),
             )
-            .one_or_none()
+            .order_by(Miembro.id)
+            .first()
         )
         if miembro is None:
             raise PermissionDeniedError("El usuario no es miembro activo de esta casa.")
