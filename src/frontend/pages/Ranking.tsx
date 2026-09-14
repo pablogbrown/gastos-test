@@ -1,3 +1,15 @@
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { esApiError, obtenerRanking, RankingEntry } from "../api/tareasClient";
@@ -6,6 +18,8 @@ export interface RankingProps {
   casaId: string;
   usuarioId: string;
 }
+
+const MEDALLAS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
 /** Pantalla "Ranking" (REQ-006): tabla de miembros ordenada por puntos
  * totales de mayor a menor, tal como la devuelve `calcular_ranking` — no
@@ -31,28 +45,43 @@ export function Ranking({ casaId, usuarioId }: RankingProps) {
   }, [cargar]);
 
   return (
-    <section aria-label="Ranking">
-      {error && <p role="alert">{error}</p>}
+    <Box component="section" aria-label="Ranking" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Typography variant="h5" component="h2">
+        Ranking
+      </Typography>
+
+      {error && <Alert severity="error">{error}</Alert>}
       {cargando ? (
-        <p>Cargando ranking...</p>
+        <Typography>Cargando ranking...</Typography>
       ) : (
-        <table aria-label="Tabla de ranking">
-          <thead>
-            <tr>
-              <th>Miembro</th>
-              <th>Puntos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranking.map((entrada) => (
-              <tr key={entrada.miembroId}>
-                <td>{entrada.miembroId}</td>
-                <td>{entrada.puntos}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TableContainer component={Paper} variant="outlined">
+          <Table aria-label="Tabla de ranking" sx={{ minWidth: 320 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Miembro</TableCell>
+                <TableCell>Puntos</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {ranking.map((entrada, indice) => (
+                <TableRow key={entrada.miembroId}>
+                  <TableCell>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {indice < 3 && (
+                        <EmojiEventsIcon fontSize="small" sx={{ color: MEDALLAS[indice] }} />
+                      )}
+                      {entrada.miembroId}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={entrada.puntos} size="small" color={indice === 0 ? "primary" : "default"} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </section>
+    </Box>
   );
 }

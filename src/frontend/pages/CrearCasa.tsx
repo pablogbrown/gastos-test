@@ -1,3 +1,10 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { FormEvent, useState } from "react";
 
 import { Casa, crearCasa, esApiError } from "../api/casasClient";
@@ -32,19 +39,36 @@ export function CrearCasa({ usuarioId, onCasaCreada }: CrearCasaProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Crear casa">
-      <label htmlFor="nombre-casa">Nombre de la casa</label>
-      <input
-        id="nombre-casa"
-        name="nombre"
-        value={nombre}
-        onChange={(event) => setNombre(event.target.value)}
-        disabled={enviando}
-      />
-      <button type="submit" disabled={enviando}>
-        Crear casa
-      </button>
-      {error && <p role="alert">{error}</p>}
-    </form>
+    <Container maxWidth="sm" sx={{ display: "flex", minHeight: "100vh", alignItems: "center" }}>
+      <Paper elevation={2} sx={{ p: { xs: 3, sm: 4 }, width: "100%" }}>
+        <Typography variant="h5" component="h1" gutterBottom>
+          taskia
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          Creá tu casa para empezar a compartir gastos y tareas.
+        </Typography>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          aria-label="Crear casa"
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <TextField
+            id="nombre-casa"
+            name="nombre"
+            label="Nombre de la casa"
+            value={nombre}
+            onChange={(event) => setNombre(event.target.value)}
+            disabled={enviando}
+            fullWidth
+            autoFocus
+          />
+          <Button type="submit" variant="contained" disabled={enviando} size="large">
+            Crear casa
+          </Button>
+          {error && <Alert severity="error">{error}</Alert>}
+        </Box>
+      </Paper>
+    </Container>
   );
 }

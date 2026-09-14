@@ -1,0 +1,80 @@
+{
+  "$schema_version": "2",
+  "feature_id": "ui-modernization",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/ui-modernization/feat/01-plan-01-design-system-shell.md",
+      "files_touched": ["package.json", "src/frontend/theme.ts", "src/frontend/App.tsx", "src/frontend/pages/CrearCasa.tsx", "src/frontend/main.tsx"],
+      "deps": [],
+      "est_minutes": 60,
+      "test_cases": ["TC-001", "TC-002", "TC-004"],
+      "interfaces_produced": [
+        {"name": "theme", "signature": "Theme (MUI createTheme)", "kind": "export"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El shell de navegación alterna entre BottomNavigation (mobile) y AppBar (desktop) según el breakpoint sm de MUI, y los ítems de navegación cumplen el mínimo táctil de 44px.",
+        "postcondition": "Con matchMedia mockeado bajo 600px, se renderiza BottomNavigation con 7 acciones; sobre 600px, se renderiza la barra superior en su lugar.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/AppShell.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/ui-modernization/feat/01-plan-02-gastos-screens.md",
+      "files_touched": ["src/frontend/pages/Miembros.tsx", "src/frontend/pages/Gastos.tsx", "src/frontend/pages/Balance.tsx"],
+      "deps": ["T1"],
+      "est_minutes": 60,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "theme"}
+      ],
+      "contract": {
+        "statement": "Miembros, Gastos y Balance se reconstruyen con componentes MUI sin cambiar su comportamiento ni sus llamadas a la API.",
+        "postcondition": "Cada pantalla renderiza al menos un componente MUI (ej. TextField, Table) y ningún elemento HTML nativo sin estilo equivalente.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx,tests/unit/frontend/Gastos.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/ui-modernization/feat/01-plan-03-tareas-dashboard-screens.md",
+      "files_touched": ["src/frontend/pages/Tareas.tsx", "src/frontend/pages/Ranking.tsx", "src/frontend/pages/InicioCasa.tsx", "src/frontend/pages/HistorialActividad.tsx"],
+      "deps": ["T1"],
+      "est_minutes": 70,
+      "test_cases": ["TC-003"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "theme"}
+      ],
+      "contract": {
+        "statement": "Tareas, Ranking, InicioCasa e HistorialActividad se reconstruyen con componentes MUI sin cambiar su comportamiento.",
+        "postcondition": "Las 8 pantallas del spec (T2+T3 combinadas) usan exclusivamente componentes MUI para sus controles interactivos.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tareas.test.tsx,tests/unit/frontend/InicioCasa.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/ui-modernization/feat/01-plan-04-responsive-polish.md",
+      "files_touched": ["tests/unit/frontend/Miembros.test.tsx", "tests/unit/frontend/Gastos.test.tsx", "tests/unit/frontend/Tareas.test.tsx", "tests/unit/frontend/InicioCasa.test.tsx", "tests/unit/frontend/HistorialActividad.test.tsx", "README.md"],
+      "deps": ["T2", "T3"],
+      "est_minutes": 45,
+      "test_cases": ["TC-005"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La suite de tests de frontend adaptada a los selectores de MUI sigue verificando el mismo comportamiento que antes del restyle.",
+        "postcondition": "npm run test pasa completo (0 fallos) tras la adaptación de selectores.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx,tests/unit/frontend/Gastos.test.tsx,tests/unit/frontend/Tareas.test.tsx,tests/unit/frontend/InicioCasa.test.tsx,tests/unit/frontend/HistorialActividad.test.tsx,tests/unit/frontend/AppShell.test.tsx,tests/unit/frontend/MuiRestyle.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

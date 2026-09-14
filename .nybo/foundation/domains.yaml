@@ -9,3 +9,5 @@ domains:
     description: db domain
   - name: auth
     description: auth domain
+  - name: infra
+    description: local dev environment orchestration (Docker, docker-compose, Makefile)

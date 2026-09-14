@@ -2,6 +2,7 @@
 // /casas/{id}/tareas y /casas/{id}/ranking). No contiene lógica de
 // negocio: solo arma requests y tipa las respuestas. Mismo patrón que
 // `casasClient.ts` (spec `casas-miembros`).
+import { formatErrorDetail } from "./casasClient";
 
 export type EstadoTarea = "pendiente" | "en_curso" | "completada";
 
@@ -55,7 +56,7 @@ async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
     let detail = resp.statusText;
     try {
       const body = await resp.json();
-      detail = body.detail ?? detail;
+      detail = formatErrorDetail(body.detail) ?? detail;
     } catch {
       // cuerpo no-JSON o vacío: se mantiene resp.statusText
     }

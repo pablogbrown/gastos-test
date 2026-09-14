@@ -1,0 +1,35 @@
+feature: ui-modernization
+status: ready
+profile: code
+action_type: UPD
+created_at: '2026-09-11'
+approved_at: '2026-09-11'
+run_at: '2026-09-11T21:50:00.000Z'
+run_completed_at: '2026-09-11T21:50:00.000Z'
+run_duration: 5400
+verified_at: '2026-09-11T21:53:31.948Z'
+verified_duration: 210
+curated_at: '2026-09-11T21:58:00.000Z'
+curated_duration: 268
+task_count: 4
+domains_referenced: []
+domain: frontend
+branch: feat/ui-modernization
+pr_url: https://github.com/pablogbrown/gastos-test/pull/7
+pr_number: 7
+kind: single_spec
+notes: |
+  Single spec: un solo concern (restyle visual), sin boundary de
+  actor/superficie que justifique un split entre pantallas.
+
+  Build cycle 1: T1-T4 implemented (MUI restyle of all 8 screens + theme
+  + responsive nav shell). npm run build/lint/test all green (31/31
+  tests). TC-001-005 automated and passing.
+
+  TC-006 verified post-build by the coordinating session (real Chrome,
+  360px iframe): no horizontal scroll, bottom nav functional, full
+  create-casa/create-categoria/registrar-gasto flow completes. Found and
+  fixed separately (not on this branch): a pre-existing crash when the
+  API returns a Pydantic 422 (detail as an array, not a string) — see
+  PR #9 on main. Curate ran once, narrow: 4 conventions/patterns/gotchas
+  written to .nybo/memory/domains/frontend.md.
