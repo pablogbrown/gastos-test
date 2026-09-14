@@ -4,7 +4,7 @@
 // `tareasClient` para las secciones que agrega el dashboard, en vez de
 // redefinirlos, para no divergir de los contratos ya fijados por las
 // specs `casas-miembros`/`gastos`/`tareas-puntos`.
-import { ApiError, esApiError, Miembro } from "./casasClient";
+import { ApiError, esApiError, formatErrorDetail, Miembro } from "./casasClient";
 import { BalancePorMiembro, Gasto } from "./gastosClient";
 import { HistorialTarea, RankingEntry, Tarea } from "./tareasClient";
 
@@ -43,7 +43,7 @@ async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
     let detail = resp.statusText;
     try {
       const body = await resp.json();
-      detail = body.detail ?? detail;
+      detail = formatErrorDetail(body.detail) ?? detail;
     } catch {
       // cuerpo no-JSON o vacío: se mantiene resp.statusText
     }
