@@ -1,5 +1,6 @@
 feature: fix-nombres-miembro-ranking-dashboard-2026-09-14
-status: ready
+status: shipped
+shipped_at: '2026-09-14T18:15:00Z'
 action_type: FIX
 profile: code
 created: '2026-09-14'
