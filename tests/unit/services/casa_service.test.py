@@ -1,6 +1,8 @@
 """T2 — Service Layer (unit slice): crear_casa y permisos.puede.
 
-Cubre TC-001, TC-002 y TC-007.
+Cubre TC-001, TC-002 y TC-007 (`casas-miembros`), y TC-007 de
+`usuarios-auth` (un Usuario que crea 2 casas tiene 2 Miembros propios,
+ambos con su mismo `usuario_id`).
 """
 import uuid
 
@@ -43,9 +45,26 @@ def test_crear_casa_asigna_admin_al_creador():
     assert casa.nombre == "Casa Brown"
     assert len(casa.miembros) == 1
     admin = casa.miembros[0]
-    assert admin.id == usuario_creador
+    # Spec `usuarios-auth`: el Miembro admin tiene su propio `id` (no el
+    # `usuario_id` del creador) — el vínculo con la identidad real vive
+    # en la FK `usuario_id`. Ver Design Rationale de `crear_casa`.
+    assert admin.id != usuario_creador
+    assert admin.usuario_id == usuario_creador
     assert admin.rol == RolEnum.ADMIN
     assert admin.activo is True
+
+
+def test_un_usuario_que_crea_dos_casas_tiene_un_miembro_propio_en_cada_una():
+    usuario_id = uuid.uuid4()
+    casa_1 = crear_casa("Casa Brown", usuario_id)
+    casa_2 = crear_casa("Casa Verde", usuario_id)
+
+    admin_1 = casa_1.miembros[0]
+    admin_2 = casa_2.miembros[0]
+
+    assert admin_1.id != admin_2.id
+    assert admin_1.usuario_id == usuario_id
+    assert admin_2.usuario_id == usuario_id
 
 
 def test_crear_casa_sin_nombre_es_rechazada():

@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from src.db.models.usuario import Usuario
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.dashboard_service import armar_dashboard
@@ -26,6 +27,9 @@ _MIGRACIONES = (
     "0002_gastos",
     "0003_tareas",
     "0004_historial_actividad",
+    # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
+    # Usuario real (por email) para vincular al nuevo Miembro.
+    "0005_usuarios",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -37,6 +41,20 @@ _SERVICIOS_CON_SESSION = (
     "balance_service",
     "actividad_service",
 )
+
+
+def _crear_usuario_de_prueba(session_factory, email):
+    """Inserta un Usuario real (spec `usuarios-auth`): `agregar_miembro`
+    ahora exige que el email vinculado ya exista."""
+    session = session_factory()
+    try:
+        usuario = Usuario(id=uuid.uuid4(), email=email, password_hash="hash-de-prueba")
+        session.add(usuario)
+        session.commit()
+        session.refresh(usuario)
+        return usuario
+    finally:
+        session.close()
 
 
 @pytest.fixture()
@@ -56,8 +74,9 @@ def db_session(monkeypatch):
 
 
 def test_armar_dashboard_de_casa_vacia_no_lanza_error(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
 
     dashboard = armar_dashboard(casa.id)
 
@@ -77,9 +96,11 @@ def test_armar_dashboard_de_casa_inexistente_lanza_not_found(db_session):
 
 
 def test_armar_dashboard_agrega_gastos_tareas_y_ranking(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
-    ana = agregar_miembro(casa.id, "Ana", "ANA1", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
+    ana_usuario = _crear_usuario_de_prueba(db_session, "ana@example.com")
+    ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, admin_id)
     categoria = crear_categoria(casa.id, "Supermercado", admin_id)
 
     registrar_gasto(
@@ -106,9 +127,11 @@ def test_armar_dashboard_agrega_gastos_tareas_y_ranking(db_session):
 
 
 def test_armar_dashboard_limita_gastos_y_tareas_completadas_a_diez(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
-    ana = agregar_miembro(casa.id, "Ana", "ANA1", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    admin_id = casa.miembros[0].id
+    ana_usuario = _crear_usuario_de_prueba(db_session, "ana@example.com")
+    ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, admin_id)
     categoria = crear_categoria(casa.id, "Varios", admin_id)
 
     for i in range(12):

@@ -14,19 +14,26 @@ Nota de diseño (pagado_por): el contrato HTTP documentado en
 `00-overview.md` no incluye un campo `pagadoPor` explícito en el body de
 `POST .../gastos` — solo `descripcion, importe, fecha, categoriaId,
 participantes?`. Se interpreta que, por defecto, quien registra el gasto
-(`actor`, resuelto del header `X-Usuario-Id`) es también quien lo pagó;
-`pagado_por` queda como campo opcional para permitir que un Administrador
-registre un gasto en nombre de otro miembro sin romper el contrato
-documentado.
+(`actor`, resuelto del JWT — spec `usuarios-auth`) es también quien lo
+pagó; `pagado_por` queda como campo opcional para permitir que un
+Administrador registre un gasto en nombre de otro miembro sin romper el
+contrato documentado.
+
+Nota de diseño (spec `usuarios-auth`): el `actor` ya no llega vía el
+header placeholder `X-Usuario-Id` — se resuelve desde un JWT real vía
+`resolver_actor_en_casa` (`src/api/dependencies.py`), que además valida
+membresía activa (REQ-005) antes de delegar en los servicios de T2, que
+no cambian.
 """
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
+from src.api.dependencies import resolver_actor_en_casa
 from src.services.balance_service import calcular_balance, sugerir_transferencias
 from src.services.categoria_service import crear_categoria, listar_categorias
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
@@ -112,7 +119,7 @@ class BalanceResponse(BaseModel):
     "/{casa_id}/categorias", response_model=CategoriaOut, status_code=status.HTTP_201_CREATED
 )
 def crear_categoria_endpoint(
-    casa_id: UUID, payload: CategoriaCreate, actor: UUID = Header(..., alias="X-Usuario-Id")
+    casa_id: UUID, payload: CategoriaCreate, actor: UUID = Depends(resolver_actor_en_casa)
 ):
     try:
         return crear_categoria(casa_id, payload.nombre, actor)
@@ -125,7 +132,7 @@ def crear_categoria_endpoint(
 
 
 @gastos_router.get("/{casa_id}/categorias", response_model=List[CategoriaOut])
-def listar_categorias_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def listar_categorias_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         return listar_categorias(casa_id)
     except NotFoundError as exc:
@@ -134,7 +141,7 @@ def listar_categorias_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X
 
 @gastos_router.post("/{casa_id}/gastos", response_model=GastoOut, status_code=status.HTTP_201_CREATED)
 def registrar_gasto_endpoint(
-    casa_id: UUID, payload: GastoCreate, actor: UUID = Header(..., alias="X-Usuario-Id")
+    casa_id: UUID, payload: GastoCreate, actor: UUID = Depends(resolver_actor_en_casa)
 ):
     try:
         return registrar_gasto(
@@ -156,7 +163,7 @@ def registrar_gasto_endpoint(
 
 
 @gastos_router.get("/{casa_id}/gastos", response_model=List[GastoOut])
-def listar_gastos_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def listar_gastos_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         return listar_gastos(casa_id)
     except NotFoundError as exc:
@@ -164,7 +171,7 @@ def listar_gastos_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usu
 
 
 @gastos_router.get("/{casa_id}/balance", response_model=BalanceResponse)
-def obtener_balance_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def obtener_balance_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         balances = calcular_balance(casa_id)
     except NotFoundError as exc:

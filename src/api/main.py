@@ -8,6 +8,7 @@ motivo (es la última de las cuatro sub-specs de la feature).
 """
 from fastapi import FastAPI
 
+from src.api.routes.auth import auth_router
 from src.api.routes.casas import casas_router
 from src.api.routes.dashboard import dashboard_router
 from src.api.routes.gastos import gastos_router
@@ -16,6 +17,7 @@ from src.db.base import engine
 from src.db.migrate import run_migrations
 
 app = FastAPI(title="taskia API")
+app.include_router(auth_router)
 app.include_router(casas_router)
 app.include_router(gastos_router)
 app.include_router(tareas_router)

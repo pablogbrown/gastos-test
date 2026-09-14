@@ -24,3 +24,14 @@ class ConflictError(Exception):
     (p. ej. completar una tarea que ya está Completada — TC-006). Se
     distingue de `ValidationError` porque las rutas de la API (T3) la
     mapean a 409 en vez de 400."""
+
+
+class InvalidCredentialsError(Exception):
+    """Credenciales de login inválidas, o un JWT ausente/inválido/expirado
+    (spec `usuarios-auth`).
+
+    Un único mensaje genérico cubre tanto "el email no existe" como "la
+    contraseña no matchea" (REQ-002/TC-004): revelar cuál de las dos causas
+    ocurrió permitiría enumerar emails registrados. Las rutas de la API
+    (T3) la mapean siempre a 401.
+    """

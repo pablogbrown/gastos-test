@@ -1,8 +1,9 @@
 """Rutas HTTP de Tareas, Ranking e Historial — adaptadores delgados sobre T2.
 
-Mismo patrón que `casas.py` (spec `casas-miembros`): ninguna regla de
-negocio vive aquí, y el "actor"/usuario autenticado llega vía el header
-`X-Usuario-Id` hasta que exista un dominio `auth`.
+Mismo patrón que `casas.py`: ninguna regla de negocio vive aquí. El
+"actor"/usuario autenticado se resuelve desde un JWT real vía
+`resolver_actor_en_casa` (`src/api/dependencies.py`, spec
+`usuarios-auth`) — ya no vía el header placeholder `X-Usuario-Id`.
 
 Un único router (`tareas_router`, sin prefijo propio) expone las cinco
 rutas del contrato de `00-overview.md`, para respetar la única interfaz
@@ -11,8 +12,9 @@ producida documentada en `run-plan.json` (un solo `APIRouter`).
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from src.api.dependencies import resolver_actor_en_casa
 from src.api.schemas import (
     HistorialTareaOut,
     RankingEntryOut,
@@ -39,7 +41,7 @@ tareas_router = APIRouter(tags=["tareas"])
     "/casas/{casa_id}/tareas", response_model=TareaOut, status_code=status.HTTP_201_CREATED
 )
 def crear_tarea_endpoint(
-    casa_id: UUID, payload: TareaCreate, actor: UUID = Header(..., alias="X-Usuario-Id")
+    casa_id: UUID, payload: TareaCreate, actor: UUID = Depends(resolver_actor_en_casa)
 ):
     try:
         return crear_tarea(
@@ -65,7 +67,7 @@ def crear_tarea_endpoint(
 def listar_tareas_endpoint(
     casa_id: UUID,
     estado: Optional[str] = None,
-    actor: UUID = Header(..., alias="X-Usuario-Id"),
+    actor: UUID = Depends(resolver_actor_en_casa),
 ):
     estado_enum = None
     if estado is not None:
@@ -82,7 +84,7 @@ def listar_tareas_endpoint(
 
 
 @tareas_router.get("/casas/{casa_id}/tareas/historial", response_model=list[HistorialTareaOut])
-def listar_historial_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def listar_historial_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         return listar_historial(casa_id)
     except NotFoundError as exc:
@@ -94,7 +96,7 @@ def actualizar_estado_tarea_endpoint(
     casa_id: UUID,
     tarea_id: UUID,
     payload: TareaEstadoUpdate,
-    actor: UUID = Header(..., alias="X-Usuario-Id"),
+    actor: UUID = Depends(resolver_actor_en_casa),
 ):
     if payload.estado != EstadoTareaEnum.COMPLETADA.value:
         raise HTTPException(
@@ -118,7 +120,7 @@ def actualizar_estado_tarea_endpoint(
 
 
 @tareas_router.get("/casas/{casa_id}/ranking", response_model=list[RankingEntryOut])
-def obtener_ranking_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def obtener_ranking_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         return calcular_ranking(casa_id)
     except NotFoundError as exc:
