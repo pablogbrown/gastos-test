@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- feat(frontend): Added Login/Registro screens and JWT-based session storage on the frontend, replacing the X-Usuario-Id header. (`.nybo/plans/auth-frontend/`)
+
+- feat(auth): Added global Usuario entity with email/password registration and JWT login, replacing X-Usuario-Id header with real multi-casa membership resolution. (`.nybo/plans/auth-backend/`)
+
 - feat(frontend): Restyled all 8 screens with Material UI; added a responsive BottomNavigation/AppBar shell at the sm (600px) breakpoint, preserving existing behavior. (`.nybo/plans/ui-modernization/`)
 
 - feat(db): Dockerized local dev environment (Postgres, backend, frontend) orchestrated via docker-compose with a Makefile wrapper. (`.nybo/plans/dockerize-local-env/`)
