@@ -1,0 +1,74 @@
+{
+  "$schema_version": "2",
+  "feature_id": "resolver-rol-usuario-en-casa",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/resolver-rol-usuario-en-casa/feat/01-plan-01-exponer-usuario-id.md",
+      "files_touched": [
+        "src/api/schemas.py",
+        "tests/integration/api/casas_routes.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 10,
+      "test_cases": ["TC-001"],
+      "interfaces_produced": [
+        { "name": "MiembroOut.usuario_id", "signature": "Optional[UUID]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "MiembroOut incluye usuario_id en su respuesta serializada.",
+        "postcondition": "GET /casas/{casa_id}/miembros devuelve cada objeto con una clave usuario_id no ausente.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/casas_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/resolver-rol-usuario-en-casa/feat/01-plan-02-resolver-rol-app.md",
+      "files_touched": [
+        "src/frontend/api/casasClient.ts",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/App.test.tsx"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 25,
+      "test_cases": ["TC-002", "TC-003", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "MiembroOut.usuario_id" }
+      ],
+      "contract": {
+        "statement": "App.tsx resuelve rolUsuarioActual del Miembro propio en la casa elegida, nunca hardcodeado.",
+        "postcondition": "Con una lista de miembros que incluye una fila cuyo usuario_id coincide con el JWT propio, rolUsuarioActual pasado a Miembros/Tareas es exactamente el rol de esa fila; sin match, es 'member'.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/App.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/resolver-rol-usuario-en-casa/feat/01-plan-03-fix-puede-completar.md",
+      "files_touched": [
+        "src/frontend/App.tsx",
+        "src/frontend/pages/Tareas.tsx",
+        "tests/unit/frontend/Tareas.test.tsx"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": ["TC-005", "TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "miMiembro" }
+      ],
+      "contract": {
+        "statement": "puedeCompletar compara el Miembro.id propio en esta casa contra tarea.responsableId, no el Usuario.id global.",
+        "postcondition": "Con tarea.responsableId igual al Miembro.id propio, 'Marcar completada' se muestra; con tarea.responsableId igual al Miembro.id de otro (rol member), no se muestra.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tareas.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

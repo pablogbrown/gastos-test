@@ -1,0 +1,15 @@
+feature: resolver-rol-usuario-en-casa
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-14'
+approved_at: '2026-09-14'
+task_count: 3
+domain: auth
+domains_referenced:
+  - auth.md
+  - frontend.md
+notes: |
+  Single spec: un solo cruce de identidad (usuario_id -> mi Miembro en
+  esta casa) consumido por 2 pantallas; no pasa el test de
+  deliverable-independiente si se separa backend/frontend.
