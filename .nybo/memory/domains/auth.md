@@ -22,6 +22,30 @@ auth domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-14 | feature: resolver-rol-usuario-en-casa | confidence: high | verified: 2026-09-14 -->
+- Frontend identity resolution (client-side mirror of
+  `resolver_actor_en_casa`): the backend centralized global-Usuario ->
+  per-casa-Miembro resolution since `usuarios-auth`, but nothing on the
+  frontend mirrored it — `App.tsx` hardcoded `rolUsuarioActual="admin"`
+  and passed the global `usuarioId` where a `Miembro.id` was needed,
+  silently masking the exact same global-vs-per-casa conflation the
+  backend already solved. Fixed by: (1) expose `usuario_id` on
+  `MiembroOut` (additive; already on the ORM model, just not previously
+  serialized); (2) in `App.tsx` — the same place that already loads the
+  casa's full `miembros` list — resolve `miMiembro = miembros.find(m =>
+  m.usuario_id === obtenerUsuarioIdActual())` once, and derive both
+  `rolUsuarioActual = miMiembro?.rol ?? "member"` and the caller's own
+  `Miembro.id` (`miMiembro?.id`) from it, passing both down instead of
+  any hardcoded/global-id value. **Fallback is always `"member"`, never
+  `"admin"`** — while `miembros` is loading or in any inconsistent state
+  where the caller's own row isn't found yet, assume the
+  least-privileged role; an unsafe default here is a silent
+  authorization gap, not just a rendering glitch. Any prop meant to
+  carry "my identity for a per-casa comparison" should be named for
+  what it actually is (`miembroIdActual`, not `usuarioId`) — the prior
+  generic name is what let the original bug hide in plain sight for a
+  full spec cycle.
+
 <!-- added: 2026-09-14 | feature: usuarios-auth (auth-frontend) | confidence: high | verified: 2026-09-14 -->
 - Frontend session/JWT handling is centralized in one module,
   `src/frontend/api/authClient.ts` — `guardarSesion`/`obtenerToken`/
@@ -40,13 +64,9 @@ auth domain
 ## Gotchas
 <!-- Things that tripped us up -->
 
+<!-- resolved: 2026-09-14 | feature: resolver-rol-usuario-en-casa | see the "Frontend identity resolution" pattern above. The 2026-09-14 (usuarios-auth) entry below about `Tareas.tsx`'s `puedeCompletar()` comparing the global Usuario.id against `tarea.responsableId` (a per-casa Miembro id) no longer applies: `App.tsx` now resolves the caller's own `Miembro.id` and passes it in (`miembroIdActual`), not the global `usuarioId`. -->
 <!-- added: 2026-09-14 | feature: usuarios-auth (auth-frontend) | confidence: medium | verified: 2026-09-14 -->
-- `src/frontend/pages/Tareas.tsx`'s `puedeCompletar()` compares the
+- ~~`src/frontend/pages/Tareas.tsx`'s `puedeCompletar()` compares the
   authenticated Usuario's id against `tarea.responsableId`, which is
-  actually a Miembro id (per-casa), not a Usuario id (global) — the same
-  global-identity-vs-per-casa-identity conflation this domain's backend
-  side already has (`resolver_actor_en_casa` bridges it server-side; no
-  equivalent exists on the frontend yet). "Marcar completada" visibility
-  for an assigned task is therefore not reliable against real data
-  today — see `evidence/suggestions.yaml` in the `auth-frontend`
-  sub-spec for the proposed follow-up.
+  actually a Miembro id (per-casa), not a Usuario id (global)~~ —
+  **resolved by `resolver-rol-usuario-en-casa`**, see the pattern above.

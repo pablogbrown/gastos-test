@@ -151,6 +151,30 @@ def test_admin_consulta_listado_completo_de_miembros_sin_restriccion(client):
     assert len(resp.json()) == 2
 
 
+def test_listado_de_miembros_incluye_usuario_id(client):
+    """TC-001 (spec `resolver-rol-usuario-en-casa`, REQ-001): cada objeto
+    del listado de miembros incluye `usuario_id` — necesario para que el
+    frontend cruce "cuál es mi Miembro en esta casa" contra el `sub` del
+    JWT propio."""
+    casa, usuario_id, admin_id = _crear_casa(client)
+    casa_id = casa["id"]
+    ana_usuario = _crear_usuario_de_prueba(client._session_factory, "ana@example.com")
+    client.post(
+        f"/casas/{casa_id}/miembros",
+        json={"nombre": "Ana", "identificacion": "ANA1", "email": ana_usuario.email},
+        headers=_bearer(usuario_id),
+    )
+
+    resp = client.get(f"/casas/{casa_id}/miembros", headers=_bearer(usuario_id))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 2
+    por_id = {m["id"]: m for m in body}
+    assert por_id[admin_id]["usuario_id"] == str(usuario_id)
+    ana_miembro = next(m for m in body if m["id"] != admin_id)
+    assert ana_miembro["usuario_id"] == str(ana_usuario.id)
+
+
 def test_agregar_miembro_con_email_de_usuario_inexistente_devuelve_404(client):
     casa, usuario_id, _admin_id = _crear_casa(client)
     resp = client.post(
