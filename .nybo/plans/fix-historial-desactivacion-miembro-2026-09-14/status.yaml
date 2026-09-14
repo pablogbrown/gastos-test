@@ -12,6 +12,8 @@ verified_at: '2026-09-14T17:20:53Z'
 verified_duration: 691
 curated_at: '2026-09-14T17:23:46Z'
 curated_duration: 173
+pr_url: 'https://github.com/pablogbrown/gastos-test/pull/14'
+pr_number: 14
 domain: services
 domains_referenced:
   - services.md
