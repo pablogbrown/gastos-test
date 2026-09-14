@@ -15,10 +15,26 @@ dev_runbook:
   subprojects:
     - name: root
       path: .
-      run_targets: []
-      test_commands: {}
+      run_targets:
+        - name: docker-dev
+          command: make up
+          description: >-
+            Dockerized dev stack (db + backend on :8000 with --reload +
+            frontend on :5173). Discovered during /nybo-verify --auto for
+            fix-membresia-duplicada-actor-2026-09-14 (2026-09-14) — see
+            .nybo/memory/domains/testing.md [TEST-01] for the full recipe
+            (auth, seeding, cold start).
+      test_commands:
+        backend: .venv/bin/python -m pytest tests/
+        frontend_test: npm run test
+        frontend_build: npm run build
+        frontend_lint: npm run lint
       auth:
-        found: false
+        found: true
+        how_to: >-
+          POST /auth/registro {email,password,nombre?} -> 201, then POST
+          /auth/login {email,password} -> {access_token}; send as
+          "Authorization: Bearer <access_token>".
 quality_tools:
   coverage:
     tool: null

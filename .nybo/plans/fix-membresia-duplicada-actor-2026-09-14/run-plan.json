@@ -1,0 +1,47 @@
+{
+  "$schema_version": "2",
+  "feature_id": "fix-membresia-duplicada-actor-2026-09-14",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/fix-membresia-duplicada-actor-2026-09-14/feat/01-plan-01-validar-membresia-unica.md",
+      "files_touched": [
+        "src/services/miembro_service.py",
+        "tests/integration/api/miembro_membresia_unica.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "agregar_miembro rechaza agregar un Usuario que ya tiene una fila Miembro activa en la misma casa.",
+        "postcondition": "POST /casas/{casa_id}/miembros con el email de un Usuario ya activo en esa casa responde 400 y no crea una segunda fila Miembro.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/miembro_membresia_unica.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/fix-membresia-duplicada-actor-2026-09-14/feat/01-plan-02-endurecer-resolver-actor.md",
+      "files_touched": [
+        "src/services/miembro_service.py",
+        "tests/integration/api/miembro_membresia_unica.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": ["TC-003", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "resolver_actor_en_casa nunca propaga una excepción no manejada cuando existe más de una fila Miembro activa para (casa_id, usuario_id).",
+        "postcondition": "Con 2 filas Miembro activas sembradas para el mismo (casa_id, usuario_id), cualquier request autenticado de ese usuario a esa casa responde con un código HTTP normal (200/403, según la acción), nunca 500, y de forma repetible.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/miembro_membresia_unica.test.py",
+        "caution": "Sembrar el duplicado insertando ambas filas Miembro directo por sesión de SQLAlchemy en el test — bypaseando T1 a propósito, para simular datos preexistentes al fix.",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

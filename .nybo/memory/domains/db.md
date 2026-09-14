@@ -26,3 +26,6 @@ db domain
   `Usuario.__table__` to migration `0001`'s own `TABLES` list. Whenever a
   new FK is added to an existing migration, verify against real Postgres
   (not just SQLite) before considering it verified.
+
+<!-- added: 2026-09-14 | feature: fix-membresia-duplicada-actor-2026-09-14 | confidence: high | verified: 2026-09-14 -->
+- [DBG-01] The `rolenum` Postgres enum stores labels in UPPERCASE (`ADMIN`, `MEMBER`) even though `RolEnum`'s Python string values are lowercase (`"admin"`, `"member"`) — SQLAlchemy's `Enum` column maps the Python enum *member name*, not its `.value`, to the Postgres label. A raw SQL `INSERT`/seed against `miembros.rol` (bypassing the ORM, e.g. to simulate preexisting data in a test or a live smoke check) must use the uppercase label or it fails with `invalid input value for enum rolenum`.
