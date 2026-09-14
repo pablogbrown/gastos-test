@@ -186,6 +186,68 @@ describe("Tareas", () => {
     expect(await screen.findByRole("cell", { name: "Pablo" })).toBeInTheDocument();
   });
 
+  it("muestra el error de negocio y no crea la tarea si Puntos queda vacío (TC-001)", async () => {
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        json: async () => ({
+          detail: "La cantidad de puntos es obligatoria y debe ser un entero no negativo.",
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    await screen.findByLabelText("Crear tarea");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Nombre"), "Sacar la basura");
+    await user.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /cantidad de puntos es obligatoria/i
+    );
+    expect(screen.queryByText("Sacar la basura")).not.toBeInTheDocument();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
+    const [, crearRequest] = fetchMock.mock.calls[3];
+    const body = JSON.parse((crearRequest as RequestInit).body as string);
+    expect(body).not.toHaveProperty("puntos");
+  });
+
+  it("sigue enviando puntos como número cuando el campo tiene valor (TC-002)", async () => {
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => tareaSinResponsable() })
+      .mockResolvedValueOnce({ ok: true, json: async () => [tareaSinResponsable()] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    await screen.findByLabelText("Crear tarea");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Nombre"), "Sacar la basura");
+    await user.type(screen.getByLabelText("Puntos"), "5");
+    await user.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(7));
+    const [, crearRequest] = fetchMock.mock.calls[3];
+    const body = JSON.parse((crearRequest as RequestInit).body as string);
+    expect(body.puntos).toBe(5);
+
+    expect(await screen.findByText("Sacar la basura")).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.restoreAllMocks();
   });

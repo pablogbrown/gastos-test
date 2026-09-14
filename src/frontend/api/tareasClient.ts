@@ -41,7 +41,7 @@ export interface RankingEntry {
 
 export interface CrearTareaInput {
   nombre: string;
-  puntos: number;
+  puntos: number | undefined;
   descripcion?: string;
   responsableId?: string;
   fechaPrevista?: string;
