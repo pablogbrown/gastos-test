@@ -1,0 +1,34 @@
+feature: resolver-rol-usuario-en-casa
+status: shipped
+shipped_at: '2026-09-14T18:05:00Z'
+profile: code
+action_type: UPD
+created_at: '2026-09-14'
+approved_at: '2026-09-14'
+run_at: '2026-09-14T16:40:00.000Z'
+run_completed_at: '2026-09-14T16:40:00.000Z'
+run_duration: 1500
+verified_at: '2026-09-14T16:55:56.000Z'
+verified_duration: 956
+curated_at: '2026-09-14T16:57:37.000Z'
+curated_duration: 101
+task_count: 3
+domain: auth
+domains_referenced:
+  - auth.md
+  - frontend.md
+branch: feat/resolver-rol-usuario-en-casa
+pr_url: https://github.com/pablogbrown/gastos-test/pull/17
+pr_number: 17
+kind: single_spec
+latest_cycle: 1
+latest_evidence_path: .nybo/plans/resolver-rol-usuario-en-casa/evidence/1/build-results.md
+cycles:
+  - cycle: 1
+    exit: ready
+    verdict: verified
+    summary: T1-T3 implemented via TDD; 131 pytest + 60 vitest green; live smoke confirmed on docker
+notes: |
+  Single spec: un solo cruce de identidad (usuario_id -> mi Miembro en
+  esta casa) consumido por 2 pantallas; no pasa el test de
+  deliverable-independiente si se separa backend/frontend.

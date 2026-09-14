@@ -23,6 +23,51 @@ function jwtFalso(sub = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"): string {
   return `${header}.${payload}.firma-invalida`;
 }
 
+function miembro(id: string, usuarioId: string | null, rol: "admin" | "member") {
+  return {
+    id,
+    casa_id: CASA.id,
+    usuario_id: usuarioId,
+    nombre: `Miembro ${id}`,
+    identificacion: id,
+    rol,
+    activo: true,
+  };
+}
+
+function mockFetchConMiembros(miembros: unknown[]) {
+  return vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/casas/mias")) {
+      return { ok: true, status: 200, json: async () => [CASA] };
+    }
+    if (url.endsWith("/miembros")) {
+      return { ok: true, status: 200, json: async () => miembros };
+    }
+    if (url.endsWith("/inicio")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          miembros: [],
+          gastosRecientes: [],
+          balance: [],
+          tareasPendientes: [],
+          tareasCompletadasRecientes: [],
+          ranking: [],
+        }),
+      };
+    }
+    return { ok: true, status: 200, json: async () => [] };
+  });
+}
+
+async function irAPantallaMiembros() {
+  const user = userEvent.setup();
+  await user.click(await screen.findByText("Casa del centro"));
+  await user.click(await screen.findByRole("tab", { name: "Miembros" }));
+}
+
 function mockMatchMedia(matches: boolean) {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
@@ -107,5 +152,60 @@ describe("App — gate de sesión", () => {
 
     expect(await screen.findByLabelText("Iniciar sesión")).toBeInTheDocument();
     expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull();
+  });
+});
+
+describe("App — resolución del rol real del Usuario en la casa (spec resolver-rol-usuario-en-casa)", () => {
+  const SUB = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("TC-002: mi Miembro tiene rol member -> Miembros oculta 'Agregar miembro'", async () => {
+    mockMatchMedia(true);
+    localStorage.setItem(TOKEN_STORAGE_KEY, jwtFalso(SUB));
+    vi.stubGlobal(
+      "fetch",
+      mockFetchConMiembros([miembro("m-yo", SUB, "member"), miembro("m-otro", "otro-usuario", "admin")])
+    );
+
+    renderApp();
+    await irAPantallaMiembros();
+
+    await screen.findByText("Miembro m-yo");
+    expect(screen.queryByRole("form", { name: "Agregar miembro" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Desactivar" })).not.toBeInTheDocument();
+  });
+
+  it("TC-003: mi Miembro tiene rol admin -> Miembros/Tareas reciben rolUsuarioActual admin", async () => {
+    mockMatchMedia(true);
+    localStorage.setItem(TOKEN_STORAGE_KEY, jwtFalso(SUB));
+    vi.stubGlobal(
+      "fetch",
+      mockFetchConMiembros([miembro("m-yo", SUB, "admin"), miembro("m-otro", "otro-usuario", "member")])
+    );
+
+    renderApp();
+    await irAPantallaMiembros();
+
+    await screen.findByText("Miembro m-yo");
+    expect(screen.getByRole("form", { name: "Agregar miembro" })).toBeInTheDocument();
+  });
+
+  it("TC-004: sin ninguna fila de miembros que coincida con mi usuario_id -> fallback 'member', nunca 'admin'", async () => {
+    mockMatchMedia(true);
+    localStorage.setItem(TOKEN_STORAGE_KEY, jwtFalso(SUB));
+    vi.stubGlobal(
+      "fetch",
+      mockFetchConMiembros([miembro("m-otro", "otro-usuario-1", "admin"), miembro("m-otro-2", "otro-usuario-2", "admin")])
+    );
+
+    renderApp();
+    await irAPantallaMiembros();
+
+    await screen.findByText("Miembro m-otro");
+    expect(screen.queryByRole("form", { name: "Agregar miembro" })).not.toBeInTheDocument();
   });
 });

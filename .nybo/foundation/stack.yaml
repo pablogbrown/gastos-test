@@ -25,7 +25,9 @@ dev_runbook:
             (vite). Backend runs migrations on every startup
             (src/db/migrate.py). `make down` stops it; volumes persist
             data across restarts (see db.md's [DB-01] gotcha re: enum
-            migrations on a persisted volume).
+            migrations on a persisted volume). Full recipe (auth,
+            seeding, cold start) also in
+            .nybo/memory/domains/testing.md [TEST-01].
       test_commands:
         backend: .venv/bin/python3 -m pytest tests/
         backend_docker: docker compose exec backend python3 -m pytest

@@ -1,0 +1,24 @@
+- id: D001
+  class: execution-observation
+  status: open
+  blocking: false
+  question: >-
+    Should a database-level UNIQUE constraint on `miembros (casa_id,
+    usuario_id) WHERE activo` be added as defense-in-depth on top of
+    this fix's service-layer validation (T1)? feat/00-overview.md's
+    Tradeoffs explicitly named this as a deliberate future-robustness
+    improvement, out of scope for this CRITICAL-severity fix (which
+    needed to merge fast, without a schema migration).
+  options:
+    - Add the partial UNIQUE constraint now (requires a new migration).
+    - Leave as service-layer-only validation (current state after this fix).
+  recommendation: >-
+    Leave as-is for now — T1 (service layer) + T2 (deterministic read)
+    together already fully close the crash and the reported
+    authorization-incident concern, both live-verified. A DB constraint
+    would be a genuine robustness improvement but is not required to
+    resolve the CRITICAL finding this spec was created for.
+  assumed: >-
+    No migration added in this fix; service-layer validation (T1) is
+    the sole guard against new duplicates, exactly as designed and
+    documented in feat/00-overview.md.
