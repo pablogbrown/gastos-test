@@ -1,0 +1,13 @@
+feature: fix-validacion-puntos-tarea-2026-09-14
+status: approved
+action_type: FIX
+profile: code
+created: '2026-09-14'
+approved_at: '2026-09-14'
+task_count: 1
+domain: frontend
+domains_referenced:
+  - frontend.md
+notes: |
+  rationale: spec.md; build narrative: evidence/build-results.md
+  Severity: LOW. Single-file frontend type-conversion fix.

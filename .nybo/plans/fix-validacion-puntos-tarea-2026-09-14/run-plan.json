@@ -1,0 +1,27 @@
+{
+  "$schema_version": "2",
+  "feature_id": "fix-validacion-puntos-tarea-2026-09-14",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/fix-validacion-puntos-tarea-2026-09-14/feat/01-plan-01-puntos-opcional.md",
+      "files_touched": [
+        "src/frontend/api/tareasClient.ts",
+        "src/frontend/pages/Tareas.tsx",
+        "tests/unit/frontend/Tareas.test.tsx"
+      ],
+      "deps": [],
+      "est_minutes": 10,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Crear una tarea con el campo Puntos vacío dispara la validación de negocio existente en vez de crear una tarea de 0 puntos.",
+        "postcondition": "Con Puntos vacío al enviar el formulario, el body de crearTarea no incluye la clave puntos, y la UI muestra el error de negocio devuelto por la API; ninguna tarea se agrega al listado.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tareas.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}
