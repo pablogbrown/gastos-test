@@ -33,3 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - feat(usuarios-auth): reemplaza el header placeholder `X-Usuario-Id` (cualquier UUID sin verificar) por autenticación real con JWT (email + contraseña hasheada) en todas las rutas de casas, gastos, tareas y dashboard.
+
+### Fixed
+
+- fix(frontend): crear una tarea con el campo Puntos vacío ahora muestra el error de validación correspondiente en vez de crear silenciosamente una tarea de 0 puntos.
