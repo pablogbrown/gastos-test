@@ -1,0 +1,52 @@
+{
+  "$schema_version": "2",
+  "feature_id": "fix-historial-desactivacion-miembro-2026-09-14",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/fix-historial-desactivacion-miembro-2026-09-14/feat/01-plan-01-registrar-actividad-miembro.md",
+      "files_touched": [
+        "src/db/models/historial_actividad.py",
+        "src/services/miembro_service.py",
+        "tests/integration/api/miembro_historial_actividad.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": ["TC-001", "TC-002", "TC-003"],
+      "interfaces_produced": [
+        { "name": "TipoActividadEnum.MIEMBRO_DESACTIVADO", "signature": "str enum member", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Agregar o desactivar un miembro exitosamente registra la entrada de actividad correspondiente.",
+        "postcondition": "GET /casas/{id}/actividad incluye una entrada tipo=miembro_agregado tras un alta exitosa, y tipo=miembro_desactivado tras una baja exitosa; ninguna entrada nueva aparece si la operación falla.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/miembro_historial_actividad.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/fix-historial-desactivacion-miembro-2026-09-14/feat/01-plan-02-frontend-tipo-actividad.md",
+      "files_touched": [
+        "src/frontend/api/dashboardClient.ts",
+        "src/frontend/pages/HistorialActividad.tsx",
+        "tests/unit/frontend/HistorialActividad.test.tsx"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 15,
+      "test_cases": ["TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "TipoActividadEnum.MIEMBRO_DESACTIVADO" }
+      ],
+      "contract": {
+        "statement": "El frontend reconoce el tipo de actividad miembro_desactivado con ícono y etiqueta propios.",
+        "postcondition": "Una entrada de actividad con tipo=miembro_desactivado se renderiza con la etiqueta 'Miembro desactivado' y su propio ícono, sin lanzar una excepción de render.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/HistorialActividad.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

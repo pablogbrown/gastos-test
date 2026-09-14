@@ -9,6 +9,17 @@ services domain
 <!-- added: 2026-09-14 | feature: fix-membresia-duplicada-actor-2026-09-14 | confidence: high | verified: 2026-09-14 -->
 - [SERV-01] Business-invariant uniqueness checks (e.g. "at most one active `Miembro` per `(casa_id, usuario_id)`") are validated in the service layer, before the write, mirroring how duplicate-`identificacion` is already checked — never as a database `UNIQUE` constraint. This keeps the check colocated with the other `agregar_miembro`-style validations and avoids a schema migration for a service-level rule; see `.nybo/plans/fix-membresia-duplicada-actor-2026-09-14/feat/00-overview.md`'s Tradeoffs for the explicit reasoning.
 
+<!-- added: 2026-09-14 | feature: fix-historial-desactivacion-miembro | confidence: high | verified: 2026-09-14 -->
+- [SERV-02] `registrar_actividad` (activity-log hook, `actividad_service.py`)
+  is called only AFTER the triggering business operation's own `commit`
+  succeeds, never before and never on a failure/exception path — so an
+  activity entry never describes something that ultimately didn't happen.
+  Established by `gasto_service.registrar_gasto`/`tarea_service.crear_tarea`/
+  `completar_tarea`; `miembro_service.agregar_miembro`/`desactivar_miembro`
+  now follow the same shape. Any new service action that should appear in
+  the Historial de actividad calls this hook the same way, right after its
+  own commit.
+
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 

@@ -20,7 +20,8 @@ export type TipoActividad =
   | "tarea_creada"
   | "tarea_completada"
   | "puntos_obtenidos"
-  | "miembro_agregado";
+  | "miembro_agregado"
+  | "miembro_desactivado";
 
 export interface Actividad {
   id: string;

@@ -17,8 +17,10 @@ from sqlalchemy.exc import IntegrityError
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
+from src.db.models.historial_actividad import TipoActividadEnum
 from src.db.models.miembro import Miembro, RolEnum
 from src.db.models.usuario import Usuario
+from src.services.actividad_service import registrar_actividad
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 
 
@@ -130,6 +132,19 @@ def agregar_miembro(
                 f"Ya existe un miembro con identificación {identificacion!r} en esta casa."
             ) from exc
         session.refresh(miembro)
+
+        # Hook de actividad (REQ-001, spec `fix-historial-desactivacion-
+        # miembro`): se dispara recién después del commit de arriba, nunca
+        # antes, mismo patrón que `gasto_service`/`tarea_service` — así una
+        # entrada de actividad nunca describe un alta que en definitiva no
+        # llegó a confirmarse.
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.MIEMBRO_AGREGADO,
+            miembro.id,
+            f"{miembro.nombre} fue agregado a la casa.",
+        )
+
         return miembro
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
@@ -158,6 +173,19 @@ def desactivar_miembro(casa_id: UUID, miembro_id: UUID, actor: UUID) -> Miembro:
         miembro.activo = False
         session.commit()
         session.refresh(miembro)
+
+        # Hook de actividad (REQ-002, spec `fix-historial-desactivacion-
+        # miembro`): se dispara recién después del commit de arriba, nunca
+        # antes, mismo patrón que `gasto_service`/`tarea_service` — así una
+        # entrada de actividad nunca describe una baja que en definitiva no
+        # llegó a confirmarse.
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.MIEMBRO_DESACTIVADO,
+            miembro.id,
+            f"{miembro.nombre} fue desactivado.",
+        )
+
         return miembro
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()

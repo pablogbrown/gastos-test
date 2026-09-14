@@ -23,6 +23,7 @@ import shutil
 import socket
 import subprocess
 import time
+import uuid
 
 import pytest
 import sqlalchemy
@@ -124,4 +125,62 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         # arranque del backend dentro de docker-compose.
         run_migrations(engine)
     finally:
+        engine.dispose()
+
+
+def test_migracion_0006_agrega_miembro_desactivado_a_un_enum_ya_existente(postgres_dsn):
+    """Regresión (spec `fix-historial-desactivacion-miembro`): un Postgres
+    con `historial_actividad` ya creado ANTES de este fix (tipo enum
+    nativo con solo los 5 valores originales, como el volumen persistente
+    de `docker-compose` de este proyecto) debe poder registrar
+    `MIEMBRO_DESACTIVADO` después de correr las migraciones — sin
+    recrear el esquema ni perder datos. `0006` fue agregada precisamente
+    porque el smoke test en vivo contra ese entorno encontró
+    `psycopg2.errors.InvalidTextRepresentation` antes de que existiera.
+    """
+    engine = sqlalchemy.create_engine(postgres_dsn)
+    try:
+        # `postgres_dsn` es module-scoped y comparte el Postgres con el test
+        # anterior, que ya corrió las migraciones (incluida `historial_
+        # actividad`/`tipoactividadenum` con el enum ya al día) — se
+        # descartan acá para recrear desde cero el escenario "enum viejo,
+        # sin MIEMBRO_DESACTIVADO" que este test necesita.
+        with engine.begin() as conn:
+            conn.execute(sqlalchemy.text("DROP TABLE IF EXISTS historial_actividad"))
+            conn.execute(sqlalchemy.text("DROP TYPE IF EXISTS tipoactividadenum"))
+        with engine.begin() as conn:
+            conn.execute(
+                sqlalchemy.text(
+                    "CREATE TYPE tipoactividadenum AS ENUM ("
+                    "'GASTO_REGISTRADO', 'TAREA_CREADA', 'TAREA_COMPLETADA', "
+                    "'PUNTOS_OBTENIDOS', 'MIEMBRO_AGREGADO')"
+                )
+            )
+            conn.execute(
+                sqlalchemy.text(
+                    "CREATE TABLE historial_actividad ("
+                    "id UUID PRIMARY KEY, casa_id UUID NOT NULL, "
+                    "tipo tipoactividadenum NOT NULL, miembro_id UUID, "
+                    "fecha TIMESTAMP NOT NULL, descripcion VARCHAR NOT NULL)"
+                )
+            )
+
+        # Corre TODAS las migraciones, incluida 0006, sobre esta base que
+        # ya tenía `historial_actividad` con el enum viejo.
+        run_migrations(engine)
+
+        # Antes no aceptaba este valor (InvalidTextRepresentation) — ahora sí.
+        with engine.begin() as conn:
+            conn.execute(
+                sqlalchemy.text(
+                    "INSERT INTO historial_actividad "
+                    "(id, casa_id, tipo, miembro_id, fecha, descripcion) VALUES "
+                    "(:id, :casa_id, 'MIEMBRO_DESACTIVADO', NULL, now(), 'test')"
+                ),
+                {"id": str(uuid.uuid4()), "casa_id": str(uuid.uuid4())},
+            )
+    finally:
+        with engine.begin() as conn:
+            conn.execute(sqlalchemy.text("DROP TABLE IF EXISTS historial_actividad"))
+            conn.execute(sqlalchemy.text("DROP TYPE IF EXISTS tipoactividadenum"))
         engine.dispose()

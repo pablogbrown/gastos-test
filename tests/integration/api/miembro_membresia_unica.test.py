@@ -47,11 +47,18 @@ def client(monkeypatch):
         poolclass=StaticPool,
     )
     importlib.import_module("src.db.migrations.0001_casas_miembros").upgrade(engine)
+    importlib.import_module("src.db.migrations.0004_historial_actividad").upgrade(engine)
     importlib.import_module("src.db.migrations.0005_usuarios").upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.miembro_service.get_session", lambda: TestSession())
+    # `agregar_miembro`/`desactivar_miembro` llaman a `registrar_actividad`
+    # (spec `fix-historial-desactivacion-miembro`, mergeada junto con este
+    # fix) — sin este monkeypatch, ese hook usa el `get_session` real
+    # (la base configurada por `DATABASE_URL`) en vez de la SQLite aislada
+    # de este test, y el INSERT falla contra una casa que no existe ahí.
+    monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
 
     app = FastAPI()
     app.include_router(casas_router)
