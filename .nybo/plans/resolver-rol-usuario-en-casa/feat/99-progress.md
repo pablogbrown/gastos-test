@@ -21,6 +21,19 @@
 - [x] `[TC-005]` *[UNIT]* — "Marcar completada" visible para el responsable asignado (Miembro.id correcto)
 - [x] `[TC-006]` *[UNIT]* — "Marcar completada" oculto para un member no-responsable
 
+#### Outcome Smoke Test
+Observado en vivo (docker-compose local, ya levantado, no reiniciado) —
+cycle 1: se registraron 2 Usuarios reales, se creó una Casa real y se
+agregó un member real vía la API en ejecución (sin fixtures/mocks).
+Logueado como member: "Agregar miembro"/"Desactivar" NO se muestran en
+Miembros; "Marcar completada" aparece solo en la tarea propia, no en la
+del admin. Logueado como admin: ambos controles se muestran. El
+`## Outcome` de `spec.md` ("un usuario `member` deja de ver
+Agregar miembro/Desactivar, y Marcar completada aparece exactamente para
+quien corresponde") quedó confirmado end-to-end, no solo por unit tests.
+Ver `evidence/1/build-results.md` (sección Verification) para el detalle
+y las 3 capturas.
+
 ## Completion Summary
 Los 3 tasks implementados en un solo pase (T2/T3 comparten la misma
 edición de `App.tsx` — ver Judgment). Backend: `MiembroOut.usuario_id`
