@@ -70,12 +70,13 @@ export async function listarMiembros(casaId: string): Promise<Miembro[]> {
 export async function agregarMiembro(
   casaId: string,
   nombre: string,
-  identificacion: string
+  identificacion: string,
+  email: string
 ): Promise<Miembro> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/miembros`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nombre, identificacion }),
+    body: JSON.stringify({ nombre, identificacion, email }),
   });
   return parseJsonOrThrow<Miembro>(resp);
 }
