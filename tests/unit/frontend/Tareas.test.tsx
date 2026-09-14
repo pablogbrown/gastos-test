@@ -74,7 +74,7 @@ describe("Tareas", () => {
   it("muestra el listado de tareas y el historial", async () => {
     vi.stubGlobal("fetch", mockFetch([tareaSinResponsable()], []));
 
-    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ADMIN_ID} rolUsuarioActual="admin" />);
 
     expect(await screen.findByText("Sacar la basura")).toBeInTheDocument();
     expect(screen.getByText("Historial de tareas")).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe("Tareas", () => {
   it("muestra 'Marcar completada' para una tarea sin responsable a cualquier miembro", async () => {
     vi.stubGlobal("fetch", mockFetch([tareaSinResponsable()], []));
 
-    render(<Tareas casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ANA_ID} rolUsuarioActual="member" />);
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Marcar completada" })).toBeInTheDocument()
@@ -93,7 +93,7 @@ describe("Tareas", () => {
   it("oculta 'Marcar completada' si el miembro no es el responsable asignado (TC-004)", async () => {
     vi.stubGlobal("fetch", mockFetch([tareaConResponsable(ANA_ID)], []));
 
-    render(<Tareas casaId={CASA_ID} usuarioId={BRUNO_ID} rolUsuarioActual="member" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={BRUNO_ID} rolUsuarioActual="member" />);
 
     await screen.findByText("Pagar servicios");
     expect(screen.queryByRole("button", { name: "Marcar completada" })).not.toBeInTheDocument();
@@ -102,7 +102,7 @@ describe("Tareas", () => {
   it("muestra 'Marcar completada' al propio responsable asignado", async () => {
     vi.stubGlobal("fetch", mockFetch([tareaConResponsable(ANA_ID)], []));
 
-    render(<Tareas casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ANA_ID} rolUsuarioActual="member" />);
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Marcar completada" })).toBeInTheDocument()
@@ -121,7 +121,7 @@ describe("Tareas", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => [] });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ADMIN_ID} rolUsuarioActual="admin" />);
     await screen.findByLabelText("Crear tarea");
 
     const user = userEvent.setup();
@@ -146,7 +146,7 @@ describe("Tareas", () => {
       });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Tareas casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ANA_ID} rolUsuarioActual="member" />);
     await screen.findByText("Sacar la basura");
 
     const user = userEvent.setup();
@@ -168,7 +168,7 @@ describe("Tareas", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => [pablo] });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ADMIN_ID} rolUsuarioActual="admin" />);
     await screen.findByLabelText("Crear tarea");
 
     const user = userEvent.setup();
