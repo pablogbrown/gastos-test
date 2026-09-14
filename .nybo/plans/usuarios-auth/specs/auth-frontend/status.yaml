@@ -12,6 +12,8 @@ domain: frontend
 parent:
   feature: usuarios-auth
   branch: feat/usuarios-auth--auth-frontend
+pr_url: https://github.com/pablogbrown/gastos-test/pull/11
+pr_number: 11
 pr_base: feat/usuarios-auth
 kind: single_spec
 dependencies:
