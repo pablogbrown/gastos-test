@@ -27,6 +27,7 @@ class MiembroActivoUpdate(BaseModel):
 
 class MiembroOut(BaseModel):
     id: UUID
+    usuario_id: Optional[UUID] = None
     casa_id: UUID
     nombre: str
     identificacion: str

@@ -6,6 +6,10 @@ import { InicioCasa } from "../../../src/frontend/pages/InicioCasa";
 const CASA_ID = "11111111-1111-1111-1111-111111111111";
 const ANA_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
+const MIEMBROS = [
+  { id: ANA_ID, casa_id: CASA_ID, nombre: "Ana", identificacion: "ANA1", rol: "member", activo: true },
+];
+
 function dashboardVacio() {
   return {
     miembros: [],
@@ -70,7 +74,7 @@ describe("InicioCasa", () => {
   it("muestra cada sección vacía sin error para una casa recién creada (TC-002)", async () => {
     vi.stubGlobal("fetch", mockFetch(dashboardVacio()));
 
-    render(<InicioCasa casaId={CASA_ID} />);
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
 
     expect(await screen.findByText("Todavía no hay gastos registrados.")).toBeInTheDocument();
     expect(screen.getByText("Todavía no hay miembros activos.")).toBeInTheDocument();
@@ -83,12 +87,30 @@ describe("InicioCasa", () => {
   it("muestra miembros, gastos, tareas y ranking cuando la casa tiene datos (TC-001)", async () => {
     vi.stubGlobal("fetch", mockFetch(dashboardConDatos()));
 
-    render(<InicioCasa casaId={CASA_ID} />);
+    render(<InicioCasa casaId={CASA_ID} miembros={MIEMBROS} />);
 
     expect(await screen.findByText("Ana")).toBeInTheDocument();
     expect(screen.getByText(/Compra semanal/)).toBeInTheDocument();
     expect(screen.getByText(/Sacar la basura/)).toBeInTheDocument();
     expect(screen.getAllByText(/8 pts/).length).toBeGreaterThan(0);
+  });
+
+  it('"Tareas completadas recientes" muestra el nombre del miembro, no su UUID (TC-003)', async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardConDatos()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    expect(await screen.findByText(/Ana completó una tarea/)).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(`${ANA_ID} completó`))).not.toBeInTheDocument();
+  });
+
+  it('la tarjeta "Ranking" del inicio también muestra el nombre del miembro, no su UUID', async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardConDatos()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    expect(await screen.findByText("Ana: 8 pts")).toBeInTheDocument();
+    expect(screen.queryByText(`${ANA_ID}: 8 pts`)).not.toBeInTheDocument();
   });
 
   it("muestra un error devuelto por la API al fallar la carga del dashboard", async () => {
@@ -102,7 +124,7 @@ describe("InicioCasa", () => {
       })
     );
 
-    render(<InicioCasa casaId={CASA_ID} />);
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/no existe/i);
   });

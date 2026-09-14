@@ -32,11 +32,15 @@ import {
 
 export interface TareasProps {
   casaId: string;
-  /** Id del Usuario autenticado (spec `usuarios-auth`, decodificado del
-   * JWT vía `obtenerUsuarioIdActual`) — usado solo para la lógica local
+  /** Spec `resolver-rol-usuario-en-casa` (REQ-003): el `Miembro.id` propio
+   * del Usuario autenticado EN ESTA CASA (resuelto en `App.tsx` cruzando
+   * `usuario_id` contra el JWT propio) — usado solo para la lógica local
    * de "¿soy yo el responsable?" (`puedeCompletar`); las llamadas a la
-   * API ya no lo necesitan, el actor se resuelve del JWT en el backend. */
-  usuarioId: string;
+   * API ya no lo necesitan, el actor se resuelve del JWT en el backend.
+   * Renombrada desde `usuarioId` (el `Usuario.id` global): ese nombre
+   * invitaba a comparar contra `tarea.responsableId` — un id de Miembro
+   * por-casa — que nunca coincidía salvo casualidad. */
+  miembroIdActual: string;
   rolUsuarioActual: Rol;
 }
 
@@ -52,18 +56,18 @@ const ESTADO_COLOR: Record<EstadoTarea, "default" | "warning" | "success"> = {
  * cualquiera si no tiene responsable, el propio responsable, o un
  * Administrador. Defensa en profundidad — la API vuelve a validar el
  * mismo criterio en `completar_tarea`. */
-function puedeCompletar(tarea: Tarea, usuarioId: string, rol: Rol): boolean {
+function puedeCompletar(tarea: Tarea, miembroIdActual: string, rol: Rol): boolean {
   if (tarea.estado === "completada") return false;
   if (rol === "admin") return true;
   if (!tarea.responsableId) return true;
-  return tarea.responsableId === usuarioId;
+  return tarea.responsableId === miembroIdActual;
 }
 
 /** Pantallas "Tareas" e "Historial de tareas" (REQ-001 a REQ-004, REQ-007,
  * REQ-008): listado por estado, alta de tareas (incluye recurrencia) y
  * acción "Marcar completada". El responsable se elige de los miembros
  * activos de la casa (id real de Miembro, nunca texto libre). */
-export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
+export function Tareas({ casaId, miembroIdActual, rolUsuarioActual }: TareasProps) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [historial, setHistorial] = useState<HistorialTarea[]>([]);
   const [miembros, setMiembros] = useState<Miembro[]>([]);
@@ -276,7 +280,7 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
                       : "Cualquiera"}
                   </TableCell>
                   <TableCell>
-                    {puedeCompletar(tarea, usuarioId, rolUsuarioActual) && (
+                    {puedeCompletar(tarea, miembroIdActual, rolUsuarioActual) && (
                       <Button type="button" size="small" onClick={() => handleCompletar(tarea.id)}>
                         Marcar completada
                       </Button>

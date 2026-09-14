@@ -10,7 +10,7 @@ import {
   suscribirseACierreSesion,
 } from "./api/authClient";
 import { AppNav, Pantalla } from "./AppNav";
-import { Casa, Miembro, listarMiembros } from "./api/casasClient";
+import { Casa, Miembro, Rol, listarMiembros } from "./api/casasClient";
 import { Balance } from "./pages/Balance";
 import { Gastos } from "./pages/Gastos";
 import { HistorialActividad } from "./pages/HistorialActividad";
@@ -80,7 +80,13 @@ export function App() {
     return <SelectorCasas onCasaElegida={setCasaActual} />;
   }
 
-  const usuarioId = obtenerUsuarioIdActual() ?? "";
+  const usuarioIdActual = obtenerUsuarioIdActual();
+  const miMiembro = miembros.find((m) => m.usuario_id === usuarioIdActual);
+  /** Spec `resolver-rol-usuario-en-casa` (REQ-002): nunca `"admin"` por
+   * default — mientras `miembros` carga o ante cualquier estado
+   * inconsistente donde mi propia fila todavía no aparece, el rol
+   * resuelto es el más restrictivo. */
+  const rolUsuarioActual: Rol = miMiembro?.rol ?? "member";
 
   return (
     <Box
@@ -103,14 +109,20 @@ export function App() {
           overflowX: "hidden",
         }}
       >
-        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} />}
-        {pantalla === "miembros" && <Miembros casaId={casaActual.id} rolUsuarioActual="admin" />}
+        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} miembros={miembros} />}
+        {pantalla === "miembros" && (
+          <Miembros casaId={casaActual.id} rolUsuarioActual={rolUsuarioActual} />
+        )}
         {pantalla === "gastos" && <Gastos casaId={casaActual.id} miembros={miembros} />}
         {pantalla === "balance" && <Balance casaId={casaActual.id} />}
         {pantalla === "tareas" && (
-          <Tareas casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
+          <Tareas
+            casaId={casaActual.id}
+            miembroIdActual={miMiembro?.id ?? ""}
+            rolUsuarioActual={rolUsuarioActual}
+          />
         )}
-        {pantalla === "ranking" && <Ranking casaId={casaActual.id} />}
+        {pantalla === "ranking" && <Ranking casaId={casaActual.id} miembros={miembros} />}
         {pantalla === "actividad" && <HistorialActividad casaId={casaActual.id} />}
       </Box>
     </Box>

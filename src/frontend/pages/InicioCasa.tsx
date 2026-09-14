@@ -8,10 +8,12 @@ import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
+import { Miembro } from "../api/casasClient";
 import { DashboardCasa, esApiError, obtenerDashboard } from "../api/dashboardClient";
 
 export interface InicioCasaProps {
   casaId: string;
+  miembros: Miembro[];
 }
 
 /** Pantalla "Inicio de la casa" (REQ-001): estado general de la casa de
@@ -19,8 +21,12 @@ export interface InicioCasaProps {
  * tareas completadas recientes y ranking. Cada sección se muestra vacía,
  * sin error, cuando la casa todavía no tiene gastos ni tareas (TC-002).
  * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
- * no recibe `usuarioId` como prop. */
-export function InicioCasa({ casaId }: InicioCasaProps) {
+ * no recibe `usuarioId` como prop. Spec
+ * `fix-nombres-miembro-ranking-dashboard`: recibe `miembros` para
+ * resolver el nombre del miembro que completó cada tarea reciente —
+ * mismo patrón que `Gastos.tsx`/`Balance.tsx`, con el id crudo como
+ * fallback. */
+export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
   const [dashboard, setDashboard] = useState<DashboardCasa | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -46,6 +52,10 @@ export function InicioCasa({ casaId }: InicioCasaProps) {
 
   if (cargando || !dashboard) {
     return <Typography>Cargando inicio...</Typography>;
+  }
+
+  function nombreDe(miembroId: string): string {
+    return miembros.find((m) => m.id === miembroId)?.nombre ?? miembroId;
   }
 
   return (
@@ -146,7 +156,7 @@ export function InicioCasa({ casaId }: InicioCasaProps) {
               {dashboard.tareasCompletadasRecientes.map((registro) => (
                 <ListItem key={registro.id} disableGutters>
                   <ListItemText
-                    primary={`${registro.miembro_id} completó una tarea (+${registro.puntos_obtenidos} pts)`}
+                    primary={`${nombreDe(registro.miembro_id)} completó una tarea (+${registro.puntos_obtenidos} pts)`}
                   />
                 </ListItem>
               ))}
@@ -166,7 +176,7 @@ export function InicioCasa({ casaId }: InicioCasaProps) {
             <List dense>
               {dashboard.ranking.map((entrada) => (
                 <ListItem key={entrada.miembroId} disableGutters>
-                  <ListItemText primary={`${entrada.miembroId}: ${entrada.puntos} pts`} />
+                  <ListItemText primary={`${nombreDe(entrada.miembroId)}: ${entrada.puntos} pts`} />
                 </ListItem>
               ))}
             </List>

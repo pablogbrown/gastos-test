@@ -46,6 +46,10 @@ def db_session(monkeypatch):
     )
     migration = importlib.import_module("src.db.migrations.0001_casas_miembros")
     migration.upgrade(engine)
+    # 0004 (spec `fix-historial-desactivacion-miembro`): agregar/desactivar
+    # miembro ahora registran actividad, que requiere esta tabla.
+    migration_actividad = importlib.import_module("src.db.migrations.0004_historial_actividad")
+    migration_actividad.upgrade(engine)
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email) para vincular al nuevo Miembro.
     migration_usuarios = importlib.import_module("src.db.migrations.0005_usuarios")
@@ -54,6 +58,7 @@ def db_session(monkeypatch):
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.miembro_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
     yield TestSession
 
 

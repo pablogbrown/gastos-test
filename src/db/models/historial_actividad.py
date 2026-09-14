@@ -16,6 +16,7 @@ class TipoActividadEnum(str, enum.Enum):
     TAREA_COMPLETADA = "tarea_completada"
     PUNTOS_OBTENIDOS = "puntos_obtenidos"
     MIEMBRO_AGREGADO = "miembro_agregado"
+    MIEMBRO_DESACTIVADO = "miembro_desactivado"
 
 
 class HistorialActividad(Base):

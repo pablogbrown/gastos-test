@@ -17,8 +17,10 @@ from sqlalchemy.exc import IntegrityError
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
+from src.db.models.historial_actividad import TipoActividadEnum
 from src.db.models.miembro import Miembro, RolEnum
 from src.db.models.usuario import Usuario
+from src.services.actividad_service import registrar_actividad
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 
 
@@ -82,6 +84,26 @@ def agregar_miembro(
                 f"No existe un Usuario registrado con el email {email_normalizado!r}."
             )
 
+        # Fix `fix-membresia-duplicada-actor` (REQ-001): un mismo Usuario no
+        # puede tener más de una fila Miembro activa en la misma casa — esto
+        # es lo que antes permitía que `resolver_actor_en_casa` encontrara
+        # más de una fila y crasheara con `MultipleResultsFound` (500).
+        # `.one_or_none()` es correcto acá (a diferencia de T2): antes de
+        # este fix nunca puede existir más de una fila activa para este
+        # (casa_id, usuario_id), justo porque esta validación recién se está
+        # agregando.
+        membresia_existente = (
+            session.query(Miembro)
+            .filter(
+                Miembro.casa_id == casa_id,
+                Miembro.usuario_id == usuario.id,
+                Miembro.activo.is_(True),
+            )
+            .one_or_none()
+        )
+        if membresia_existente is not None:
+            raise ValidationError("El usuario ya es miembro activo de esta casa.")
+
         duplicado = (
             session.query(Miembro)
             .filter(Miembro.casa_id == casa_id, Miembro.identificacion == identificacion)
@@ -110,6 +132,19 @@ def agregar_miembro(
                 f"Ya existe un miembro con identificación {identificacion!r} en esta casa."
             ) from exc
         session.refresh(miembro)
+
+        # Hook de actividad (REQ-001, spec `fix-historial-desactivacion-
+        # miembro`): se dispara recién después del commit de arriba, nunca
+        # antes, mismo patrón que `gasto_service`/`tarea_service` — así una
+        # entrada de actividad nunca describe un alta que en definitiva no
+        # llegó a confirmarse.
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.MIEMBRO_AGREGADO,
+            miembro.id,
+            f"{miembro.nombre} fue agregado a la casa.",
+        )
+
         return miembro
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
@@ -138,6 +173,19 @@ def desactivar_miembro(casa_id: UUID, miembro_id: UUID, actor: UUID) -> Miembro:
         miembro.activo = False
         session.commit()
         session.refresh(miembro)
+
+        # Hook de actividad (REQ-002, spec `fix-historial-desactivacion-
+        # miembro`): se dispara recién después del commit de arriba, nunca
+        # antes, mismo patrón que `gasto_service`/`tarea_service` — así una
+        # entrada de actividad nunca describe una baja que en definitiva no
+        # llegó a confirmarse.
+        registrar_actividad(
+            casa_id,
+            TipoActividadEnum.MIEMBRO_DESACTIVADO,
+            miembro.id,
+            f"{miembro.nombre} fue desactivado.",
+        )
+
         return miembro
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
@@ -206,6 +254,18 @@ def resolver_actor_en_casa(casa_id: UUID, usuario_id: UUID) -> UUID:
         if session.get(Casa, casa_id) is None:
             raise NotFoundError(f"La casa {casa_id} no existe.")
 
+        # Fix `fix-membresia-duplicada-actor` (REQ-002): `.one_or_none()`
+        # asume que nunca hay más de una fila Miembro activa para este
+        # (casa_id, usuario_id) — T1 impide que se CREEN nuevas duplicadas,
+        # pero un dato preexistente a este fix (o cualquier vía no
+        # anticipada) puede seguir violando esa asunción. `.first()` nunca
+        # lanza `MultipleResultsFound`: devuelve `None` si no hay filas, o
+        # la primera según `order_by`, sin importar cuántas existan.
+        # `Miembro` no tiene columna de fecha de creación (no se agrega una
+        # solo para este caso defensivo) — `order_by(Miembro.id)` da un
+        # orden estable y determinístico (mismo resultado en cada corrida),
+        # aunque arbitrario respecto a cuál membresía es la "correcta": el
+        # objetivo acá es eliminar el 500, no arbitrar intención de negocio.
         miembro = (
             session.query(Miembro)
             .filter(
@@ -213,7 +273,8 @@ def resolver_actor_en_casa(casa_id: UUID, usuario_id: UUID) -> UUID:
                 Miembro.usuario_id == usuario_id,
                 Miembro.activo.is_(True),
             )
-            .one_or_none()
+            .order_by(Miembro.id)
+            .first()
         )
         if miembro is None:
             raise PermissionDeniedError("El usuario no es miembro activo de esta casa.")

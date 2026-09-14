@@ -1,6 +1,7 @@
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import StarIcon from "@mui/icons-material/Star";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import Alert from "@mui/material/Alert";
@@ -25,6 +26,7 @@ const ETIQUETAS_TIPO: Record<Actividad["tipo"], string> = {
   tarea_completada: "Tarea completada",
   puntos_obtenidos: "Puntos",
   miembro_agregado: "Miembro agregado",
+  miembro_desactivado: "Miembro desactivado",
 };
 
 const ICONOS_TIPO: Record<Actividad["tipo"], JSX.Element> = {
@@ -33,6 +35,7 @@ const ICONOS_TIPO: Record<Actividad["tipo"], JSX.Element> = {
   tarea_completada: <CheckCircleIcon />,
   puntos_obtenidos: <StarIcon />,
   miembro_agregado: <PersonAddIcon />,
+  miembro_desactivado: <PersonRemoveIcon />,
 };
 
 /** Pantalla "Historial de actividad" (REQ-002, REQ-003): lista
