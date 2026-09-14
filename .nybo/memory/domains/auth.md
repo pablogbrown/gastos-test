@@ -6,6 +6,19 @@ auth domain
 <!-- Each convention has metadata as an HTML comment -->
 <!-- added: YYYY-MM-DD | feature: feature-name | confidence: high|medium|low | verified: YYYY-MM-DD -->
 
+<!-- added: 2026-09-14 | feature: usuarios-auth (auth-backend) | confidence: high | verified: 2026-09-14 -->
+- Backend identity resolution is centralized in `src/api/dependencies.py`:
+  `get_current_usuario` (decodes the `Authorization: Bearer <jwt>` header
+  via `auth_service.decodificar_token`, 401 on missing/invalid/expired)
+  and `resolver_actor_en_casa` (maps the authenticated `Usuario` to their
+  `Miembro` row for a given `casa_id`, 403 if not a member). Every
+  protected route depends on these via FastAPI `Depends(...)` — no route
+  reads `X-Usuario-Id` or any other identity header directly anymore.
+  `Usuario.id` (global) and `Miembro.id` (per-casa) are deliberately
+  different values since a Usuario can belong to more than one Casa; a
+  new route needs the `Miembro`, not the `Usuario`, resolve it via
+  `resolver_actor_en_casa`, never assume they're the same id.
+
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
