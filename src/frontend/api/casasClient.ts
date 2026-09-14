@@ -15,6 +15,11 @@ export type Rol = "admin" | "member";
 
 export interface Miembro {
   id: string;
+  /** Spec `resolver-rol-usuario-en-casa` (REQ-001): FK al `Usuario` global
+   * dueño de este `Miembro` en esta casa — cruzado en `App.tsx` contra
+   * `obtenerUsuarioIdActual()` para resolver "mi rol real" y "mi propio
+   * Miembro.id". `null` para filas sembradas antes de `usuarios-auth`. */
+  usuario_id: string | null;
   casa_id: string;
   nombre: string;
   identificacion: string;

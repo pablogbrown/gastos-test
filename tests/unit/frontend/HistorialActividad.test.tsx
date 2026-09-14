@@ -54,4 +54,27 @@ describe("HistorialActividad", () => {
     expect(items[0]).toHaveTextContent("Ana completó la tarea 'Lavar los platos'.");
     expect(items[1]).toHaveTextContent("Ana registró un gasto de $10000.");
   });
+
+  it("renderiza una entrada miembro_desactivado con su propio ícono y etiqueta (TC-004)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockFetch([
+        {
+          id: "e1",
+          casa_id: CASA_ID,
+          tipo: "miembro_desactivado",
+          miembro_id: "bruno",
+          fecha: "2026-01-03T10:00:00",
+          descripcion: "Bruno fue desactivado.",
+        },
+      ])
+    );
+
+    render(<HistorialActividad casaId={CASA_ID} />);
+
+    const items = await screen.findAllByRole("listitem");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent("Miembro desactivado");
+    expect(items[0]).toHaveTextContent("Bruno fue desactivado.");
+  });
 });

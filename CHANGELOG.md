@@ -33,7 +33,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - feat(usuarios-auth): reemplaza el header placeholder `X-Usuario-Id` (cualquier UUID sin verificar) por autenticación real con JWT (email + contraseña hasheada) en todas las rutas de casas, gastos, tareas y dashboard.
+- fix(auth): la UI ya no muestra "Agregar miembro"/"Desactivar" a un usuario con rol `member`, ni "Marcar completada" en tareas ajenas — el rol y la identidad de miembro se resuelven del JWT real en vez de estar hardcodeados a "admin".
 
 ### Fixed
 
+- fix(services): un Usuario ya no puede terminar con más de una membresía activa en la misma casa — evita que un crash `MultipleResultsFound` (500) rompa cualquier request autenticado de ese usuario a esa casa.
+- fix(services): agregar o desactivar un miembro ahora queda registrado en el Historial de actividad de la casa (antes ninguna de las dos acciones dejaba rastro).
 - fix(frontend): Ranking y el inicio de la casa muestran el nombre del miembro en vez de su UUID crudo, tanto en la tabla completa de Ranking como en el mini-ranking de la pantalla de Inicio.

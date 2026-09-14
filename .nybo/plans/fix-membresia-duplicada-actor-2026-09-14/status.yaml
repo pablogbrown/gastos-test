@@ -1,0 +1,32 @@
+feature: fix-membresia-duplicada-actor-2026-09-14
+status: shipped
+shipped_at: '2026-09-14T18:00:00Z'
+action_type: FIX
+profile: code
+created: '2026-09-14'
+approved_at: '2026-09-14'
+task_count: 2
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - auth.md
+exceptions:
+  - code: TASK_CAP_EXCEEDED
+    detail: 2 tasks vs the fix-mode default of 1 — closing the duplicate-membership entry point (T1) and hardening the crashing read (T2) are independently verifiable and both required to close out the critical finding; splitting into 2 separate fix specs would separate two halves of the same root cause.
+notes: |
+  rationale: spec.md; build narrative: evidence/build-results.md
+  Severity: CRITICAL. Also closes the uncertainty around a separate
+  incident (member deactivated an admin, 200 instead of 403) that
+  happened in the same QA session immediately after this exact crash —
+  see spec.md Intention.
+run_started_at: '2026-09-14T16:00:00Z'
+run_at: '2026-09-14T16:31:53Z'
+run_completed_at: '2026-09-14T16:31:53Z'
+run_duration: 1913
+verified_at: '2026-09-14T16:38:08Z'
+verified_duration: 375
+curated_at: '2026-09-14T16:42:13Z'
+curated_duration: 245
+pr_url: 'https://github.com/pablogbrown/gastos-test/pull/13'
+pr_number: 13
