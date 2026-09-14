@@ -1,5 +1,6 @@
 feature: fix-historial-desactivacion-miembro-2026-09-14
-status: ready
+status: shipped
+shipped_at: '2026-09-14T18:10:00Z'
 action_type: FIX
 profile: code
 created: '2026-09-14'
