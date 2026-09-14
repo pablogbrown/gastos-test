@@ -1,0 +1,19 @@
+feature: fix-historial-desactivacion-miembro-2026-09-14
+status: approved
+action_type: FIX
+profile: code
+created: '2026-09-14'
+approved_at: '2026-09-14'
+task_count: 2
+domain: services
+domains_referenced:
+  - services.md
+  - frontend.md
+exceptions:
+  - code: TASK_CAP_EXCEEDED
+    detail: 2 tasks vs the fix-mode default of 1 — backend event-logging wiring (T1) and frontend type recognition (T2) are independently verifiable and both required to close the audit-trail gap.
+notes: |
+  rationale: spec.md; build narrative: evidence/build-results.md
+  Severity: MEDIUM. Scope widened during planning from "add
+  miembro_desactivado" to also wire up the already-defined but
+  never-invoked miembro_agregado.
