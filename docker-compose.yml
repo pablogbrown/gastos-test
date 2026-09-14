@@ -1,0 +1,55 @@
+# Entorno local dockerizado de taskia (db + backend + frontend).
+# No usado en producción (ver .nybo/foundation/stack.yaml) — este archivo
+# reemplaza el flujo manual de venv/npm por `make up`, con Postgres real
+# en vez del fallback SQLite en memoria usado por los tests.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-taskia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskia}
+      POSTGRES_DB: ${POSTGRES_DB:-taskia}
+    volumes:
+      - taskia-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # -h 127.0.0.1 fuerza a pg_isready a validar el listener TCP real
+      # (el mismo que usa `backend` para conectarse) en vez del socket Unix
+      # local, que el propio entrypoint de la imagen postgres expone
+      # brevemente durante su fase de init-y-reinicio interna — sin -h,
+      # el healthcheck puede reportar "healthy" antes de que Postgres esté
+      # realmente aceptando conexiones TCP.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-taskia} -d ${POSTGRES_DB:-taskia}"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-taskia}:${POSTGRES_PASSWORD:-taskia}@db:5432/${POSTGRES_DB:-taskia}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./src/frontend:/app/src/frontend
+    ports:
+      - "5173:5173"
+
+volumes:
+  taskia-db-data:

@@ -1,0 +1,17 @@
+# Frontend image for local Docker development (taskia, Vite dev server).
+# Runs Vite's own dev server (not a production build served by nginx) —
+# see .nybo/plans/dockerize-local-env/feat/00-overview.md's Tradeoffs:
+# this environment prioritizes hot-reload iteration speed over fidelity
+# to the production static build.
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

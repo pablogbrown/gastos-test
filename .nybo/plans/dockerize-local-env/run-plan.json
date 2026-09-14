@@ -1,0 +1,74 @@
+{
+  "$schema_version": "2",
+  "feature_id": "dockerize-local-env",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/dockerize-local-env/feat/01-plan-01-backend-dockerfile.md",
+      "files_touched": ["Dockerfile.backend", ".dockerignore"],
+      "deps": [],
+      "est_minutes": 30,
+      "test_cases": ["TC-002", "TC-003", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El backend construye como imagen Docker, usa PostgreSQL cuando DATABASE_URL está seteada y SQLite en memoria cuando no, y las 4 migraciones corren limpias contra Postgres real.",
+        "postcondition": "Sin DATABASE_URL, el engine sigue apuntando a sqlite:///:memory:; contra un Postgres real, las 4 migraciones crean todas las tablas y el enum de rol sin error.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": "tests/unit/db/database_url_fallback.test.py,tests/integration/db/postgres_migrations.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/dockerize-local-env/feat/01-plan-02-frontend-dockerfile.md",
+      "files_touched": ["Dockerfile.frontend", "vite.config.ts"],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El frontend construye como imagen Docker y su proxy es configurable por variable de entorno sin romper el default local.",
+        "postcondition": "Sin VITE_API_PROXY_TARGET, el proxy sigue apuntando a http://127.0.0.1:8000 exactamente como antes de esta spec.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/vite-proxy-config.test.ts",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/dockerize-local-env/feat/01-plan-03-docker-compose.md",
+      "files_touched": ["docker-compose.yml", ".env.example"],
+      "deps": ["T1", "T2"],
+      "est_minutes": 40,
+      "test_cases": ["TC-001"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "docker-compose levanta db/backend/frontend en orden correcto (Postgres healthy antes de que el backend arranque) y expone el backend en el puerto 8000.",
+        "postcondition": "GET http://localhost:8000/health responde 200 después de `docker compose up`.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/infra/docker_compose_up.test.sh",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/dockerize-local-env/feat/01-plan-04-makefile.md",
+      "files_touched": ["Makefile", "README.md"],
+      "deps": ["T3"],
+      "est_minutes": 20,
+      "test_cases": ["TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "make test ejecuta la suite de pytest contra el backend dockerizado y refleja su resultado (exit code).",
+        "postcondition": "`make test` sale con código 0 cuando la suite pasa y no-cero cuando falla.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/infra/make_test_target.test.sh",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
