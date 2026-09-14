@@ -82,8 +82,43 @@ describe("Miembros", () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Nombre"), "Ana");
     await user.type(screen.getByLabelText("Identificación"), "ANA1");
+    await user.type(screen.getByLabelText("Email"), "ana@example.com");
     await user.click(screen.getByRole("button", { name: "Agregar miembro" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/identificación/i);
+  });
+
+  it("envía el email del usuario a vincular al agregar un miembro (regresión: 'field required')", async () => {
+    const fetchMock = mockFetchListaMiembros();
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => [],
+    }));
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => ({
+        id: "55555555-5555-5555-5555-555555555555",
+        casa_id: CASA_ID,
+        nombre: "Pablo",
+        identificacion: "papá",
+        rol: "member",
+        activo: true,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
+    await screen.findByLabelText("Agregar miembro");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Nombre"), "Pablo");
+    await user.type(screen.getByLabelText("Identificación"), "papá");
+    await user.type(screen.getByLabelText("Email"), "pablo@example.com");
+    await user.click(screen.getByRole("button", { name: "Agregar miembro" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const [, altaRequest] = fetchMock.mock.calls[1];
+    const body = JSON.parse((altaRequest as RequestInit).body as string);
+    expect(body).toEqual({ nombre: "Pablo", identificacion: "papá", email: "pablo@example.com" });
   });
 });

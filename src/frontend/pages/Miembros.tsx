@@ -32,6 +32,7 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
   const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [nombre, setNombre] = useState("");
   const [identificacion, setIdentificacion] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -57,9 +58,10 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
     event.preventDefault();
     setError(null);
     try {
-      await agregarMiembro(casaId, nombre, identificacion);
+      await agregarMiembro(casaId, nombre, identificacion, email);
       setNombre("");
       setIdentificacion("");
+      setEmail("");
       await cargarMiembros();
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo agregar el miembro.");
@@ -105,6 +107,15 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
               value={identificacion}
               onChange={(event) => setIdentificacion(event.target.value)}
               size="small"
+            />
+            <TextField
+              id="email-miembro"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              size="small"
+              helperText="Debe ser un email ya registrado"
             />
             <Button type="submit" variant="contained">
               Agregar miembro
