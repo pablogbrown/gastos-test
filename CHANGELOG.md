@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- feat(db): Dockerized local dev environment (Postgres, backend, frontend) orchestrated via docker-compose with a Makefile wrapper. (`.nybo/plans/dockerize-local-env/`)
+
 - feat(gestion-domestica): creación de casas y gestión de miembros con roles Administrador/Miembro — permite armar el grupo que comparte gastos y tareas, con desactivación de miembros que preserva su historial.
 - feat(gestion-domestica): registro de gastos compartidos con división automática entre participantes y balance por miembro — responde quién pagó, quién debe, y cuánto transferir para saldar cuentas.
 - feat(gestion-domestica): gestión de tareas domésticas con estados, asignación, recurrencia, sistema de puntos y ranking de participación.
