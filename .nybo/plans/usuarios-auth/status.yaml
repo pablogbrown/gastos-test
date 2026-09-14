@@ -1,5 +1,6 @@
 feature: usuarios-auth
-status: verified
+status: shipped
+shipped_at: '2026-09-14T13:35:00Z'
 ship_eligible: true
 kind: multi_spec
 profile: code
@@ -14,12 +15,12 @@ specs:
     status: verified
     branch: feat/usuarios-auth--auth-backend
     pr_url: https://github.com/pablogbrown/gastos-test/pull/10
-    shipped_at: null
+    shipped_at: '2026-09-14T13:35:00Z'
   - id: auth-frontend
     status: verified
     branch: feat/usuarios-auth--auth-frontend
     pr_url: https://github.com/pablogbrown/gastos-test/pull/11
-    shipped_at: null
+    shipped_at: '2026-09-14T13:35:00Z'
 notes: |
   Rationale completa en plan.md (Split Rationale).
   Reemplaza el header placeholder X-Usuario-Id por JWT real en las
