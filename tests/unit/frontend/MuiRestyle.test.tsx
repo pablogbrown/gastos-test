@@ -83,13 +83,13 @@ describe("TC-003 — las 8 pantallas usan componentes MUI, no HTML nativo sin es
   });
 
   it("CrearCasa", () => {
-    const { container } = render(conTema(<CrearCasa usuarioId={USUARIO_ID} onCasaCreada={vi.fn()} />));
+    const { container } = render(conTema(<CrearCasa onCasaCreada={vi.fn()} />));
     assertSoloControlesMui(container);
   });
 
   it("Miembros", async () => {
     const { container, findByText } = render(
-      conTema(<Miembros casaId={CASA_ID} usuarioId={USUARIO_ID} rolUsuarioActual="admin" />)
+      conTema(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />)
     );
     await findByText("Miembros");
     assertSoloControlesMui(container);
@@ -97,14 +97,14 @@ describe("TC-003 — las 8 pantallas usan componentes MUI, no HTML nativo sin es
 
   it("Gastos", async () => {
     const { container, findByLabelText } = render(
-      conTema(<Gastos casaId={CASA_ID} usuarioId={USUARIO_ID} miembros={[]} />)
+      conTema(<Gastos casaId={CASA_ID} miembros={[]} />)
     );
     await findByLabelText("Nuevo gasto");
     assertSoloControlesMui(container);
   });
 
   it("Balance", async () => {
-    const { container, findByText } = render(conTema(<Balance casaId={CASA_ID} usuarioId={USUARIO_ID} />));
+    const { container, findByText } = render(conTema(<Balance casaId={CASA_ID} />));
     await findByText("Transferencias sugeridas");
     assertSoloControlesMui(container);
   });
@@ -118,20 +118,20 @@ describe("TC-003 — las 8 pantallas usan componentes MUI, no HTML nativo sin es
   });
 
   it("Ranking", async () => {
-    const { container, findByText } = render(conTema(<Ranking casaId={CASA_ID} usuarioId={USUARIO_ID} />));
+    const { container, findByText } = render(conTema(<Ranking casaId={CASA_ID} />));
     await findByText("Ranking");
     assertSoloControlesMui(container);
   });
 
   it("InicioCasa", async () => {
-    const { container, findByText } = render(conTema(<InicioCasa casaId={CASA_ID} usuarioId={USUARIO_ID} />));
+    const { container, findByText } = render(conTema(<InicioCasa casaId={CASA_ID} />));
     await findByText("Todavía no hay miembros activos.");
     assertSoloControlesMui(container);
   });
 
   it("HistorialActividad", async () => {
     const { container, findByText } = render(
-      conTema(<HistorialActividad casaId={CASA_ID} usuarioId={USUARIO_ID} />)
+      conTema(<HistorialActividad casaId={CASA_ID} />)
     );
     await findByText("Todavía no hay actividad registrada.");
     assertSoloControlesMui(container);

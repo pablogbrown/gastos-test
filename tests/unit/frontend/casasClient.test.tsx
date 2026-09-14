@@ -31,7 +31,7 @@ describe("casasClient — manejo de error.detail no-string (422 de Pydantic)", (
   it("convierte un detail-array de Pydantic a un mensaje de texto legible", async () => {
     let caught: unknown;
     try {
-      await crearCasa("", "00000000-0000-0000-0000-000000000000");
+      await crearCasa("");
     } catch (err) {
       caught = err;
     }

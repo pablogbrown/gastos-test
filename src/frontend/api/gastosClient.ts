@@ -1,6 +1,11 @@
 // Cliente HTTP delgado sobre la API de T3 (categorías, gastos, balance).
 // No contiene lógica de negocio: solo arma requests y tipa las respuestas.
-import { ApiError, esApiError, formatErrorDetail } from "./casasClient";
+//
+// Spec `usuarios-auth`: usa `fetchAutenticado` (Authorization: Bearer
+// <jwt>) en vez de `X-Usuario-Id` — ver `casasClient.ts` para el mismo
+// patrón.
+import { fetchAutenticado } from "./authClient";
+import { ApiError, esApiError, formatErrorDetail } from "./httpError";
 
 export type { ApiError };
 export { esApiError };
@@ -72,34 +77,24 @@ async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
   return (await resp.json()) as T;
 }
 
-export async function listarCategorias(casaId: string, usuarioId: string): Promise<Categoria[]> {
-  const resp = await fetch(`${API_BASE}/${casaId}/categorias`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function listarCategorias(casaId: string): Promise<Categoria[]> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/categorias`);
   return parseJsonOrThrow<Categoria[]>(resp);
 }
 
-export async function crearCategoria(
-  casaId: string,
-  nombre: string,
-  usuarioId: string
-): Promise<Categoria> {
-  const resp = await fetch(`${API_BASE}/${casaId}/categorias`, {
+export async function crearCategoria(casaId: string, nombre: string): Promise<Categoria> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/categorias`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Usuario-Id": usuarioId },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nombre }),
   });
   return parseJsonOrThrow<Categoria>(resp);
 }
 
-export async function registrarGasto(
-  casaId: string,
-  gasto: NuevoGasto,
-  usuarioId: string
-): Promise<Gasto> {
-  const resp = await fetch(`${API_BASE}/${casaId}/gastos`, {
+export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise<Gasto> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/gastos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Usuario-Id": usuarioId },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       descripcion: gasto.descripcion,
       importe: gasto.importe,
@@ -112,16 +107,12 @@ export async function registrarGasto(
   return parseJsonOrThrow<Gasto>(resp);
 }
 
-export async function listarGastos(casaId: string, usuarioId: string): Promise<Gasto[]> {
-  const resp = await fetch(`${API_BASE}/${casaId}/gastos`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function listarGastos(casaId: string): Promise<Gasto[]> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/gastos`);
   return parseJsonOrThrow<Gasto[]>(resp);
 }
 
-export async function obtenerBalance(casaId: string, usuarioId: string): Promise<BalanceResponse> {
-  const resp = await fetch(`${API_BASE}/${casaId}/balance`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function obtenerBalance(casaId: string): Promise<BalanceResponse> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/balance`);
   return parseJsonOrThrow<BalanceResponse>(resp);
 }

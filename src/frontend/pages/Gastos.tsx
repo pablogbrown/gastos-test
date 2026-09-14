@@ -31,15 +31,16 @@ import {
 
 export interface GastosProps {
   casaId: string;
-  usuarioId: string;
   miembros: Miembro[];
 }
 
 /** Pantalla "Gastos" (REQ-001, REQ-002, REQ-003, REQ-008): formulario de
  * alta de un gasto y su historial. "Todos los miembros" viene
  * preseleccionado (REQ-003); el historial no filtra por `activo` — la
- * API ya incluye gastos de miembros desactivados (REQ-008/TC-010). */
-export function Gastos({ casaId, usuarioId, miembros }: GastosProps) {
+ * API ya incluye gastos de miembros desactivados (REQ-008/TC-010).
+ * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
+ * no recibe `usuarioId` como prop. */
+export function Gastos({ casaId, miembros }: GastosProps) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [descripcion, setDescripcion] = useState("");
@@ -54,15 +55,15 @@ export function Gastos({ casaId, usuarioId, miembros }: GastosProps) {
   const cargar = useCallback(async () => {
     try {
       const [listaCategorias, historial] = await Promise.all([
-        listarCategorias(casaId, usuarioId),
-        listarGastos(casaId, usuarioId),
+        listarCategorias(casaId),
+        listarGastos(casaId),
       ]);
       setCategorias(listaCategorias);
       setGastos(historial);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar los gastos.");
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargar();
@@ -72,7 +73,7 @@ export function Gastos({ casaId, usuarioId, miembros }: GastosProps) {
     event.preventDefault();
     setError(null);
     try {
-      await crearCategoria(casaId, nuevaCategoria, usuarioId);
+      await crearCategoria(casaId, nuevaCategoria);
       setNuevaCategoria("");
       await cargar();
     } catch (err) {
@@ -84,17 +85,13 @@ export function Gastos({ casaId, usuarioId, miembros }: GastosProps) {
     event.preventDefault();
     setError(null);
     try {
-      await registrarGasto(
-        casaId,
-        {
-          descripcion,
-          importe,
-          fecha,
-          categoriaId,
-          participantes: todosLosMiembros ? undefined : seleccionados,
-        },
-        usuarioId
-      );
+      await registrarGasto(casaId, {
+        descripcion,
+        importe,
+        fecha,
+        categoriaId,
+        participantes: todosLosMiembros ? undefined : seleccionados,
+      });
       setDescripcion("");
       setImporte("");
       setFecha("");

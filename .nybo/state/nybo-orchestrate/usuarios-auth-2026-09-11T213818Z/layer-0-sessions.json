@@ -1,0 +1,13 @@
+[
+  {
+    "spec": "auth-backend",
+    "worktree": ".claude/worktrees/feat-usuarios-auth--auth-backend",
+    "branch": "feat/usuarios-auth--auth-backend",
+    "base_commit": "429bb03b691ec9c7b5faa409cb8a2ec4ed7a366b",
+    "dispatched_at": "2026-09-11T21:38:18Z",
+    "completed_at": "2026-09-11T22:10:00Z",
+    "outcome": "verified",
+    "verified": { "new_commits": true, "status_advanced_past_in_progress": true, "coordinator_smoke_test": "127/127 pytest + manual JWT flow (registro/login/crear casa/401 sin token/GET casas/mias) all pass" },
+    "pr_url": "https://github.com/pablogbrown/gastos-test/pull/10"
+  }
+]

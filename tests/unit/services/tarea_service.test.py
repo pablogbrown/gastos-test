@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.db.models.tarea import EstadoTareaEnum
+from src.db.models.usuario import Usuario
 from src.services.casa_service import crear_casa
 from src.services.exceptions import (
     ConflictError,
@@ -19,6 +20,20 @@ from src.services.exceptions import (
 )
 from src.services.miembro_service import agregar_miembro
 from src.services.tarea_service import completar_tarea, crear_tarea, procesar_recurrencia
+
+
+def _crear_usuario_de_prueba(session_factory, email):
+    """Inserta un Usuario real (spec `usuarios-auth`): `agregar_miembro`
+    ahora exige que el email vinculado ya exista."""
+    session = session_factory()
+    try:
+        usuario = Usuario(id=uuid.uuid4(), email=email, password_hash="hash-de-prueba")
+        session.add(usuario)
+        session.commit()
+        session.refresh(usuario)
+        return usuario
+    finally:
+        session.close()
 
 
 @pytest.fixture()
@@ -34,9 +49,13 @@ def db_session(monkeypatch):
     # disparan un hook a `actividad_service.registrar_actividad`, que
     # requiere la tabla `historial_actividad`.
     migracion_actividad = importlib.import_module("src.db.migrations.0004_historial_actividad")
+    # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
+    # Usuario real (por email) para vincular al nuevo Miembro.
+    migracion_usuarios = importlib.import_module("src.db.migrations.0005_usuarios")
     migracion_casas.upgrade(engine)
     migracion_tareas.upgrade(engine)
     migracion_actividad.upgrade(engine)
+    migracion_usuarios.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
@@ -47,9 +66,14 @@ def db_session(monkeypatch):
 
 
 def _casa_con_admin_y_miembro(db_session):
-    admin_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", admin_id)
-    ana = agregar_miembro(casa.id, "Ana", "ANA1", admin_id)
+    usuario_id = uuid.uuid4()
+    casa = crear_casa("Casa Brown", usuario_id)
+    # Spec `usuarios-auth`: `Miembro.id` ya no es el `usuario_id` del
+    # creador (ver Design Rationale de `crear_casa`) — el actor que usan
+    # los demás servicios de esta casa es el `Miembro.id` del admin.
+    admin_id = casa.miembros[0].id
+    ana_usuario = _crear_usuario_de_prueba(db_session, "ana@example.com")
+    ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, admin_id)
     return casa, admin_id, ana
 
 
@@ -127,7 +151,8 @@ def test_completar_tarea_ya_completada_es_rechazada_sin_puntos_adicionales(db_se
 
 def test_solo_el_responsable_asignado_o_un_admin_puede_completar_la_tarea(db_session):
     casa, admin_id, ana = _casa_con_admin_y_miembro(db_session)
-    bruno = agregar_miembro(casa.id, "Bruno", "BRU1", admin_id)
+    bruno_usuario = _crear_usuario_de_prueba(db_session, "bruno@example.com")
+    bruno = agregar_miembro(casa.id, "Bruno", "BRU1", bruno_usuario.email, admin_id)
     tarea = crear_tarea(
         casa.id, "Pagar servicios", 8, actor=admin_id, responsable_id=ana.id
     )

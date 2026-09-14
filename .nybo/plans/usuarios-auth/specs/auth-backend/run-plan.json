@@ -1,0 +1,94 @@
+{
+  "$schema_version": "2",
+  "feature_id": "auth-backend",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-backend/feat/01-plan-01-usuario-model.md",
+      "files_touched": ["src/db/models/usuario.py", "src/db/models/miembro.py", "src/db/migrations/0005_usuarios.py", "requirements.txt"],
+      "deps": [],
+      "est_minutes": 30,
+      "test_cases": [],
+      "interfaces_produced": [
+        {"name": "Usuario", "signature": "class Usuario(id, email, password_hash, nombre, creado_en)", "kind": "class"}
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El esquema de Usuario persiste datos válidos y rechaza emails duplicados.",
+        "postcondition": "Insertar dos Usuarios con el mismo email lanza una violación de constraint.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/db/usuario.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-backend/feat/01-plan-02-auth-service.md",
+      "files_touched": ["src/services/auth_service.py", "src/services/exceptions.py"],
+      "deps": ["T1"],
+      "est_minutes": 50,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004"],
+      "interfaces_produced": [
+        {"name": "registrar_usuario", "signature": "(email: str, password: str, nombre: str | None) -> Usuario", "kind": "function"},
+        {"name": "autenticar_usuario", "signature": "(email: str, password: str) -> Usuario", "kind": "function"},
+        {"name": "emitir_token", "signature": "(usuario_id: UUID) -> str", "kind": "function"},
+        {"name": "decodificar_token", "signature": "(token: str) -> UUID", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T1", "name": "Usuario"}
+      ],
+      "contract": {
+        "statement": "El servicio de auth hashea contraseñas, emite JWTs válidos y nunca revela si un email existe en un login fallido.",
+        "postcondition": "autenticar_usuario con credenciales incorrectas y con un email inexistente lanzan la misma excepción con el mismo mensaje.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/services/auth_service.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-backend/feat/01-plan-03-auth-routes-migration.md",
+      "files_touched": ["src/api/routes/auth.py", "src/api/routes/casas.py", "src/api/routes/gastos.py", "src/api/routes/tareas.py", "src/api/routes/dashboard.py", "src/api/main.py", "src/api/dependencies.py"],
+      "deps": ["T2"],
+      "est_minutes": 60,
+      "test_cases": ["TC-005", "TC-006", "TC-009"],
+      "interfaces_produced": [
+        {"name": "auth_router", "signature": "APIRouter", "kind": "export"},
+        {"name": "get_current_usuario", "signature": "(authorization: str) -> UUID", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "autenticar_usuario"},
+        {"from": "T2", "name": "emitir_token"},
+        {"from": "T2", "name": "decodificar_token"}
+      ],
+      "contract": {
+        "statement": "Las 4 rutas existentes requieren un JWT válido en vez de X-Usuario-Id, y un usuario no-miembro de una casa recibe 403.",
+        "postcondition": "Un request sin Authorization a POST /casas responde 401; con un JWT de un usuario no-miembro de la casa objetivo, la ruta correspondiente responde 403.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/auth_migration.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/usuarios-auth/specs/auth-backend/feat/01-plan-04-multi-casa-linking.md",
+      "files_touched": ["src/services/casa_service.py", "src/services/miembro_service.py", "src/api/routes/casas.py", "src/api/schemas.py"],
+      "deps": ["T3"],
+      "est_minutes": 50,
+      "test_cases": ["TC-007", "TC-008", "TC-010"],
+      "interfaces_produced": [
+        {"name": "listar_casas_de_usuario", "signature": "(usuario_id: UUID) -> Casa[]", "kind": "function"}
+      ],
+      "interfaces_consumed": [
+        {"from": "T2", "name": "registrar_usuario"}
+      ],
+      "contract": {
+        "statement": "Un Usuario puede tener un Miembro en más de una Casa, todos vinculados a su mismo usuario_id, y puede listarlas vía GET /casas/mias.",
+        "postcondition": "Un Usuario que crea 2 casas y es agregado a una tercera por email tiene 3 filas Miembro, las 3 con el mismo usuario_id, y GET /casas/mias devuelve exactamente esas 3.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": "tests/unit/services/casa_service.test.py,tests/integration/services/miembro_service.test.py",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

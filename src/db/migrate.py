@@ -16,6 +16,7 @@ _MIGRACIONES = (
     "0002_gastos",
     "0003_tareas",
     "0004_historial_actividad",
+    "0005_usuarios",
 )
 
 

@@ -1,8 +1,14 @@
 """Servicio de Miembro: alta, baja y guard de membresía activa.
 
-Cubre REQ-002, REQ-003, REQ-005 y expone `requiere_membresia_activa`,
-el guard transversal que las specs `gastos` y `tareas-puntos` importan
-directamente para cumplir REQ-005 (nadie opera sin ser miembro activo).
+Cubre REQ-002, REQ-003, REQ-005 (`casas-miembros`) y expone
+`requiere_membresia_activa`, el guard transversal que las specs `gastos`
+y `tareas-puntos` importan directamente para cumplir REQ-005 (nadie opera
+sin ser miembro activo).
+
+`resolver_actor_en_casa` (spec `usuarios-auth`) es un guard adicional y
+distinto: traduce la identidad global resuelta del JWT (`Usuario`) al
+`Miembro.id` correspondiente dentro de una Casa puntual, para la capa de
+rutas (T3). Ninguno de los dos reemplaza al otro.
 """
 import uuid
 from uuid import UUID
@@ -12,6 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from src.db.base import get_session
 from src.db.models.casa import Casa
 from src.db.models.miembro import Miembro, RolEnum
+from src.db.models.usuario import Usuario
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 
 
@@ -31,17 +38,33 @@ def _validar_actor_admin(session, casa_id: UUID, actor: UUID) -> None:
         raise PermissionDeniedError("Solo un Administrador puede realizar esta acción.")
 
 
-def agregar_miembro(casa_id: UUID, nombre: str, identificacion: str, actor: UUID) -> Miembro:
-    """Agrega un nuevo Miembro (rol `member`) a la casa `casa_id`.
+def agregar_miembro(
+    casa_id: UUID, nombre: str, identificacion: str, email_usuario: str, actor: UUID
+) -> Miembro:
+    """Agrega un nuevo Miembro (rol `member`) a la casa `casa_id`,
+    vinculado al Usuario existente identificado por `email_usuario`
+    (spec `usuarios-auth`, REQ-004, TC-008).
 
     Requiere que `actor` sea Administrador activo de esa casa (TC-006).
     Rechaza identificación duplicada dentro de la misma casa (TC-004),
     delegando la garantía última al constraint único de T1.
+
+    Nota de diseño (spec `usuarios-auth`): antes de esta spec, el cliente
+    podía enviar cualquier UUID como identidad del nuevo miembro (sin
+    verificación). Ahora se exige que ya exista un Usuario registrado con
+    `email_usuario` — 404 si no existe, "un usuario debe registrarse
+    antes de que lo agreguen a una casa" — y el `Miembro` nuevo queda
+    vinculado a su `usuario_id`, nunca a uno creado al vuelo. Esto es lo
+    que hace real la regla "un Usuario puede estar en varias Casas": un
+    mismo Usuario puede tener múltiples filas `Miembro` (una por Casa),
+    todas con el mismo `usuario_id`.
     """
     if not nombre or not str(nombre).strip():
         raise ValidationError("El nombre del miembro no puede estar vacío.")
     if not identificacion or not str(identificacion).strip():
         raise ValidationError("La identificación del miembro no puede estar vacía.")
+    if not email_usuario or not str(email_usuario).strip():
+        raise ValidationError("El email del usuario a agregar no puede estar vacío.")
 
     session = get_session()
     try:
@@ -49,6 +72,15 @@ def agregar_miembro(casa_id: UUID, nombre: str, identificacion: str, actor: UUID
             raise NotFoundError(f"La casa {casa_id} no existe.")
 
         _validar_actor_admin(session, casa_id, actor)
+
+        email_normalizado = email_usuario.strip().lower()
+        usuario = (
+            session.query(Usuario).filter(Usuario.email == email_normalizado).one_or_none()
+        )
+        if usuario is None:
+            raise NotFoundError(
+                f"No existe un Usuario registrado con el email {email_normalizado!r}."
+            )
 
         duplicado = (
             session.query(Miembro)
@@ -63,6 +95,7 @@ def agregar_miembro(casa_id: UUID, nombre: str, identificacion: str, actor: UUID
         miembro = Miembro(
             id=uuid.uuid4(),
             casa_id=casa_id,
+            usuario_id=usuario.id,
             nombre=nombre.strip(),
             identificacion=identificacion.strip(),
             rol=RolEnum.MEMBER,
@@ -134,10 +167,56 @@ def requiere_membresia_activa(casa_id: UUID, usuario_id: UUID) -> bool:
     """Guard transversal (REQ-005): True si `usuario_id` es miembro activo
     de `casa_id`. Reutilizado por las specs `gastos` y `tareas-puntos`
     antes de permitir registrar un gasto o completar una tarea (TC-008).
+
+    Nota (spec `usuarios-auth`): a pesar del nombre del parámetro, esta
+    función NO cambia con `usuarios-auth` — sigue recibiendo un
+    `Miembro.id` (la identidad dentro de esa casa puntual), exactamente
+    como la llaman hoy `gasto_service`/`tarea_service`. La resolución de
+    la identidad *global* (`Usuario`, JWT) a un `Miembro.id` por casa vive
+    en `resolver_actor_en_casa`, más abajo — un guard nuevo y distinto,
+    usado solo por la capa de rutas (T3).
     """
     session = get_session()
     try:
         miembro = _obtener_miembro_o_none(session, casa_id, usuario_id)
         return miembro is not None and miembro.activo
+    finally:
+        session.close()
+
+
+def resolver_actor_en_casa(casa_id: UUID, usuario_id: UUID) -> UUID:
+    """Traduce la identidad global de un Usuario autenticado (JWT,
+    `usuario_id`) al `Miembro.id` que le corresponde dentro de `casa_id`
+    (spec `usuarios-auth`, REQ-003/REQ-005).
+
+    Es el puente entre `get_current_usuario` (que solo conoce el
+    `Usuario` global) y los servicios ya existentes de esta y otras specs
+    (`casa_service`, `gasto_service`, `tarea_service`, ...), que siguen
+    sin cambios: todos ellos reciben y usan un `Miembro.id` como `actor`,
+    nunca un `usuario_id` global.
+
+    Lanza `NotFoundError` (404) si la casa no existe, y
+    `PermissionDeniedError` (403) si el Usuario no tiene un Miembro activo
+    en ella (TC-009) — el mismo caso que `requiere_membresia_activa`
+    devolviendo False, pero acá se necesita el id concreto del Miembro,
+    no solo el booleano.
+    """
+    session = get_session()
+    try:
+        if session.get(Casa, casa_id) is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+
+        miembro = (
+            session.query(Miembro)
+            .filter(
+                Miembro.casa_id == casa_id,
+                Miembro.usuario_id == usuario_id,
+                Miembro.activo.is_(True),
+            )
+            .one_or_none()
+        )
+        if miembro is None:
+            raise PermissionDeniedError("El usuario no es miembro activo de esta casa.")
+        return miembro.id
     finally:
         session.close()

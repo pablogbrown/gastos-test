@@ -2,11 +2,12 @@
 (`dashboard_service`, `actividad_service`).
 
 Mismo patrón que el resto de los routers de esta feature (`casas.py`,
-`tareas.py`, `gastos.py`): ninguna regla de negocio vive aquí, y el
-"actor"/usuario autenticado llega vía el header `X-Usuario-Id` hasta que
-exista un dominio `auth`. Son rutas de solo lectura sin guard de rol
-adicional más allá de membresía activa: cualquier miembro puede
-consultarlas (REQ-003).
+`tareas.py`, `gastos.py`): ninguna regla de negocio vive aquí. El
+"actor"/usuario autenticado se resuelve desde un JWT real vía
+`resolver_actor_en_casa` (`src/api/dependencies.py`, spec
+`usuarios-auth`) — ya no vía el header placeholder `X-Usuario-Id`. Son
+rutas de solo lectura sin guard de rol adicional más allá de membresía
+activa: cualquier miembro puede consultarlas (REQ-003).
 
 Los esquemas de respuesta de las secciones ya existentes (miembros,
 gastos, balance, tareas, ranking) se reutilizan de `src.api.schemas` y de
@@ -18,9 +19,10 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
+from src.api.dependencies import resolver_actor_en_casa
 from src.api.routes.gastos import BalancePorMiembroOut, GastoOut
 from src.api.schemas import HistorialTareaOut, MiembroOut, RankingEntryOut, TareaOut
 from src.services.actividad_service import obtener_actividad
@@ -61,7 +63,7 @@ class ActividadOut(BaseModel):
 
 
 @dashboard_router.get("/{casa_id}/inicio", response_model=DashboardOut)
-def obtener_inicio_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def obtener_inicio_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         dashboard = armar_dashboard(casa_id)
     except NotFoundError as exc:
@@ -77,7 +79,7 @@ def obtener_inicio_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Us
 
 
 @dashboard_router.get("/{casa_id}/actividad", response_model=List[ActividadOut])
-def obtener_actividad_endpoint(casa_id: UUID, actor: UUID = Header(..., alias="X-Usuario-Id")):
+def obtener_actividad_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         return obtener_actividad(casa_id)
     except NotFoundError as exc:

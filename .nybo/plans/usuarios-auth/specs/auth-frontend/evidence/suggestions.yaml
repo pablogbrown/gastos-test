@@ -1,0 +1,46 @@
+suggestions:
+  - id: shared-frontend-http-helper-partially-resolved
+    area: frontend
+    observation: >
+      `gastos`'s own suggestion (`shared-frontend-http-helper`) proposed
+      extracting a shared `src/frontend/api/http.ts` once a third client
+      module existed. This spec extracted `ApiError`/`esApiError`/
+      `formatErrorDetail` into `src/frontend/api/httpError.ts` (driven by
+      a different need — avoiding a circular import with the new
+      `authClient.ts`, see build-results.md Judgment #1) and
+      `casasClient.ts` re-exports them for backward compatibility. But
+      `parseJsonOrThrow` itself is still duplicated verbatim across all
+      5 client files (`casasClient`/`gastosClient`/`tareasClient`/
+      `dashboardClient`/`authClient`) — the original suggestion is only
+      half-resolved.
+    suggested_when: the next frontend API client added to the project,
+      or a dedicated small cleanup spec — extract `parseJsonOrThrow` into
+      `httpError.ts` alongside the types it already shares.
+  - id: usuario-id-vs-miembro-id-conflation-frontend
+    area: frontend
+    observation: >
+      `Tareas.tsx`'s `puedeCompletar()` compares the authenticated
+      Usuario's id (now `obtenerUsuarioIdActual()`, decoded from the JWT)
+      against `tarea.responsableId`, which is actually a Miembro id — the
+      same global-identity-vs-per-casa-identity conflation
+      `auth-backend`'s own suggestions/observations flagged server-side
+      (`resolver_actor_en_casa`). No test case in this spec exercises it
+      correctly (TC-004 in `Tareas.test.tsx` passes a raw string as both
+      "the current usuario" and "the responsable", pre-dating this spec),
+      so "Marcar completada" visibility for an assigned task is not
+      reliable against real backend data today.
+    suggested_when: a future spec that surfaces a real per-casa Miembro
+      identity to the frontend (e.g. once `GET /casas/mias` or a
+      "mi membresía en esta casa" endpoint returns the caller's own
+      Miembro.id) — wire `Tareas.tsx` to that instead of the Usuario id.
+  - id: node-webstorage-vitest-shadowing
+    area: frontend
+    observation: >
+      Node >= 22's built-in `localStorage`/`sessionStorage` globals
+      shadow jsdom's implementation under Vitest and throw
+      "X is not a function" on any call unless
+      `--no-experimental-webstorage` is passed to the test runner's Node
+      process. Fixed project-wide via `vite.config.ts`'s
+      `test.poolOptions.{forks,threads}.execArgv`. Worth capturing as a
+      `frontend` domain convention so it isn't rediscovered per-spec.
+    suggested_when: next `/nybo-curate` pass over the `frontend` domain.
