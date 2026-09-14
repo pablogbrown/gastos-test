@@ -1,5 +1,6 @@
 feature: resolver-rol-usuario-en-casa
-status: ready
+status: shipped
+shipped_at: '2026-09-14T18:05:00Z'
 profile: code
 action_type: UPD
 created_at: '2026-09-14'
