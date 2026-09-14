@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- feat(frontend): Restyled all 8 screens with Material UI; added a responsive BottomNavigation/AppBar shell at the sm (600px) breakpoint, preserving existing behavior. (`.nybo/plans/ui-modernization/`)
+
 - feat(db): Dockerized local dev environment (Postgres, backend, frontend) orchestrated via docker-compose with a Makefile wrapper. (`.nybo/plans/dockerize-local-env/`)
 
 - feat(gestion-domestica): creación de casas y gestión de miembros con roles Administrador/Miembro — permite armar el grupo que comparte gastos y tareas, con desactivación de miembros que preserva su historial.
