@@ -26,3 +26,22 @@ db domain
   `Usuario.__table__` to migration `0001`'s own `TABLES` list. Whenever a
   new FK is added to an existing migration, verify against real Postgres
   (not just SQLite) before considering it verified.
+
+<!-- added: 2026-09-14 | feature: fix-historial-desactivacion-miembro | confidence: high | verified: 2026-09-14 -->
+- [DB-01] Adding a new member to a `sqlalchemy.Enum(SomePythonEnum)` column
+  (e.g. a new `TipoActividadEnum` value) is invisible on SQLite (the table
+  is always recreated fresh from the current model in every test) but
+  requires its own migration on Postgres: `create_all`/`checkfirst` never
+  retrofits an *existing* native Postgres enum type with a new label.
+  Without a companion `ALTER TYPE <type> ADD VALUE IF NOT EXISTS
+  '<LABEL>'` migration, any environment where the owning table already
+  existed before the enum grew (a persisted `docker-compose` volume, a
+  real deployment) rejects the new value with
+  `psycopg2.errors.InvalidTextRepresentation`, even though every test
+  passes. The label to add is the enum member's **`.name`** (uppercase,
+  e.g. `MIEMBRO_DESACTIVADO`), not its `.value` — SQLAlchemy stores
+  Python enum members in a native Postgres enum column by name, not by
+  value, by default. Run `ALTER TYPE ... ADD VALUE` outside any explicit
+  transaction (`isolation_level="AUTOCOMMIT"`) for portability across
+  Postgres versions. See `src/db/migrations/0006_miembro_desactivado_enum_value.py`
+  and its regression test in `tests/integration/db/postgres_migrations.test.py`.

@@ -12,13 +12,40 @@ monorepo:
       path: .
 dev_runbook:
   discovered_at: '2026-09-11'
+  updated_at: '2026-09-14'
   subprojects:
     - name: root
       path: .
-      run_targets: []
-      test_commands: {}
+      run_targets:
+        - name: docker-compose (db + backend + frontend)
+          command: make up
+          notes: >-
+            Backend on :8000 (uvicorn --reload, src/api/main.py, real
+            Postgres via docker-compose's db service), frontend on :5173
+            (vite). Backend runs migrations on every startup
+            (src/db/migrate.py). `make down` stops it; volumes persist
+            data across restarts (see db.md's [DB-01] gotcha re: enum
+            migrations on a persisted volume).
+      test_commands:
+        backend: .venv/bin/python3 -m pytest tests/
+        backend_docker: docker compose exec backend python3 -m pytest
+        frontend: npm run test -- --run
+        build: npm run build
+        lint: npm run lint
+      smoke:
+        how_to: >-
+          Probe backend healthcheck implicitly via GET /casas/mias with a
+          Bearer token (see auth below); frontend via navigating to
+          http://localhost:5173 in a real browser.
+        surfaces:
+          api: http://localhost:8000
+          frontend: http://localhost:5173
       auth:
-        found: false
+        found: true
+        token_how_to: >-
+          POST /auth/registro {email, password} to create a Usuario, then
+          POST /auth/login {email, password} -> {access_token}. Use as
+          `Authorization: Bearer <access_token>` on every other endpoint.
 quality_tools:
   coverage:
     tool: null

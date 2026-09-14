@@ -11,5 +11,7 @@ trust:
   auto_evaluate: false
 dashboard:
   enabled: false
+testing:
+  coverage_threshold: 80
 maintenance:
   last_reviewed: '2026-09-11'

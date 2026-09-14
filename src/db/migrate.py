@@ -17,6 +17,7 @@ _MIGRACIONES = (
     "0003_tareas",
     "0004_historial_actividad",
     "0005_usuarios",
+    "0006_miembro_desactivado_enum_value",
 )
 
 
