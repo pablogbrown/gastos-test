@@ -9,6 +9,17 @@ const ADMIN_ID = "22222222-2222-2222-2222-222222222222";
 const ANA_ID = "33333333-3333-3333-3333-333333333333";
 const BRUNO_ID = "44444444-4444-4444-4444-444444444444";
 
+function miembroActivo(id: string, nombre: string) {
+  return {
+    id,
+    casa_id: CASA_ID,
+    nombre,
+    identificacion: id,
+    rol: "member",
+    activo: true,
+  };
+}
+
 function tareaSinResponsable() {
   return {
     id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -39,7 +50,7 @@ function tareaConResponsable(responsableId: string) {
   };
 }
 
-function mockFetch(tareas: unknown[], historial: unknown[] = []) {
+function mockFetch(tareas: unknown[], historial: unknown[] = [], miembros: unknown[] = []) {
   return vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.endsWith("/historial")) {
@@ -47,6 +58,9 @@ function mockFetch(tareas: unknown[], historial: unknown[] = []) {
     }
     if (url.includes("/tareas")) {
       return { ok: true, json: async () => tareas };
+    }
+    if (url.includes("/miembros")) {
+      return { ok: true, json: async () => miembros };
     }
     return { ok: true, json: async () => [] };
   });
@@ -100,8 +114,10 @@ describe("Tareas", () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => [] })
       .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
       .mockResolvedValueOnce({ ok: true, json: async () => tareaSinResponsable() })
       .mockResolvedValueOnce({ ok: true, json: async () => [tareaSinResponsable()] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
       .mockResolvedValueOnce({ ok: true, json: async () => [] });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -121,6 +137,7 @@ describe("Tareas", () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => [tareaSinResponsable()] })
       .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
       .mockResolvedValueOnce({
         ok: false,
         status: 409,
@@ -136,6 +153,37 @@ describe("Tareas", () => {
     await user.click(screen.getByRole("button", { name: "Marcar completada" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/ya fue completada/i);
+  });
+
+  it("asigna el responsable de una tarea eligiendo un miembro existente (regresión: 'value is not a valid uuid')", async () => {
+    const pablo = miembroActivo("55555555-5555-5555-5555-555555555555", "Pablo");
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [pablo] })
+      .mockResolvedValueOnce({ ok: true, json: async () => tareaConResponsable(pablo.id) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [tareaConResponsable(pablo.id)] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [pablo] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Tareas casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    await screen.findByLabelText("Crear tarea");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Nombre"), "Barrer la casa");
+    await user.type(screen.getByLabelText("Puntos"), "1");
+    await user.selectOptions(screen.getByLabelText("Responsable (opcional)"), "Pablo");
+    await user.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(7));
+    const [, crearRequest] = fetchMock.mock.calls[3];
+    const body = JSON.parse((crearRequest as RequestInit).body as string);
+    expect(body.responsableId).toBe(pablo.id);
+
+    expect(await screen.findByText("Pagar servicios")).toBeInTheDocument();
+    expect(await screen.findByRole("cell", { name: "Pablo" })).toBeInTheDocument();
   });
 
   beforeEach(() => {

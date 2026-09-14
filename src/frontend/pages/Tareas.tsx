@@ -18,7 +18,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
-import { Rol } from "../api/casasClient";
+import { Miembro, Rol, listarMiembros } from "../api/casasClient";
 import {
   completarTarea,
   crearTarea,
@@ -61,12 +61,12 @@ function puedeCompletar(tarea: Tarea, usuarioId: string, rol: Rol): boolean {
 
 /** Pantallas "Tareas" e "Historial de tareas" (REQ-001 a REQ-004, REQ-007,
  * REQ-008): listado por estado, alta de tareas (incluye recurrencia) y
- * acción "Marcar completada". El responsable se ingresa por id de miembro
- * (texto libre) — un selector con nombres reales queda para la spec
- * `dashboard-actividad`, que integra esta pantalla en la navegación. */
+ * acción "Marcar completada". El responsable se elige de los miembros
+ * activos de la casa (id real de Miembro, nunca texto libre). */
 export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [historial, setHistorial] = useState<HistorialTarea[]>([]);
+  const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [nombre, setNombre] = useState("");
   const [puntos, setPuntos] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -80,12 +80,14 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const [listaTareas, listaHistorial] = await Promise.all([
+      const [listaTareas, listaHistorial, listaMiembros] = await Promise.all([
         listarTareas(casaId),
         listarHistorial(casaId),
+        listarMiembros(casaId),
       ]);
       setTareas(listaTareas);
       setHistorial(listaHistorial);
+      setMiembros(listaMiembros);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar las tareas.");
     } finally {
@@ -173,13 +175,27 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
               size="small"
             />
 
-            <TextField
-              id="responsable-tarea"
-              label="Responsable (opcional)"
-              value={responsableId}
-              onChange={(e) => setResponsableId(e.target.value)}
-              size="small"
-            />
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel htmlFor="responsable-tarea" shrink>
+                Responsable (opcional)
+              </InputLabel>
+              <Select
+                native
+                id="responsable-tarea"
+                label="Responsable (opcional)"
+                value={responsableId}
+                onChange={(e) => setResponsableId(e.target.value)}
+              >
+                <option value="">Cualquiera</option>
+                {miembros
+                  .filter((m) => m.activo)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre}
+                    </option>
+                  ))}
+              </Select>
+            </FormControl>
 
             <TextField
               id="fecha-tarea"
@@ -254,7 +270,11 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
                   <TableCell>
                     <Chip label={tarea.estado} color={ESTADO_COLOR[tarea.estado]} size="small" />
                   </TableCell>
-                  <TableCell>{tarea.responsableId ?? "Cualquiera"}</TableCell>
+                  <TableCell>
+                    {tarea.responsableId
+                      ? miembros.find((m) => m.id === tarea.responsableId)?.nombre ?? tarea.responsableId
+                      : "Cualquiera"}
+                  </TableCell>
                   <TableCell>
                     {puedeCompletar(tarea, usuarioId, rolUsuarioActual) && (
                       <Button type="button" size="small" onClick={() => handleCompletar(tarea.id)}>
