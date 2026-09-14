@@ -1,0 +1,13 @@
+[
+  {
+    "spec": "auth-frontend",
+    "worktree": ".claude/worktrees/feat-usuarios-auth--auth-frontend",
+    "branch": "feat/usuarios-auth--auth-frontend",
+    "base_commit": "1059ec49a4d1e6d589a15b6a03b7b8ccbb036027",
+    "dispatched_at": "2026-09-14T12:40:00Z",
+    "completed_at": "2026-09-14T13:10:00Z",
+    "outcome": "verified",
+    "verified": { "new_commits": true, "status_advanced_past_in_progress": true, "coordinator_e2e_test": "real backend+frontend+Chrome: registro/login/crear casa/navegar shell/logout/re-login, no console errors" },
+    "pr_url": "https://github.com/pablogbrown/gastos-test/pull/11"
+  }
+]

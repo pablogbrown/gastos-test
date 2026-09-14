@@ -1,5 +1,6 @@
 feature: usuarios-auth
-status: in-progress
+status: verified
+ship_eligible: true
 kind: multi_spec
 profile: code
 action_type: UPD
@@ -15,8 +16,9 @@ specs:
     pr_url: https://github.com/pablogbrown/gastos-test/pull/10
     shipped_at: null
   - id: auth-frontend
-    status: approved
+    status: verified
     branch: feat/usuarios-auth--auth-frontend
+    pr_url: https://github.com/pablogbrown/gastos-test/pull/11
     shipped_at: null
 notes: |
   Rationale completa en plan.md (Split Rationale).
