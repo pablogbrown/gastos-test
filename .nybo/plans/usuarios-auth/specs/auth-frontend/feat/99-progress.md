@@ -21,7 +21,18 @@
 - [x] `[TC-004]` *[UNIT]* — Un 401 dispara logout automático
 - [x] `[TC-005]` *[UNIT]* — Usuario con 2 casas ve el selector
 - [x] `[TC-006]` *[UNIT]* — Cerrar sesión borra el JWT y vuelve a Login
-- [ ] `[TC-007]` *[E2E]* — Flujo completo registro→login→crear casa→navegar shell (no verificable en este sandbox — sin navegador real ni backend corriendo; pendiente de un pase humano/E2E antes de shippear)
+- [x] `[TC-007]` *[E2E]* — Flujo completo registro→login→crear casa→navegar shell — verificado por la sesión coordinadora con Chrome real (ver nota)
+
+#### Outcome Smoke Test
+Verificado en vivo por la sesión coordinadora (el builder no tenía
+navegador ni backend+frontend corriendo juntos disponibles): backend
+real (`uvicorn`) + frontend real (`vite`, proxy a `/auth` y `/casas`) +
+Chrome real. Flujo completo: `POST /auth/registro` (vía curl) → Login
+en la UI → sesión establecida → "Tus casas" vacío → Crear casa → shell
+existente con navegación superior (viewport ancho) poblado
+correctamente (Miembros/Gastos/Balance/Tareas/Ranking) → "Cerrar
+sesión" vuelve a Login → re-login → "Casa E2E" sigue en el selector →
+entrar de nuevo muestra el mismo estado. Sin errores de consola.
 
 ## Completion Summary
 Las 4 tasks implementadas end-to-end con TDD: pantallas Login/Registro
@@ -30,10 +41,20 @@ Las 4 tasks implementadas end-to-end con TDD: pantallas Login/Registro
 automático en 401), selector de casas + gate de 3 estados en `App.tsx`
 (Login/Registro → SelectorCasas → shell existente), y los 4 clientes de
 API existentes migrados de `X-Usuario-Id` a `Authorization: Bearer <jwt>`
-sin cambiar su lógica de negocio. TC-001 a TC-006 en verde; TC-007
-(navegador real) no pudo ejecutarse en este sandbox — ver Judgment/
-Verification Evidence en `evidence/1/build-results.md`. Suite completa:
+sin cambiar su lógica de negocio. TC-001 a TC-006 en verde en el build;
+TC-007 (navegador real) fue verificado posteriormente por la sesión
+coordinadora — ver Outcome Smoke Test arriba y
+`evidence/1/build-results.md` para el detalle del build. Suite completa:
 `npm run build`/`npm run lint`/`npm run test` limpios (55/55 tests).
+
+**Hallazgo durante esa verificación, ya corregido**: al integrar
+`auth-backend` con `dockerize-local-env` por primera vez (mergeando
+`main` dentro de `feat/usuarios-auth`), la migración `0001` fallaba
+contra un PostgreSQL real recién creado (creaba `miembros` con una FK a
+`usuarios` antes de que esa tabla existiera — SQLite no valida esto,
+Postgres sí). Corregido directamente en `feat/usuarios-auth` (no en
+esta branch), verificado con `docker compose up` desde cero + flujo
+JWT completo contra Postgres real.
 
 ## History
 | # | Date | Event | Task | Test | Note |

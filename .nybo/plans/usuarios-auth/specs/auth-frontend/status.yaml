@@ -25,8 +25,10 @@ notes: |
   que ui-modernization esté mergeada (dependencia externa, otra feature)
   para reutilizar su tema/shell — ver plan.md.
 
-  TC-007 (E2E, navegador real) y el gate [HUMAN] de revisión visual de
-  10-verify.md no pudieron verificarse en el sandbox del builder (sin
-  navegador real ni backend+frontend corriendo juntos) — ver
-  evidence/1/build-results.md. Pendientes de un pase humano/E2E antes de
-  /nybo-ship.
+  TC-007 (E2E, navegador real) verificado post-build por la sesión
+  coordinadora: backend+frontend reales + Chrome real, flujo completo
+  registro/login/crear casa/navegar shell/logout/re-login, sin errores
+  de consola. También encontró y corrigió, en feat/usuarios-auth (no en
+  esta branch), un bug de integración entre auth-backend y
+  dockerize-local-env: migración 0001 fallaba contra Postgres real por
+  una FK a una tabla creada recién en 0005.
