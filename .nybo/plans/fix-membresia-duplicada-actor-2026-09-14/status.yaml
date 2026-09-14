@@ -1,0 +1,21 @@
+feature: fix-membresia-duplicada-actor-2026-09-14
+status: approved
+action_type: FIX
+profile: code
+created: '2026-09-14'
+approved_at: '2026-09-14'
+task_count: 2
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - auth.md
+exceptions:
+  - code: TASK_CAP_EXCEEDED
+    detail: 2 tasks vs the fix-mode default of 1 — closing the duplicate-membership entry point (T1) and hardening the crashing read (T2) are independently verifiable and both required to close out the critical finding; splitting into 2 separate fix specs would separate two halves of the same root cause.
+notes: |
+  rationale: spec.md; build narrative: evidence/build-results.md
+  Severity: CRITICAL. Also closes the uncertainty around a separate
+  incident (member deactivated an admin, 200 instead of 403) that
+  happened in the same QA session immediately after this exact crash —
+  see spec.md Intention.
