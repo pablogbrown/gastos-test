@@ -43,6 +43,9 @@ def client(monkeypatch):
         poolclass=StaticPool,
     )
     importlib.import_module("src.db.migrations.0001_casas_miembros").upgrade(engine)
+    # 0004 (spec `fix-historial-desactivacion-miembro`): agregar/desactivar
+    # miembro ahora registran actividad, que requiere esta tabla.
+    importlib.import_module("src.db.migrations.0004_historial_actividad").upgrade(engine)
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email) para vincular al nuevo Miembro.
     importlib.import_module("src.db.migrations.0005_usuarios").upgrade(engine)
@@ -50,6 +53,7 @@ def client(monkeypatch):
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.miembro_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
 
     app = FastAPI()
     app.include_router(casas_router)

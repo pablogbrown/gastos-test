@@ -30,9 +30,9 @@ declare (aunque el cambio de TypeScript en sí no requiere que el backend
 esté corriendo para compilar).
 
 ## Done When
-- [ ] TC-004 pasa.
-- [ ] `npm run build` (`tsc --noEmit` + `vite build`) sin errores.
-- [ ] `npm run test -- --run` completo sigue en verde.
+- [x] TC-004 pasa.
+- [x] `npm run build` (`tsc --noEmit` + `vite build`) sin errores.
+- [x] `npm run test -- --run` completo sigue en verde.
 
 ## Interfaces Produced
 Ninguna nueva — extiende un tipo y dos `Record` ya exportados/usados

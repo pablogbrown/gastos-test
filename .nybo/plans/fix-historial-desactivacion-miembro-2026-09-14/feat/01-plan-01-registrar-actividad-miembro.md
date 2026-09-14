@@ -33,8 +33,8 @@ toca el mismo archivo (`miembro_service.py`) pero una región de código
 distinta (el final de cada función, no la validación de entrada).
 
 ## Done When
-- [ ] TC-001, TC-002, TC-003 pasan.
-- [ ] `pytest tests/` completo sigue en verde.
+- [x] TC-001, TC-002, TC-003 pasan.
+- [x] `pytest tests/` completo sigue en verde.
 
 ## Interfaces Produced
 - `TipoActividadEnum.MIEMBRO_DESACTIVADO` — `{name: "MIEMBRO_DESACTIVADO", signature: "str enum member", kind: "export"}`
