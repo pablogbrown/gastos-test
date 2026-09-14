@@ -109,7 +109,7 @@ export function Tareas({ casaId, miembroIdActual, rolUsuarioActual }: TareasProp
     try {
       await crearTarea(casaId, {
         nombre,
-        puntos: Number(puntos),
+        puntos: puntos === "" ? undefined : Number(puntos),
         descripcion: descripcion || undefined,
         responsableId: responsableId || undefined,
         fechaPrevista: fechaPrevista || undefined,

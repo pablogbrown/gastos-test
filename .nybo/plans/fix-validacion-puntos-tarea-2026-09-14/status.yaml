@@ -1,0 +1,24 @@
+feature: fix-validacion-puntos-tarea-2026-09-14
+status: shipped
+shipped_at: '2026-09-14T18:20:00Z'
+action_type: FIX
+profile: code
+created: '2026-09-14'
+approved_at: '2026-09-14'
+verified_at: '2026-09-14'
+curated_at: '2026-09-14'
+task_count: 1
+test_case_count: 2
+domain: frontend
+domains_referenced:
+  - frontend.md
+branch: fix/validacion-puntos-tarea
+pr_url: https://github.com/pablogbrown/gastos-test/pull/16
+pr_number: 16
+kind: single_spec
+notes: |
+  rationale: spec.md; build narrative: evidence/1/build-results.md
+  Severity: LOW. Single-file frontend type-conversion fix.
+  BUILD cycle 1: execute (T1 TDD red/green) -> verify (spec-level,
+  green: 59/59 tests, build clean, lint clean) -> curate (one frontend
+  domain convention captured). No open decisions.yaml entries.

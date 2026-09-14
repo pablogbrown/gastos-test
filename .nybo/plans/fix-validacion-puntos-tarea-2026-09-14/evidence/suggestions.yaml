@@ -1,0 +1,17 @@
+suggestions:
+  - id: SUGG-001
+    area: frontend/forms
+    observation: >
+      Optional numeric fields backed by a "required via absence, not
+      via client validation" backend contract (see src/api/schemas.py's
+      Optional[int]=None pattern) need their client-side empty-string
+      state mapped explicitly to `undefined` before Number() coercion,
+      not `Number(value)` directly (which turns "" into 0). Tareas.tsx's
+      `puntos` field had this bug; worth a quick audit of other numeric
+      form fields in the app (e.g. any future optional quantity/amount
+      inputs) for the same pattern.
+    severity: low
+    suggested_action: >
+      Consider a small shared helper (e.g. `numOrUndefined(value: string)`)
+      in the frontend api layer to standardize this conversion and avoid
+      re-introducing the same class of bug in new forms.
