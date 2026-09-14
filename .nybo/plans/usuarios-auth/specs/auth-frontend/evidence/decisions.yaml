@@ -1,0 +1,8 @@
+decisions: []
+# No open blocking or non-blocking decisions. Every judgment call made
+# during this build stayed within builder authority at trust level
+# semi-autonomous (spec-deviation class) — see evidence/1/build-results.md's
+# Judgment section for the full list and rationale. TC-007 (E2E) and the
+# 10-verify.md [HUMAN] visual gate are flagged as pending in status.yaml
+# and 99-progress.md, not as decisions — nothing here needs a human call
+# before this sub-spec's PR can be reviewed.

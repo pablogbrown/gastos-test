@@ -16,15 +16,16 @@ import { esApiError, obtenerRanking, RankingEntry } from "../api/tareasClient";
 
 export interface RankingProps {
   casaId: string;
-  usuarioId: string;
 }
 
 const MEDALLAS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
 /** Pantalla "Ranking" (REQ-006): tabla de miembros ordenada por puntos
  * totales de mayor a menor, tal como la devuelve `calcular_ranking` — no
- * se reordena en el cliente para no divergir del criterio del servicio. */
-export function Ranking({ casaId, usuarioId }: RankingProps) {
+ * se reordena en el cliente para no divergir del criterio del servicio.
+ * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
+ * no recibe `usuarioId` como prop. */
+export function Ranking({ casaId }: RankingProps) {
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -32,13 +33,13 @@ export function Ranking({ casaId, usuarioId }: RankingProps) {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      setRanking(await obtenerRanking(casaId, usuarioId));
+      setRanking(await obtenerRanking(casaId));
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar el ranking.");
     } finally {
       setCargando(false);
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargar();

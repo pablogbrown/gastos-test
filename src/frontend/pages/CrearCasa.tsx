@@ -10,15 +10,15 @@ import { FormEvent, useState } from "react";
 import { Casa, crearCasa, esApiError } from "../api/casasClient";
 
 export interface CrearCasaProps {
-  usuarioId: string;
   onCasaCreada: (casa: Casa) => void;
 }
 
 /** Formulario "Crear casa" (REQ-001). Al crearse, notifica al padre con la
  * casa nueva para que navegue a la pantalla de miembros (T4 no incluye un
  * router propio; la navegación queda a cargo de quien componga esta
- * pantalla). */
-export function CrearCasa({ usuarioId, onCasaCreada }: CrearCasaProps) {
+ * pantalla). Spec `usuarios-auth`: el actor se resuelve del JWT en el
+ * backend — ya no recibe `usuarioId` como prop. */
+export function CrearCasa({ onCasaCreada }: CrearCasaProps) {
   const [nombre, setNombre] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -28,7 +28,7 @@ export function CrearCasa({ usuarioId, onCasaCreada }: CrearCasaProps) {
     setError(null);
     setEnviando(true);
     try {
-      const casa = await crearCasa(nombre, usuarioId);
+      const casa = await crearCasa(nombre);
       setNombre("");
       onCasaCreada(casa);
     } catch (err) {

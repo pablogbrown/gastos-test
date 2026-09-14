@@ -19,24 +19,24 @@ import { BalanceResponse, esApiError, obtenerBalance } from "../api/gastosClient
 
 export interface BalanceProps {
   casaId: string;
-  usuarioId: string;
 }
 
 /** Pantalla "Balance" (REQ-005, REQ-006): cuánto pagó y le correspondía
  * pagar a cada miembro, más las transferencias sugeridas para saldar
- * cuentas. */
-export function Balance({ casaId, usuarioId }: BalanceProps) {
+ * cuentas. Spec `usuarios-auth`: el actor se resuelve del JWT en el
+ * backend — ya no recibe `usuarioId` como prop. */
+export function Balance({ casaId }: BalanceProps) {
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     try {
-      const data = await obtenerBalance(casaId, usuarioId);
+      const data = await obtenerBalance(casaId);
       setBalance(data);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar el balance.");
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargar();

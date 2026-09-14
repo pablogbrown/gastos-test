@@ -19,15 +19,16 @@ import { puedeGestionarMiembros } from "../api/permisos";
 
 export interface MiembrosProps {
   casaId: string;
-  usuarioId: string;
   rolUsuarioActual: Rol;
 }
 
 /** Pantalla "Miembros" (REQ-002, REQ-003, REQ-004): lista miembros
  * activos/inactivos, permite dar de alta y, solo si el usuario actual es
  * Administrador, desactivar un miembro. La ocultación de la acción es
- * defensa en profundidad — la API ya rechaza la operación por rol. */
-export function Miembros({ casaId, usuarioId, rolUsuarioActual }: MiembrosProps) {
+ * defensa en profundidad — la API ya rechaza la operación por rol.
+ * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
+ * no recibe `usuarioId` como prop. */
+export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
   const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [nombre, setNombre] = useState("");
   const [identificacion, setIdentificacion] = useState("");
@@ -39,14 +40,14 @@ export function Miembros({ casaId, usuarioId, rolUsuarioActual }: MiembrosProps)
   const cargarMiembros = useCallback(async () => {
     setCargando(true);
     try {
-      const lista = await listarMiembros(casaId, usuarioId);
+      const lista = await listarMiembros(casaId);
       setMiembros(lista);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar la lista de miembros.");
     } finally {
       setCargando(false);
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargarMiembros();
@@ -56,7 +57,7 @@ export function Miembros({ casaId, usuarioId, rolUsuarioActual }: MiembrosProps)
     event.preventDefault();
     setError(null);
     try {
-      await agregarMiembro(casaId, nombre, identificacion, usuarioId);
+      await agregarMiembro(casaId, nombre, identificacion);
       setNombre("");
       setIdentificacion("");
       await cargarMiembros();
@@ -68,7 +69,7 @@ export function Miembros({ casaId, usuarioId, rolUsuarioActual }: MiembrosProps)
   async function handleDesactivar(miembroId: string) {
     setError(null);
     try {
-      await desactivarMiembro(casaId, miembroId, usuarioId);
+      await desactivarMiembro(casaId, miembroId);
       await cargarMiembros();
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo desactivar el miembro.");

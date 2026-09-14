@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { HistorialActividad } from "../../../src/frontend/pages/HistorialActividad";
 
 const CASA_ID = "11111111-1111-1111-1111-111111111111";
-const USUARIO_ID = "22222222-2222-2222-2222-222222222222";
 
 function mockFetch(actividad: unknown[]) {
   return vi.fn().mockResolvedValue({ ok: true, json: async () => actividad });
@@ -18,7 +17,7 @@ describe("HistorialActividad", () => {
   it("muestra un mensaje vacío cuando la casa no tiene actividad registrada", async () => {
     vi.stubGlobal("fetch", mockFetch([]));
 
-    render(<HistorialActividad casaId={CASA_ID} usuarioId={USUARIO_ID} />);
+    render(<HistorialActividad casaId={CASA_ID} />);
 
     expect(
       await screen.findByText("Todavía no hay actividad registrada.")
@@ -48,7 +47,7 @@ describe("HistorialActividad", () => {
       ])
     );
 
-    render(<HistorialActividad casaId={CASA_ID} usuarioId={USUARIO_ID} />);
+    render(<HistorialActividad casaId={CASA_ID} />);
 
     const items = await screen.findAllByRole("listitem");
     expect(items).toHaveLength(2);
