@@ -33,3 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - feat(usuarios-auth): reemplaza el header placeholder `X-Usuario-Id` (cualquier UUID sin verificar) por autenticación real con JWT (email + contraseña hasheada) en todas las rutas de casas, gastos, tareas y dashboard.
+
+### Fixed
+
+- fix(services): un Usuario ya no puede terminar con más de una membresía activa en la misma casa — evita que un crash `MultipleResultsFound` (500) rompa cualquier request autenticado de ese usuario a esa casa.
