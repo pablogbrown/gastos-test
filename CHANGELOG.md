@@ -33,3 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - feat(usuarios-auth): reemplaza el header placeholder `X-Usuario-Id` (cualquier UUID sin verificar) por autenticación real con JWT (email + contraseña hasheada) en todas las rutas de casas, gastos, tareas y dashboard.
+
+### Fixed
+
+- fix(services): agregar o desactivar un miembro ahora queda registrado en el Historial de actividad de la casa (antes ninguna de las dos acciones dejaba rastro).
