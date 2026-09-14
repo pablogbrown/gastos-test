@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { InicioCasa } from "../../../src/frontend/pages/InicioCasa";
 
 const CASA_ID = "11111111-1111-1111-1111-111111111111";
-const USUARIO_ID = "22222222-2222-2222-2222-222222222222";
 const ANA_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
 function dashboardVacio() {
@@ -71,7 +70,7 @@ describe("InicioCasa", () => {
   it("muestra cada sección vacía sin error para una casa recién creada (TC-002)", async () => {
     vi.stubGlobal("fetch", mockFetch(dashboardVacio()));
 
-    render(<InicioCasa casaId={CASA_ID} usuarioId={USUARIO_ID} />);
+    render(<InicioCasa casaId={CASA_ID} />);
 
     expect(await screen.findByText("Todavía no hay gastos registrados.")).toBeInTheDocument();
     expect(screen.getByText("Todavía no hay miembros activos.")).toBeInTheDocument();
@@ -84,7 +83,7 @@ describe("InicioCasa", () => {
   it("muestra miembros, gastos, tareas y ranking cuando la casa tiene datos (TC-001)", async () => {
     vi.stubGlobal("fetch", mockFetch(dashboardConDatos()));
 
-    render(<InicioCasa casaId={CASA_ID} usuarioId={USUARIO_ID} />);
+    render(<InicioCasa casaId={CASA_ID} />);
 
     expect(await screen.findByText("Ana")).toBeInTheDocument();
     expect(screen.getByText(/Compra semanal/)).toBeInTheDocument();
@@ -103,7 +102,7 @@ describe("InicioCasa", () => {
       })
     );
 
-    render(<InicioCasa casaId={CASA_ID} usuarioId={USUARIO_ID} />);
+    render(<InicioCasa casaId={CASA_ID} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/no existe/i);
   });

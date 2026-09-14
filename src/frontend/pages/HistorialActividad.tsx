@@ -17,7 +17,6 @@ import { Actividad, esApiError, obtenerActividad } from "../api/dashboardClient"
 
 export interface HistorialActividadProps {
   casaId: string;
-  usuarioId: string;
 }
 
 const ETIQUETAS_TIPO: Record<Actividad["tipo"], string> = {
@@ -38,8 +37,10 @@ const ICONOS_TIPO: Record<Actividad["tipo"], JSX.Element> = {
 
 /** Pantalla "Historial de actividad" (REQ-002, REQ-003): lista
  * cronológica descendente de las acciones relevantes de la casa,
- * consultable por cualquier miembro (no requiere rol Administrador). */
-export function HistorialActividad({ casaId, usuarioId }: HistorialActividadProps) {
+ * consultable por cualquier miembro (no requiere rol Administrador).
+ * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
+ * no recibe `usuarioId` como prop. */
+export function HistorialActividad({ casaId }: HistorialActividadProps) {
   const [actividad, setActividad] = useState<Actividad[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -47,13 +48,13 @@ export function HistorialActividad({ casaId, usuarioId }: HistorialActividadProp
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      setActividad(await obtenerActividad(casaId, usuarioId));
+      setActividad(await obtenerActividad(casaId));
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar el historial de actividad.");
     } finally {
       setCargando(false);
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargar();

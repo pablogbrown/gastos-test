@@ -2,12 +2,14 @@ import ActivityIcon from "@mui/icons-material/History";
 import BalanceIcon from "@mui/icons-material/AccountBalanceWallet";
 import GastosIcon from "@mui/icons-material/Receipt";
 import HomeIcon from "@mui/icons-material/Home";
+import LogoutIcon from "@mui/icons-material/Logout";
 import PeopleIcon from "@mui/icons-material/People";
 import RankingIcon from "@mui/icons-material/EmojiEvents";
 import TareasIcon from "@mui/icons-material/Checklist";
 import AppBar from "@mui/material/AppBar";
 import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
+import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
@@ -41,6 +43,10 @@ export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] 
 export interface AppNavProps {
   pantalla: Pantalla;
   onChange: (pantalla: Pantalla) => void;
+  /** Spec `usuarios-auth`, REQ-005/TC-006: cuando se pasa, se muestra un
+   * botón "Cerrar sesión" — omitido (como en los tests existentes de
+   * `ui-modernization`) no cambia el markup anterior a esta spec. */
+  onCerrarSesion?: () => void;
 }
 
 /** Navegación principal responsiva (spec `ui-modernization`, REQ-002):
@@ -50,7 +56,7 @@ export interface AppNavProps {
  * esta pieza a cómo `App` maneja la casa actual. Extraído como su propio
  * componente (en vez de vivir inline en `App`) para poder verificar
  * TC-001/TC-002/TC-004 sin pasar por el flujo de "crear casa". */
-export function AppNav({ pantalla, onChange }: AppNavProps) {
+export function AppNav({ pantalla, onChange, onCerrarSesion }: AppNavProps) {
   const theme = useTheme();
   const esDesktop = useMediaQuery(theme.breakpoints.up("sm"));
 
@@ -69,6 +75,7 @@ export function AppNav({ pantalla, onChange }: AppNavProps) {
             variant="scrollable"
             scrollButtons="auto"
             aria-label="Navegación"
+            sx={{ flex: 1 }}
           >
             {SECCIONES.map((seccion) => (
               <Tab
@@ -80,32 +87,59 @@ export function AppNav({ pantalla, onChange }: AppNavProps) {
               />
             ))}
           </Tabs>
+          {onCerrarSesion && (
+            <IconButton
+              color="inherit"
+              aria-label="Cerrar sesión"
+              onClick={onCerrarSesion}
+            >
+              <LogoutIcon />
+            </IconButton>
+          )}
         </Toolbar>
       </AppBar>
     );
   }
 
   return (
-    <Paper
-      component="nav"
-      aria-label="Navegación"
-      elevation={3}
-      sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
-    >
-      <BottomNavigation
-        value={pantalla}
-        onChange={(_event, value: Pantalla) => onChange(value)}
-        showLabels
+    <>
+      {onCerrarSesion && (
+        <IconButton
+          aria-label="Cerrar sesión"
+          onClick={onCerrarSesion}
+          sx={{
+            position: "fixed",
+            top: 8,
+            right: 8,
+            zIndex: theme.zIndex.appBar + 1,
+            bgcolor: "background.paper",
+            boxShadow: 1,
+          }}
+        >
+          <LogoutIcon />
+        </IconButton>
+      )}
+      <Paper
+        component="nav"
+        aria-label="Navegación"
+        elevation={3}
+        sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
       >
-        {SECCIONES.map((seccion) => (
-          <BottomNavigationAction
-            key={seccion.value}
-            value={seccion.value}
-            label={seccion.label}
-            icon={seccion.icon}
-          />
-        ))}
-      </BottomNavigation>
-    </Paper>
+        <BottomNavigation
+          value={pantalla}
+          onChange={(_event, value: Pantalla) => onChange(value)}
+          showLabels
+        >
+          {SECCIONES.map((seccion) => (
+            <BottomNavigationAction
+              key={seccion.value}
+              value={seccion.value}
+              label={seccion.label}
+              icon={seccion.icon}
+            />
+          ))}
+        </BottomNavigation>
+      </Paper>
+    </>
   );
 }

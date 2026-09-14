@@ -51,3 +51,17 @@ frontend domain
   `Stack` everywhere. Worth a closer look (dependency dedupe, or
   confirming this is really this MUI major's API) before relying on
   `Stack` again.
+
+<!-- added: 2026-09-14 | feature: usuarios-auth (auth-frontend) | confidence: high | verified: 2026-09-14 -->
+- Node >= 22 exposes its own built-in `localStorage`/`sessionStorage`
+  globals, active without any CLI flag in some Node builds (confirmed on
+  Node v25.6.1). These shadow jsdom's `window.localStorage` under
+  Vitest's `environment: "jsdom"` and are non-functional without
+  `--localstorage-file` — any code under test that calls real
+  `localStorage`/`sessionStorage` (e.g. `authClient.ts`'s JWT session)
+  throws `TypeError: X.getItem is not a function`. Fixed project-wide via
+  `vite.config.ts`'s `test.poolOptions.{forks,threads}.execArgv:
+  ["--no-experimental-webstorage"]` — this disables Node's competing
+  implementation inside the Vitest worker so jsdom's real `Storage`
+  (the one actually being tested) takes effect. Keep this flag if the
+  Vitest `poolOptions` config is ever touched again.

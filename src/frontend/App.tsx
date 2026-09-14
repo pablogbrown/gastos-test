@@ -3,49 +3,84 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  cerrarSesion,
+  obtenerToken,
+  obtenerUsuarioIdActual,
+  suscribirseACierreSesion,
+} from "./api/authClient";
 import { AppNav, Pantalla } from "./AppNav";
 import { Casa, Miembro, listarMiembros } from "./api/casasClient";
 import { Balance } from "./pages/Balance";
-import { CrearCasa } from "./pages/CrearCasa";
 import { Gastos } from "./pages/Gastos";
 import { HistorialActividad } from "./pages/HistorialActividad";
 import { InicioCasa } from "./pages/InicioCasa";
+import { Login } from "./pages/Login";
 import { Miembros } from "./pages/Miembros";
 import { Ranking } from "./pages/Ranking";
+import { Registro } from "./pages/Registro";
+import { SelectorCasas } from "./pages/SelectorCasas";
 import { Tareas } from "./pages/Tareas";
 
-/** Composición de las pantallas de las cuatro sub-specs de
- * `gestion-domestica` (`casas-miembros`, `gastos`, `tareas-puntos` y
- * `dashboard-actividad`, esta última la que agrega "Inicio" y
- * "Actividad" y termina de cablear "Tareas"/"Ranking" a la navegación).
- * No hay dominio `auth` todavía (fuera de alcance), así que `usuarioId`
- * se genera al cargar la página — una spec de auth futura lo reemplazará
- * por la identidad de sesión real sin tocar las pantallas individuales. */
-function usuarioIdDeSesion(): string {
-  return crypto.randomUUID();
-}
+type VistaSinSesion = "login" | "registro";
 
+/** Gate de 3 estados (spec `usuarios-auth`, T3): sin JWT → `Login`/
+ * `Registro`; con JWT y sin casa elegida → `SelectorCasas`; con JWT y
+ * casa elegida → el shell existente de `ui-modernization` (sin cambios
+ * en su navegación interna). Reemplaza el `usuarioIdDeSesion()` al azar
+ * que generaba esta app en cada carga — la identidad ahora viene de un
+ * login real (REQ-001 a REQ-005). */
 export function App() {
   const theme = useTheme();
   const esDesktop = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const [usuarioId] = useState(usuarioIdDeSesion);
+  const [token, setToken] = useState<string | null>(obtenerToken);
+  const [vistaSinSesion, setVistaSinSesion] = useState<VistaSinSesion>("login");
   const [casaActual, setCasaActual] = useState<Casa | null>(null);
   const [pantalla, setPantalla] = useState<Pantalla>("inicio");
   const [miembros, setMiembros] = useState<Miembro[]>([]);
 
+  useEffect(
+    () =>
+      suscribirseACierreSesion(() => {
+        setToken(null);
+        setCasaActual(null);
+      }),
+    []
+  );
+
   const cargarMiembros = useCallback(async () => {
     if (!casaActual) return;
-    setMiembros(await listarMiembros(casaActual.id, usuarioId));
-  }, [casaActual, usuarioId]);
+    setMiembros(await listarMiembros(casaActual.id));
+  }, [casaActual]);
 
   useEffect(() => {
     void cargarMiembros();
   }, [cargarMiembros]);
 
-  if (!casaActual) {
-    return <CrearCasa usuarioId={usuarioId} onCasaCreada={setCasaActual} />;
+  function handleCerrarSesion() {
+    cerrarSesion();
   }
+
+  if (!token) {
+    return vistaSinSesion === "login" ? (
+      <Login
+        onLoginExitoso={() => setToken(obtenerToken())}
+        onIrARegistro={() => setVistaSinSesion("registro")}
+      />
+    ) : (
+      <Registro
+        onRegistroExitoso={() => setVistaSinSesion("login")}
+        onIrALogin={() => setVistaSinSesion("login")}
+      />
+    );
+  }
+
+  if (!casaActual) {
+    return <SelectorCasas onCasaElegida={setCasaActual} />;
+  }
+
+  const usuarioId = obtenerUsuarioIdActual() ?? "";
 
   return (
     <Box
@@ -56,7 +91,7 @@ export function App() {
         bgcolor: "background.default",
       }}
     >
-      <AppNav pantalla={pantalla} onChange={setPantalla} />
+      <AppNav pantalla={pantalla} onChange={setPantalla} onCerrarSesion={handleCerrarSesion} />
 
       <Box
         component="main"
@@ -68,21 +103,15 @@ export function App() {
           overflowX: "hidden",
         }}
       >
-        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} usuarioId={usuarioId} />}
-        {pantalla === "miembros" && (
-          <Miembros casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
-        )}
-        {pantalla === "gastos" && (
-          <Gastos casaId={casaActual.id} usuarioId={usuarioId} miembros={miembros} />
-        )}
-        {pantalla === "balance" && <Balance casaId={casaActual.id} usuarioId={usuarioId} />}
+        {pantalla === "inicio" && <InicioCasa casaId={casaActual.id} />}
+        {pantalla === "miembros" && <Miembros casaId={casaActual.id} rolUsuarioActual="admin" />}
+        {pantalla === "gastos" && <Gastos casaId={casaActual.id} miembros={miembros} />}
+        {pantalla === "balance" && <Balance casaId={casaActual.id} />}
         {pantalla === "tareas" && (
           <Tareas casaId={casaActual.id} usuarioId={usuarioId} rolUsuarioActual="admin" />
         )}
-        {pantalla === "ranking" && <Ranking casaId={casaActual.id} usuarioId={usuarioId} />}
-        {pantalla === "actividad" && (
-          <HistorialActividad casaId={casaActual.id} usuarioId={usuarioId} />
-        )}
+        {pantalla === "ranking" && <Ranking casaId={casaActual.id} />}
+        {pantalla === "actividad" && <HistorialActividad casaId={casaActual.id} />}
       </Box>
     </Box>
   );

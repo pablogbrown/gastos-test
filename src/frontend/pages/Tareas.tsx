@@ -32,6 +32,10 @@ import {
 
 export interface TareasProps {
   casaId: string;
+  /** Id del Usuario autenticado (spec `usuarios-auth`, decodificado del
+   * JWT vía `obtenerUsuarioIdActual`) — usado solo para la lógica local
+   * de "¿soy yo el responsable?" (`puedeCompletar`); las llamadas a la
+   * API ya no lo necesitan, el actor se resuelve del JWT en el backend. */
   usuarioId: string;
   rolUsuarioActual: Rol;
 }
@@ -77,8 +81,8 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
     setCargando(true);
     try {
       const [listaTareas, listaHistorial] = await Promise.all([
-        listarTareas(casaId, usuarioId),
-        listarHistorial(casaId, usuarioId),
+        listarTareas(casaId),
+        listarHistorial(casaId),
       ]);
       setTareas(listaTareas);
       setHistorial(listaHistorial);
@@ -87,7 +91,7 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
     } finally {
       setCargando(false);
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargar();
@@ -97,7 +101,7 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
     event.preventDefault();
     setError(null);
     try {
-      await crearTarea(casaId, usuarioId, {
+      await crearTarea(casaId, {
         nombre,
         puntos: Number(puntos),
         descripcion: descripcion || undefined,
@@ -121,7 +125,7 @@ export function Tareas({ casaId, usuarioId, rolUsuarioActual }: TareasProps) {
   async function handleCompletar(tareaId: string) {
     setError(null);
     try {
-      await completarTarea(casaId, tareaId, usuarioId);
+      await completarTarea(casaId, tareaId);
       await cargar();
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo completar la tarea.");

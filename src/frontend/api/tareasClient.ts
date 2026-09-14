@@ -2,7 +2,14 @@
 // /casas/{id}/tareas y /casas/{id}/ranking). No contiene lógica de
 // negocio: solo arma requests y tipa las respuestas. Mismo patrón que
 // `casasClient.ts` (spec `casas-miembros`).
-import { formatErrorDetail } from "./casasClient";
+//
+// Spec `usuarios-auth`: usa `fetchAutenticado` (Authorization: Bearer
+// <jwt>) en vez de `X-Usuario-Id`.
+import { fetchAutenticado } from "./authClient";
+import { ApiError, esApiError, formatErrorDetail } from "./httpError";
+
+export type { ApiError };
+export { esApiError };
 
 export type EstadoTarea = "pendiente" | "en_curso" | "completada";
 
@@ -42,11 +49,6 @@ export interface CrearTareaInput {
   frecuencia?: string;
 }
 
-export interface ApiError {
-  status: number;
-  detail: string;
-}
-
 function apiBase(casaId: string): string {
   return `/casas/${casaId}`;
 }
@@ -66,61 +68,36 @@ async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
   return (await resp.json()) as T;
 }
 
-export async function crearTarea(
-  casaId: string,
-  usuarioId: string,
-  input: CrearTareaInput
-): Promise<Tarea> {
-  const resp = await fetch(`${apiBase(casaId)}/tareas`, {
+export async function crearTarea(casaId: string, input: CrearTareaInput): Promise<Tarea> {
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/tareas`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Usuario-Id": usuarioId },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
   return parseJsonOrThrow<Tarea>(resp);
 }
 
-export async function listarTareas(
-  casaId: string,
-  usuarioId: string,
-  estado?: EstadoTarea
-): Promise<Tarea[]> {
+export async function listarTareas(casaId: string, estado?: EstadoTarea): Promise<Tarea[]> {
   const query = estado ? `?estado=${estado}` : "";
-  const resp = await fetch(`${apiBase(casaId)}/tareas${query}`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/tareas${query}`);
   return parseJsonOrThrow<Tarea[]>(resp);
 }
 
-export async function completarTarea(
-  casaId: string,
-  tareaId: string,
-  usuarioId: string
-): Promise<Tarea> {
-  const resp = await fetch(`${apiBase(casaId)}/tareas/${tareaId}`, {
+export async function completarTarea(casaId: string, tareaId: string): Promise<Tarea> {
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/tareas/${tareaId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", "X-Usuario-Id": usuarioId },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ estado: "completada" }),
   });
   return parseJsonOrThrow<Tarea>(resp);
 }
 
-export async function listarHistorial(
-  casaId: string,
-  usuarioId: string
-): Promise<HistorialTarea[]> {
-  const resp = await fetch(`${apiBase(casaId)}/tareas/historial`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function listarHistorial(casaId: string): Promise<HistorialTarea[]> {
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/tareas/historial`);
   return parseJsonOrThrow<HistorialTarea[]>(resp);
 }
 
-export async function obtenerRanking(casaId: string, usuarioId: string): Promise<RankingEntry[]> {
-  const resp = await fetch(`${apiBase(casaId)}/ranking`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function obtenerRanking(casaId: string): Promise<RankingEntry[]> {
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/ranking`);
   return parseJsonOrThrow<RankingEntry[]>(resp);
-}
-
-export function esApiError(err: unknown): err is ApiError {
-  return typeof err === "object" && err !== null && "status" in err && "detail" in err;
 }

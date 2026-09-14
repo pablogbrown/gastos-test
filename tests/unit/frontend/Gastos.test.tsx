@@ -59,14 +59,14 @@ describe("Gastos", () => {
   });
 
   it("muestra el historial de gastos y el catálogo de categorías", async () => {
-    render(<Gastos casaId={CASA_ID} usuarioId={ADMIN_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
 
     expect(await screen.findByText("Compra semanal")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Supermercado" })).toBeInTheDocument();
   });
 
   it("preselecciona 'todos los miembros' y oculta la lista de participantes", async () => {
-    render(<Gastos casaId={CASA_ID} usuarioId={ADMIN_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
 
     await screen.findByLabelText("Nuevo gasto");
     expect(screen.getByLabelText("Todos los miembros")).toBeChecked();
@@ -95,7 +95,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} usuarioId={ADMIN_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -107,7 +107,7 @@ describe("Gastos", () => {
   });
 
   it("permite seleccionar participantes explícitos cuando se desmarca 'todos'", async () => {
-    render(<Gastos casaId={CASA_ID} usuarioId={ADMIN_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
 
     await screen.findByLabelText("Nuevo gasto");
     const user = userEvent.setup();

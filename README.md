@@ -10,6 +10,23 @@ The frontend UI is built with [Material UI](https://mui.com/) (`@mui/material`,
 switches responsively between a bottom tab bar (mobile, < 600px) and a top
 app bar with tabs (desktop, ≥ 600px).
 
+## Autenticación
+
+taskia requiere una cuenta real: al abrir la app sin una sesión guardada se
+muestra **Login** (con un link a **Registro**). Un registro exitoso
+(`POST /auth/registro`) vuelve a Login; un login exitoso (`POST /auth/login`)
+guarda el JWT devuelto en `localStorage` y, si el usuario pertenece a más de
+una Casa, muestra un selector antes de entrar al shell existente (o crear
+una casa nueva desde ahí si todavía no tiene ninguna).
+
+Ese JWT se envía como `Authorization: Bearer <jwt>` en cada request
+posterior a la API — **el header `X-Usuario-Id` ya no existe**: ninguna
+ruta de la API (`/casas`, `/casas/{id}/...`) lo acepta más, el actor se
+resuelve del token en el backend (`src/api/dependencies.py`). Si el token
+guardado es inválido o expiró, la primera respuesta 401 de cualquier
+cliente dispara un logout automático y vuelve a mostrar Login. "Cerrar
+sesión" (visible desde el shell) hace lo mismo manualmente.
+
 <!-- nybo:managed:start:quick-start -->
 ## Quick Start
 

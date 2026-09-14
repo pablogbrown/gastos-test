@@ -12,14 +12,15 @@ import { DashboardCasa, esApiError, obtenerDashboard } from "../api/dashboardCli
 
 export interface InicioCasaProps {
   casaId: string;
-  usuarioId: string;
 }
 
 /** Pantalla "Inicio de la casa" (REQ-001): estado general de la casa de
  * un vistazo — miembros, gastos recientes, balance, tareas pendientes,
  * tareas completadas recientes y ranking. Cada sección se muestra vacía,
- * sin error, cuando la casa todavía no tiene gastos ni tareas (TC-002). */
-export function InicioCasa({ casaId, usuarioId }: InicioCasaProps) {
+ * sin error, cuando la casa todavía no tiene gastos ni tareas (TC-002).
+ * Spec `usuarios-auth`: el actor se resuelve del JWT en el backend — ya
+ * no recibe `usuarioId` como prop. */
+export function InicioCasa({ casaId }: InicioCasaProps) {
   const [dashboard, setDashboard] = useState<DashboardCasa | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -27,13 +28,13 @@ export function InicioCasa({ casaId, usuarioId }: InicioCasaProps) {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      setDashboard(await obtenerDashboard(casaId, usuarioId));
+      setDashboard(await obtenerDashboard(casaId));
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar el inicio de la casa.");
     } finally {
       setCargando(false);
     }
-  }, [casaId, usuarioId]);
+  }, [casaId]);
 
   useEffect(() => {
     void cargar();

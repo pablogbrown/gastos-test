@@ -4,6 +4,10 @@
 // `tareasClient` para las secciones que agrega el dashboard, en vez de
 // redefinirlos, para no divergir de los contratos ya fijados por las
 // specs `casas-miembros`/`gastos`/`tareas-puntos`.
+//
+// Spec `usuarios-auth`: usa `fetchAutenticado` (Authorization: Bearer
+// <jwt>) en vez de `X-Usuario-Id`.
+import { fetchAutenticado } from "./authClient";
 import { ApiError, esApiError, formatErrorDetail, Miembro } from "./casasClient";
 import { BalancePorMiembro, Gasto } from "./gastosClient";
 import { HistorialTarea, RankingEntry, Tarea } from "./tareasClient";
@@ -53,19 +57,12 @@ async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
   return (await resp.json()) as T;
 }
 
-export async function obtenerDashboard(
-  casaId: string,
-  usuarioId: string
-): Promise<DashboardCasa> {
-  const resp = await fetch(`${API_BASE}/${casaId}/inicio`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function obtenerDashboard(casaId: string): Promise<DashboardCasa> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/inicio`);
   return parseJsonOrThrow<DashboardCasa>(resp);
 }
 
-export async function obtenerActividad(casaId: string, usuarioId: string): Promise<Actividad[]> {
-  const resp = await fetch(`${API_BASE}/${casaId}/actividad`, {
-    headers: { "X-Usuario-Id": usuarioId },
-  });
+export async function obtenerActividad(casaId: string): Promise<Actividad[]> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/actividad`);
   return parseJsonOrThrow<Actividad[]>(resp);
 }

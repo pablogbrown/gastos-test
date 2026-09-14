@@ -42,20 +42,20 @@ describe("Miembros", () => {
   });
 
   it("muestra el listado de miembros activos", async () => {
-    render(<Miembros casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
 
     expect(await screen.findByText("Ana")).toBeInTheDocument();
     expect(screen.getByText("Administrador")).toBeInTheDocument();
   });
 
   it("muestra la acción Desactivar para un Administrador", async () => {
-    render(<Miembros casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
 
     await waitFor(() => expect(screen.getAllByText("Desactivar").length).toBeGreaterThan(0));
   });
 
   it("oculta la acción Desactivar y el alta para un rol Miembro (TC-006)", async () => {
-    render(<Miembros casaId={CASA_ID} usuarioId={ANA_ID} rolUsuarioActual="member" />);
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="member" />);
 
     await screen.findByText("Ana");
     expect(screen.queryByText("Desactivar")).not.toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("Miembros", () => {
     }));
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Miembros casaId={CASA_ID} usuarioId={ADMIN_ID} rolUsuarioActual="admin" />);
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
     await screen.findByLabelText("Agregar miembro");
 
     const user = userEvent.setup();
