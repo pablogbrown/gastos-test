@@ -33,3 +33,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - feat(usuarios-auth): reemplaza el header placeholder `X-Usuario-Id` (cualquier UUID sin verificar) por autenticación real con JWT (email + contraseña hasheada) en todas las rutas de casas, gastos, tareas y dashboard.
+- fix(auth): la UI ya no muestra "Agregar miembro"/"Desactivar" a un usuario con rol `member`, ni "Marcar completada" en tareas ajenas — el rol y la identidad de miembro se resuelven del JWT real en vez de estar hardcodeados a "admin".
