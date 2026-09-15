@@ -19,6 +19,7 @@ from src.services.gasto_service import listar_gastos
 from src.services.miembro_service import listar_miembros
 from src.services.ranking_service import calcular_ranking
 from src.services.tarea_service import listar_historial, listar_tareas
+from src.services.tarjeta_service import TarjetaAlerta, obtener_tarjetas_con_alerta
 
 _LIMITE_RECIENTES = 10
 
@@ -33,6 +34,9 @@ class DashboardCasa:
     tareas_pendientes: List[Tarea] = field(default_factory=list)
     tareas_completadas_recientes: List[HistorialTarea] = field(default_factory=list)
     ranking: List[dict] = field(default_factory=list)
+    # Spec `tarjetas-credito`, REQ-004: tarjetas activas de la casa cuyo
+    # vencimiento está a `UMBRAL_ALERTA_DIAS` días o menos (o ya venció).
+    tarjetas_con_alerta: List[TarjetaAlerta] = field(default_factory=list)
 
 
 def armar_dashboard(casa_id: UUID) -> DashboardCasa:
@@ -51,6 +55,7 @@ def armar_dashboard(casa_id: UUID) -> DashboardCasa:
     tareas_pendientes = listar_tareas(casa_id, EstadoTareaEnum.PENDIENTE)
     tareas_completadas_recientes = listar_historial(casa_id)[:_LIMITE_RECIENTES]
     ranking = calcular_ranking(casa_id)
+    tarjetas_con_alerta = obtener_tarjetas_con_alerta(casa_id)
 
     return DashboardCasa(
         miembros=miembros,
@@ -59,4 +64,5 @@ def armar_dashboard(casa_id: UUID) -> DashboardCasa:
         tareas_pendientes=tareas_pendientes,
         tareas_completadas_recientes=tareas_completadas_recientes,
         ranking=ranking,
+        tarjetas_con_alerta=tarjetas_con_alerta,
     )

@@ -7,7 +7,7 @@ migración a JWT de `usuarios-auth` (reemplaza `X-Usuario-Id`).
 """
 import importlib
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
@@ -25,6 +25,7 @@ from src.services.categoria_service import crear_categoria
 from src.services.gasto_service import registrar_gasto
 from src.services.miembro_service import agregar_miembro
 from src.services.tarea_service import completar_tarea, crear_tarea
+from src.services.tarjeta_service import crear_tarjeta
 
 _MIGRACIONES = (
     "0001_casas_miembros",
@@ -39,6 +40,9 @@ _MIGRACIONES = (
     # `suscripcion_service.generar_gastos_pendientes` como primera línea,
     # que requiere la tabla `suscripciones`.
     "0009_suscripciones",
+    # 0011 (spec `tarjetas-credito`): `GET /inicio` ahora expone
+    # `tarjetasConAlerta`, calculado sobre la tabla `tarjetas_credito`.
+    "0011_tarjetas_credito",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -50,6 +54,7 @@ _SERVICIOS_CON_SESSION = (
     "balance_service",
     "actividad_service",
     "suscripcion_service",
+    "tarjeta_service",
 )
 
 
@@ -109,6 +114,8 @@ def test_inicio_de_casa_vacia_responde_200_con_secciones_vacias(client):
     assert body["tareasPendientes"] == []
     assert body["tareasCompletadasRecientes"] == []
     assert body["ranking"] == []
+    # Spec `tarjetas-credito`: sección aditiva, vacía sin tarjetas.
+    assert body["tarjetasConAlerta"] == []
 
 
 def test_inicio_sin_jwt_devuelve_401(client):
@@ -158,6 +165,34 @@ def test_inicio_de_casa_refleja_gastos_tareas_y_ranking(client):
     assert len(body["tareasCompletadasRecientes"]) == 1
     assert body["ranking"][0]["miembroId"] == str(ana.id)
     assert body["ranking"][0]["puntos"] == 8
+
+
+def test_inicio_incluye_tarjetas_con_alerta_proxima_a_vencer(client):
+    """T3 (spec `tarjetas-credito`): `GET .../inicio` propaga
+    `tarjetasConAlerta` con la forma de `TarjetaAlertaOut`."""
+    casa, usuario_id, admin_id = _crear_casa_directo()
+    hoy = date.today()
+    tarjeta = crear_tarjeta(
+        casa.id,
+        admin_id,
+        "BBVA",
+        "Visa Platinum",
+        "1234",
+        hoy - timedelta(days=10),
+        hoy + timedelta(days=3),
+        admin_id,
+    )
+
+    resp = client.get(f"/casas/{casa.id}/inicio", headers=_bearer(usuario_id))
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert len(body["tarjetasConAlerta"]) == 1
+    alerta = body["tarjetasConAlerta"][0]
+    assert alerta["id"] == str(tarjeta.id)
+    assert alerta["nombre"] == "Visa Platinum"
+    assert alerta["dias_para_vencimiento"] == 3
+    assert alerta["vencida"] is False
 
 
 def test_actividad_de_casa_vacia_responde_200_lista_vacia(client):

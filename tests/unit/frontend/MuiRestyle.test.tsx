@@ -33,6 +33,7 @@ function mockFetchGenerico() {
           tareasPendientes: [],
           tareasCompletadasRecientes: [],
           ranking: [],
+          tarjetasConAlerta: [],
         }),
       };
     }

@@ -22,6 +22,7 @@ import { Registro } from "./pages/Registro";
 import { SelectorCasas } from "./pages/SelectorCasas";
 import { Suscripciones } from "./pages/Suscripciones";
 import { Tareas } from "./pages/Tareas";
+import { Tarjetas } from "./pages/Tarjetas";
 
 type VistaSinSesion = "login" | "registro";
 
@@ -128,6 +129,7 @@ export function App() {
         {pantalla === "suscripciones" && (
           <Suscripciones casaId={casaActual.id} rolUsuarioActual={rolUsuarioActual} />
         )}
+        {pantalla === "tarjetas" && <Tarjetas casaId={casaActual.id} />}
       </Box>
     </Box>
   );

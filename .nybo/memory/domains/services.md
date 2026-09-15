@@ -20,6 +20,18 @@ services domain
   the Historial de actividad calls this hook the same way, right after its
   own commit.
 
+<!-- added: 2026-09-15 | feature: tarjetas-credito | confidence: medium | verified: 2026-09-15 -->
+- [SERV-03] Whether a write action requires `_validar_actor_admin`
+  (Administrador only, e.g. `suscripcion_service.crear_suscripcion`) or
+  the looser `miembro_service.requiere_membresia_activa` (any active
+  member, e.g. `gasto_service.registrar_gasto`/`tarea_service.crear_tarea`/
+  `tarjeta_service.crear_tarjeta`) is decided per-spec by the requirement
+  text, not by resource shape: "un miembro puede..." (no role mentioned)
+  means any active member; an explicit "solo un Administrador" means the
+  admin guard. Don't default to the admin guard just because a sibling
+  resource (e.g. `Suscripcion`) happens to use it — check the spec's own
+  wording for the action being added.
+
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 

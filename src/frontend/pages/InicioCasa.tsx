@@ -9,7 +9,12 @@ import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { Miembro } from "../api/casasClient";
-import { DashboardCasa, esApiError, obtenerDashboard } from "../api/dashboardClient";
+import {
+  DashboardCasa,
+  TarjetaAlerta,
+  esApiError,
+  obtenerDashboard,
+} from "../api/dashboardClient";
 
 export interface InicioCasaProps {
   casaId: string;
@@ -65,16 +70,44 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
   // mismo default que el backend.
   const balanceArs = dashboard.balance.filter((entrada) => (entrada.moneda ?? "ARS") === "ARS");
 
+  /** Spec `tarjetas-credito`, REQ-004: texto del banner de alerta — "vence
+   * el {fecha} — quedan {dias} días" para una tarjeta próxima a vencer,
+   * "ya venció hace {dias} días" si ya pasó la fecha (`vencida`). */
+  function textoAlerta(tarjeta: TarjetaAlerta): string {
+    const base = `${tarjeta.nombre} (${tarjeta.banco}) vence el ${tarjeta.fecha_vencimiento_actual}`;
+    if (tarjeta.vencida) {
+      return `${base} — ya venció hace ${Math.abs(tarjeta.dias_para_vencimiento)} días`;
+    }
+    return `${base} — quedan ${tarjeta.dias_para_vencimiento} días`;
+  }
+
   return (
     <Box
       component="section"
       aria-label="Inicio de la casa"
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
-        gap: 2,
-      }}
+      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
     >
+      {(dashboard.tarjetasConAlerta ?? []).length > 0 && (
+        <Box
+          component="section"
+          aria-label="Alertas de vencimiento de tarjetas"
+          sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+        >
+          {dashboard.tarjetasConAlerta.map((tarjeta) => (
+            <Alert key={tarjeta.id} severity={tarjeta.vencida ? "error" : "warning"}>
+              {textoAlerta(tarjeta)}
+            </Alert>
+          ))}
+        </Box>
+      )}
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+          gap: 2,
+        }}
+      >
       <Card component="section" aria-label="Miembros" variant="outlined">
         <CardContent>
           <Typography variant="h6" component="h3" gutterBottom>
@@ -190,6 +223,7 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
           )}
         </CardContent>
       </Card>
+      </Box>
     </Box>
   );
 }

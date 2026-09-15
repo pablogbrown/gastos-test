@@ -1,5 +1,6 @@
 import ActivityIcon from "@mui/icons-material/History";
 import BalanceIcon from "@mui/icons-material/AccountBalanceWallet";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
 import GastosIcon from "@mui/icons-material/Receipt";
 import HomeIcon from "@mui/icons-material/Home";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -27,12 +28,14 @@ export type Pantalla =
   | "tareas"
   | "ranking"
   | "actividad"
-  | "suscripciones";
+  | "suscripciones"
+  | "tarjetas";
 
-/** Las 8 secciones de navegación (spec `ui-modernization`, REQ-002;
- * `gastos-suscripcion-mensual` agrega "Suscripciones"), compartidas
- * entre `BottomNavigation` (mobile) y `AppBar`/`Tabs` (desktop) — mismo
- * orden, mismos íconos, mismo estado `pantalla`. */
+/** Las 9 secciones de navegación (spec `ui-modernization`, REQ-002;
+ * `gastos-suscripcion-mensual` agrega "Suscripciones"; `tarjetas-credito`
+ * agrega "Tarjetas"), compartidas entre `BottomNavigation` (mobile) y
+ * `AppBar`/`Tabs` (desktop) — mismo orden, mismos íconos, mismo estado
+ * `pantalla`. */
 export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] = [
   { value: "inicio", label: "Inicio", icon: <HomeIcon /> },
   { value: "miembros", label: "Miembros", icon: <PeopleIcon /> },
@@ -42,6 +45,7 @@ export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] 
   { value: "ranking", label: "Ranking", icon: <RankingIcon /> },
   { value: "actividad", label: "Actividad", icon: <ActivityIcon /> },
   { value: "suscripciones", label: "Suscripciones", icon: <SuscripcionesIcon /> },
+  { value: "tarjetas", label: "Tarjetas", icon: <CreditCardIcon /> },
 ];
 
 export interface AppNavProps {
