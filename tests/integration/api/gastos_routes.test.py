@@ -257,6 +257,75 @@ def test_balance_con_mes_explicito_filtra_los_gastos(client):
     assert por_id_septiembre[admin_id]["pago"] == 0
 
 
+def test_registrar_gasto_con_cuotas_en_el_body_crea_las_n_filas(client):
+    """T3 (spec `gastos-en-cuotas`): `cuotas` en el body HTTP llega hasta
+    `registrar_gasto` y `GastoOut` expone los campos de cuota — el
+    reparto/fechas en sí ya se verifica a nivel de servicio en T2."""
+    casa, usuario_id, admin_id = _crear_casa(client)
+    categoria = _crear_categoria(client, casa["id"], usuario_id)
+
+    resp = client.post(
+        f"/casas/{casa['id']}/gastos",
+        json={
+            "descripcion": "Heladera",
+            "importe": "120000.00",
+            "fecha": "2026-09-15",
+            "categoria_id": categoria["id"],
+            "cuotas": 3,
+        },
+        headers=_bearer(usuario_id),
+    )
+    assert resp.status_code == 201, resp.text
+    gasto = resp.json()
+    assert gasto["cuota_numero"] == 1
+    assert gasto["cuota_total"] == 3
+    assert gasto["cuota_grupo_id"] is not None
+    assert gasto["descripcion"] == "Heladera (1/3)"
+
+    historial = client.get(f"/casas/{casa['id']}/gastos", headers=_bearer(usuario_id))
+    assert len(historial.json()) == 3
+
+
+def test_registrar_gasto_sin_cuotas_no_expone_datos_de_cuota(client):
+    casa, usuario_id, _admin_id = _crear_casa(client)
+    categoria = _crear_categoria(client, casa["id"], usuario_id)
+
+    resp = client.post(
+        f"/casas/{casa['id']}/gastos",
+        json={
+            "descripcion": "Compra semanal",
+            "importe": "100.00",
+            "fecha": "2026-01-01",
+            "categoria_id": categoria["id"],
+        },
+        headers=_bearer(usuario_id),
+    )
+    assert resp.status_code == 201, resp.text
+    gasto = resp.json()
+    assert gasto["cuota_grupo_id"] is None
+    assert gasto["cuota_numero"] is None
+    assert gasto["cuota_total"] is None
+
+
+def test_registrar_gasto_con_cuotas_cero_devuelve_400(client):
+    """TC-005 a nivel HTTP."""
+    casa, usuario_id, _admin_id = _crear_casa(client)
+    categoria = _crear_categoria(client, casa["id"], usuario_id)
+
+    resp = client.post(
+        f"/casas/{casa['id']}/gastos",
+        json={
+            "descripcion": "Compra",
+            "importe": "100.00",
+            "fecha": "2026-01-01",
+            "categoria_id": categoria["id"],
+            "cuotas": 0,
+        },
+        headers=_bearer(usuario_id),
+    )
+    assert resp.status_code == 400
+
+
 def test_historial_ordenado_por_fecha_descendente(client):
     casa, usuario_id, _admin_id = _crear_casa(client)
     categoria = _crear_categoria(client, casa["id"], usuario_id)

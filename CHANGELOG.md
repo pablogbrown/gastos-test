@@ -49,3 +49,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - feat(auth): un Administrador puede agregar como miembro a alguien que todavía no tiene cuenta — queda como "Pendiente" y se vincula automáticamente en cuanto esa persona se registra con el mismo email.
+- feat(services): un gasto se puede registrar en cuotas — se generan N gastos, uno por mes, cada uno por el importe total dividido en partes iguales; el balance solo refleja cada cuota en el mes que le corresponde.

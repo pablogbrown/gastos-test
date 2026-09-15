@@ -30,6 +30,9 @@ export interface Gasto {
   pagado_por: string;
   categoria_id: string;
   participantes: ParticipanteGasto[];
+  cuota_grupo_id?: string | null;
+  cuota_numero?: number | null;
+  cuota_total?: number | null;
 }
 
 export interface BalancePorMiembro {
@@ -58,6 +61,7 @@ export interface NuevoGasto {
   categoriaId: string;
   pagadoPor?: string;
   participantes?: string[];
+  cuotas?: number;
 }
 
 const API_BASE = "/casas";
@@ -102,6 +106,7 @@ export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise
       categoria_id: gasto.categoriaId,
       pagado_por: gasto.pagadoPor,
       participantes: gasto.participantes,
+      cuotas: gasto.cuotas,
     }),
   });
   return parseJsonOrThrow<Gasto>(resp);

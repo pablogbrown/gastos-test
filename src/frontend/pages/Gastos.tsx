@@ -47,6 +47,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
   const [importe, setImporte] = useState("");
   const [fecha, setFecha] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
+  const [cuotas, setCuotas] = useState("");
   const [nuevaCategoria, setNuevaCategoria] = useState("");
   const [todosLosMiembros, setTodosLosMiembros] = useState(true);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -91,11 +92,13 @@ export function Gastos({ casaId, miembros }: GastosProps) {
         fecha,
         categoriaId,
         participantes: todosLosMiembros ? undefined : seleccionados,
+        cuotas: cuotas === "" ? undefined : Number(cuotas),
       });
       setDescripcion("");
       setImporte("");
       setFecha("");
       setCategoriaId("");
+      setCuotas("");
       setTodosLosMiembros(true);
       setSeleccionados([]);
       await cargar();
@@ -198,7 +201,22 @@ export function Gastos({ casaId, miembros }: GastosProps) {
                 ))}
               </Select>
             </FormControl>
+
+            <TextField
+              id="cuotas-gasto"
+              label="Cuotas (opcional)"
+              type="number"
+              value={cuotas}
+              onChange={(event) => setCuotas(event.target.value)}
+              size="small"
+            />
           </Box>
+
+          {Number(cuotas) >= 2 && (
+            <Typography variant="body2" color="text.secondary">
+              Se van a crear {Number(cuotas)} gastos, uno por mes.
+            </Typography>
+          )}
 
           <FormGroup>
             <FormControlLabel

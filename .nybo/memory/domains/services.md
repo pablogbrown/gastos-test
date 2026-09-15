@@ -23,6 +23,19 @@ services domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-15 | feature: gastos-en-cuotas | confidence: medium | verified: 2026-09-15 -->
+- [SERVP-02] Month arithmetic (adding N calendar months to a `date`,
+  clamping the day when the target month is shorter — e.g. 31 ene + 1 mes
+  -> 28/29 feb) is done with stdlib only (`date.year`/`date.month` plus
+  `calendar.monthrange` for the day bound), never `python-dateutil` —
+  not a declared project dependency. `balance_service._rango_mes` already
+  used this technique for "first/last day of a month"; `gasto_service.
+  _sumar_meses` (spec `gastos-en-cuotas`) is the second independent case,
+  confirming it as the project's actual convention for this kind of date
+  math rather than a one-off. Reach for the same stdlib approach before
+  reaching for a new dependency the next time month/date arithmetic comes
+  up.
+
 <!-- added: 2026-09-15 | feature: invitar-miembro-pendiente | confidence: high | verified: 2026-09-15 -->
 - [SERVP-01] A function meant to be called FROM another service, as part of
   that caller's own transaction (not from a route), takes an already-open
