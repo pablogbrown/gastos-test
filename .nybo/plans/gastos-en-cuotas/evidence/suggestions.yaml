@@ -1,0 +1,51 @@
+feature: gastos-en-cuotas
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: No hay herramienta de coverage configurada en el proyecto
+    detail: >-
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool` es
+      `null` (backend y frontend). El threshold de `nybo.config.yaml`
+      (`testing.coverage_threshold: 80`) no se puede verificar
+      numéricamente en ningún ciclo BUILD hasta que se instale una
+      herramienta. Preexistente a esta spec (ya reportado como S001 en
+      `balance-mensual` e `invitar-miembro-pendiente`), no introducido
+      por ella.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: question
+    title: >-
+      `nybo results write`/`set` sigue sobrescribiendo/truncando
+      contenido del body ya escrito (Judgment/Observations) en llamadas
+      sucesivas
+    detail: >-
+      Reconfirmado en este cycle: tras escribir Judgment `J001` y luego
+      `J002`, y luego Observations, el body final solo conservaba la
+      última entrada de Judgment y un fragmento truncado de
+      Observations — el frontmatter (`judgment.entries: 2`,
+      `observations.entries: 2`) sí quedó correcto, pero el texto real
+      del body se perdió. Ya había sido reportado como `S002` en
+      `invitar-miembro-pendiente` (versión de nybo: 4.0.0-okf-v2) y no
+      parece haberse corregido todavía. Corregido a mano en este cycle
+      editando `evidence/1/build-results.md` directamente después de
+      cada `nybo results write`/`set`. Vale la pena revisar
+      `src/services/results/*` en nybo-cli antes de confiar en llamadas
+      sucesivas de este comando dentro de un mismo cycle.
+    scope: out-of-spec
+    status: open
+  - id: S003
+    category: quick-win
+    title: >-
+      `cuota_grupo_id` no se expone todavía en ninguna pantalla — no hay
+      forma de ver "las 3 cuotas de esta compra" agrupadas
+    detail: >-
+      Documentado como decisión deliberada en el Tradeoffs de
+      `00-overview.md` (fuera de scope de esta spec) — el historial de
+      Gastos ya distingue cada cuota por su descripción "(N/total)", que
+      alcanza para el caso de uso actual. Si en el futuro se pide ver o
+      cancelar cuotas restantes de una compra, `cuota_grupo_id` ya está
+      disponible en el modelo y en `GastoOut` para construir esa vista
+      sin otra migración.
+    scope: future-enhancement
+    status: open

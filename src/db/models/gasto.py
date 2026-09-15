@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, Date, ForeignKey, Numeric, String
+from sqlalchemy import Column, Date, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 
 from src.db.base import Base
@@ -13,6 +13,13 @@ class Gasto(Base):
     `pagado_por` referencia al Miembro que efectivamente pagó (puede ser
     distinto de quien realiza la operación de registro). `categoria_id`
     es obligatorio (REQ-001/TC-002): no existe un gasto sin categoría.
+
+    `cuota_grupo_id`/`cuota_numero`/`cuota_total` (spec `gastos-en-
+    cuotas`): `NULL` para un gasto normal (sin cuotas); pobladas juntas
+    cuando este `Gasto` es una de las N cuotas generadas al registrar un
+    gasto con `cuotas >= 2` — `cuota_grupo_id` comparte el mismo valor
+    entre las N filas de una misma compra, `cuota_numero` va de 1 a
+    `cuota_total`.
     """
 
     __tablename__ = "gastos"
@@ -24,6 +31,9 @@ class Gasto(Base):
     fecha = Column(Date, nullable=False)
     pagado_por = Column(GUID(), ForeignKey("miembros.id"), nullable=False)
     categoria_id = Column(GUID(), ForeignKey("categorias.id"), nullable=False)
+    cuota_grupo_id = Column(GUID(), nullable=True)
+    cuota_numero = Column(Integer, nullable=True)
+    cuota_total = Column(Integer, nullable=True)
 
     participantes = relationship(
         "GastoParticipante", back_populates="gasto", cascade="all, delete-orphan"
