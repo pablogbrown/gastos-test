@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/tarjetas-credito
+pr_url: https://github.com/pablogbrown/gastos-test/pull/24
+pr_number: 24
 kind: single_spec
 notes: |
   Independiente de gastos-multi-moneda. Dependencia de
