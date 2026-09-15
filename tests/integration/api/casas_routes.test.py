@@ -179,14 +179,18 @@ def test_listado_de_miembros_incluye_usuario_id(client):
     assert ana_miembro["usuario_id"] == str(ana_usuario.id)
 
 
-def test_agregar_miembro_con_email_de_usuario_inexistente_devuelve_404(client):
+def test_agregar_miembro_con_email_de_usuario_inexistente_crea_membresia_pendiente(client):
+    """Spec `invitar-miembro-pendiente` (REQ-001): reemplaza el 404 previo
+    — ahora la API responde 201 igual, con `usuario_id: null` (queda
+    "pendiente" hasta que esa persona se registre con ese email)."""
     casa, usuario_id, _admin_id = _crear_casa(client)
     resp = client.post(
         f"/casas/{casa['id']}/miembros",
         json={"nombre": "Ana", "identificacion": "ANA1", "email": "no-registrado@example.com"},
         headers=_bearer(usuario_id),
     )
-    assert resp.status_code == 404
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["usuario_id"] is None
 
 
 def test_desactivar_miembro_devuelve_200_y_activo_false(client):
