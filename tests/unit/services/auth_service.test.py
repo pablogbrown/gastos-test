@@ -46,6 +46,16 @@ def test_registrar_usuario_hashea_la_contrasena(monkeypatch):
     assert "hunter2" not in usuario.password_hash
 
 
+def test_registrar_usuario_sin_membresias_pendientes_no_cambia_de_comportamiento():
+    """TC-005 (`invitar-miembro-pendiente`, control): registrarse con un
+    email sin ninguna membresía pendiente funciona exactamente igual que
+    antes de esta spec — `vincular_membresias_pendientes` no encuentra
+    nada para vincular y no rompe el registro."""
+    usuario = registrar_usuario("sin-invitaciones@example.com", "hunter2")
+
+    assert usuario.email == "sin-invitaciones@example.com"
+
+
 def test_registrar_usuario_con_email_vacio_es_rechazado():
     with pytest.raises(ValidationError):
         registrar_usuario("", "hunter2")

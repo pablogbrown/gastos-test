@@ -115,7 +115,7 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               size="small"
-              helperText="Debe ser un email ya registrado"
+              helperText="Si la persona no está registrada, queda invitada hasta que se registre con este email"
             />
             <Button type="submit" variant="contained">
               Agregar miembro
@@ -148,15 +148,19 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
                   <TableCell>{miembro.identificacion}</TableCell>
                   <TableCell>{miembro.rol}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={miembro.activo ? "Activo" : "Inactivo"}
-                      color={miembro.activo ? "success" : "default"}
-                      size="small"
-                    />
+                    {miembro.usuario_id == null ? (
+                      <Chip label="Pendiente" color="warning" size="small" />
+                    ) : (
+                      <Chip
+                        label={miembro.activo ? "Activo" : "Inactivo"}
+                        color={miembro.activo ? "success" : "default"}
+                        size="small"
+                      />
+                    )}
                   </TableCell>
                   {puedeGestionar && (
                     <TableCell>
-                      {miembro.activo && (
+                      {miembro.usuario_id != null && miembro.activo && (
                         <Button
                           type="button"
                           size="small"

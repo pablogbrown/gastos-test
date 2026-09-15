@@ -171,9 +171,13 @@ def listar_gastos_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_e
 
 
 @gastos_router.get("/{casa_id}/balance", response_model=BalanceResponse)
-def obtener_balance_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
+def obtener_balance_endpoint(
+    casa_id: UUID, mes: Optional[str] = None, actor: UUID = Depends(resolver_actor_en_casa)
+):
     try:
-        balances = calcular_balance(casa_id)
+        balances = calcular_balance(casa_id, mes)
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     transferencias = sugerir_transferencias(balances)

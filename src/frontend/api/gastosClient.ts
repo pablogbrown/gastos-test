@@ -112,7 +112,8 @@ export async function listarGastos(casaId: string): Promise<Gasto[]> {
   return parseJsonOrThrow<Gasto[]>(resp);
 }
 
-export async function obtenerBalance(casaId: string): Promise<BalanceResponse> {
-  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/balance`);
+export async function obtenerBalance(casaId: string, mes?: string): Promise<BalanceResponse> {
+  const query = mes ? `?mes=${mes}` : "";
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/balance${query}`);
   return parseJsonOrThrow<BalanceResponse>(resp);
 }

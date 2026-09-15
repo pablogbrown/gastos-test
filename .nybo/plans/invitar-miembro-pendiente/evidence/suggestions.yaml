@@ -1,0 +1,32 @@
+feature: invitar-miembro-pendiente
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: No hay herramienta de coverage configurada en el proyecto
+    detail: >-
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool` es
+      `null` (backend y frontend). El threshold de `nybo.config.yaml`
+      (`testing.coverage_threshold: 80`) no se puede verificar
+      numéricamente en ningún ciclo BUILD hasta que se instale una
+      herramienta. Preexistente a esta spec, no introducido por ella.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: question
+    title: >-
+      `nybo results write`/`set` (--phase execute/verify) sobrescribe
+      el body completo de build-results.md en vez de solo su propia
+      sección
+    detail: >-
+      Al escribir "Verification" (replace) o al usar "set" para el
+      frontmatter, el CLI regeneró el documento completo y descartó el
+      contenido ya escrito de "### Judgment"/"### Observations" (solo
+      conservó los contadores en el frontmatter, no el texto en el
+      body). Se resolvió a mano insertando esas secciones directamente
+      en el archivo, evitando llamadas adicionales a `nybo results`
+      después. Vale la pena revisar `src/services/results/*` en
+      nybo-cli (versión en uso: 4.0.0-okf-v2, worktree
+      memory-core-okf-v2) — parece un bug de esta build de dev, no algo
+      específico de este proyecto.
+    scope: out-of-spec
+    status: open

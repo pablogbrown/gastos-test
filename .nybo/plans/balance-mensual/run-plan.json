@@ -1,0 +1,69 @@
+{
+  "$schema_version": "2",
+  "feature_id": "balance-mensual",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/balance-mensual/feat/01-plan-01-calcular-balance-por-mes.md",
+      "files_touched": [
+        "src/services/balance_service.py",
+        "tests/integration/services/balance_mensual.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": ["TC-001", "TC-002", "TC-003"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "calcular_balance filtra los gastos considerados por mes, usando el mes actual como default.",
+        "postcondition": "Con gastos en dos meses distintos, calcular_balance(casa_id) sin mes refleja solo el mes actual, y calcular_balance(casa_id, mes='YYYY-MM') refleja solo ese mes; un mes con formato inválido lanza ValidationError.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/balance_mensual.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/balance-mensual/feat/01-plan-02-ruta-y-cliente.md",
+      "files_touched": [
+        "src/api/routes/gastos.py",
+        "src/frontend/api/gastosClient.ts",
+        "tests/integration/api/gastos_routes.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 15,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "calcular_balance" }
+      ],
+      "contract": {
+        "statement": "GET /casas/{id}/balance acepta un query param mes opcional y lo propaga a calcular_balance.",
+        "postcondition": "GET /casas/{id}/balance?mes=formato-invalido responde 400.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/balance-mensual/feat/01-plan-03-selector-de-mes.md",
+      "files_touched": [
+        "src/frontend/pages/Balance.tsx",
+        "tests/unit/frontend/Balance.test.tsx"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 15,
+      "test_cases": ["TC-004", "TC-005"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Balance.tsx muestra un selector de mes preseleccionado en el mes actual, y cambiarlo vuelve a consultar el balance para el mes elegido.",
+        "postcondition": "Al montar, el selector muestra el mes actual; al cambiar su valor, obtenerBalance se llama con el nuevo mes.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Balance.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

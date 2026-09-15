@@ -53,13 +53,19 @@ def agregar_miembro(
 
     Nota de diseño (spec `usuarios-auth`): antes de esta spec, el cliente
     podía enviar cualquier UUID como identidad del nuevo miembro (sin
-    verificación). Ahora se exige que ya exista un Usuario registrado con
-    `email_usuario` — 404 si no existe, "un usuario debe registrarse
-    antes de que lo agreguen a una casa" — y el `Miembro` nuevo queda
+    verificación). Ahora se exige un email — y el `Miembro` nuevo queda
     vinculado a su `usuario_id`, nunca a uno creado al vuelo. Esto es lo
     que hace real la regla "un Usuario puede estar en varias Casas": un
     mismo Usuario puede tener múltiples filas `Miembro` (una por Casa),
     todas con el mismo `usuario_id`.
+
+    Nota de diseño (spec `invitar-miembro-pendiente`, REQ-001): si
+    `email_usuario` NO corresponde a ningún Usuario registrado, esto ya
+    no se rechaza con `NotFoundError` — se crea la membresía igual, en
+    estado "pendiente" (`usuario_id=None`, `email_invitacion` guarda el
+    email normalizado). `registrar_usuario` la vincula automáticamente
+    más adelante (`vincular_membresias_pendientes`), cuando esa persona
+    se registre con ese mismo email.
     """
     if not nombre or not str(nombre).strip():
         raise ValidationError("El nombre del miembro no puede estar vacío.")
@@ -79,30 +85,43 @@ def agregar_miembro(
         usuario = (
             session.query(Usuario).filter(Usuario.email == email_normalizado).one_or_none()
         )
-        if usuario is None:
-            raise NotFoundError(
-                f"No existe un Usuario registrado con el email {email_normalizado!r}."
-            )
 
-        # Fix `fix-membresia-duplicada-actor` (REQ-001): un mismo Usuario no
-        # puede tener más de una fila Miembro activa en la misma casa — esto
-        # es lo que antes permitía que `resolver_actor_en_casa` encontrara
-        # más de una fila y crasheara con `MultipleResultsFound` (500).
-        # `.one_or_none()` es correcto acá (a diferencia de T2): antes de
-        # este fix nunca puede existir más de una fila activa para este
-        # (casa_id, usuario_id), justo porque esta validación recién se está
-        # agregando.
-        membresia_existente = (
-            session.query(Miembro)
-            .filter(
-                Miembro.casa_id == casa_id,
-                Miembro.usuario_id == usuario.id,
-                Miembro.activo.is_(True),
+        if usuario is not None:
+            # Fix `fix-membresia-duplicada-actor` (REQ-001): un mismo Usuario
+            # no puede tener más de una fila Miembro activa en la misma casa
+            # — esto es lo que antes permitía que `resolver_actor_en_casa`
+            # encontrara más de una fila y crasheara con
+            # `MultipleResultsFound` (500). `.one_or_none()` es correcto acá
+            # (a diferencia de T2): antes de ese fix nunca puede existir más
+            # de una fila activa para este (casa_id, usuario_id), justo
+            # porque esa validación recién se estaba agregando.
+            membresia_existente = (
+                session.query(Miembro)
+                .filter(
+                    Miembro.casa_id == casa_id,
+                    Miembro.usuario_id == usuario.id,
+                    Miembro.activo.is_(True),
+                )
+                .one_or_none()
             )
-            .one_or_none()
-        )
-        if membresia_existente is not None:
-            raise ValidationError("El usuario ya es miembro activo de esta casa.")
+            if membresia_existente is not None:
+                raise ValidationError("El usuario ya es miembro activo de esta casa.")
+        else:
+            # spec `invitar-miembro-pendiente` (REQ-003): mismo criterio de
+            # "ya es miembro de esta casa", pero para una invitación
+            # pendiente (sin Usuario todavía) — evita duplicar la invitación
+            # mientras siga sin vincularse.
+            invitacion_existente = (
+                session.query(Miembro)
+                .filter(
+                    Miembro.casa_id == casa_id,
+                    Miembro.email_invitacion == email_normalizado,
+                    Miembro.usuario_id.is_(None),
+                )
+                .one_or_none()
+            )
+            if invitacion_existente is not None:
+                raise ValidationError("El usuario ya es miembro activo de esta casa.")
 
         duplicado = (
             session.query(Miembro)
@@ -117,7 +136,8 @@ def agregar_miembro(
         miembro = Miembro(
             id=uuid.uuid4(),
             casa_id=casa_id,
-            usuario_id=usuario.id,
+            usuario_id=usuario.id if usuario is not None else None,
+            email_invitacion=email_normalizado,
             nombre=nombre.strip(),
             identificacion=identificacion.strip(),
             rol=RolEnum.MEMBER,
@@ -192,6 +212,30 @@ def desactivar_miembro(casa_id: UUID, miembro_id: UUID, actor: UUID) -> Miembro:
         raise
     finally:
         session.close()
+
+
+def vincular_membresias_pendientes(session, usuario_id: UUID, email: str) -> None:
+    """Vincula todas las membresías `Miembro` pendientes que coincidan con
+    `email` al `Usuario` recién registrado `usuario_id` (spec
+    `invitar-miembro-pendiente`, REQ-002).
+
+    A diferencia de cada otra función de este módulo, ESTA NO abre su
+    propia sesión — recibe una ya abierta y no hace `commit`/`close`. Es
+    deliberado: se llama desde `auth_service.registrar_usuario`, DENTRO
+    de la misma transacción que crea el `Usuario`, para que el alta y la
+    vinculación de sus membresías pendientes sean atómicas (si el
+    registro falla, ninguna vinculación queda a medio hacer). El llamador
+    es responsable de normalizar `email` y de hacer `commit()`.
+
+    Vincula TODAS las filas pendientes con ese email, en cualquier casa
+    (REQ-002) — un mismo Usuario puede tener sido invitado a varias casas
+    a la vez.
+    """
+    (
+        session.query(Miembro)
+        .filter(Miembro.email_invitacion == email, Miembro.usuario_id.is_(None))
+        .update({Miembro.usuario_id: usuario_id}, synchronize_session=False)
+    )
 
 
 def listar_miembros(casa_id: UUID):

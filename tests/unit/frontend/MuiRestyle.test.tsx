@@ -36,7 +36,9 @@ function mockFetchGenerico() {
         }),
       };
     }
-    if (url.endsWith("/balance")) {
+    if (url.includes("/balance")) {
+      // Spec `balance-mensual`: `obtenerBalance` ahora agrega
+      // `?mes=YYYY-MM` a la URL, así que ya no termina en `/balance`.
       return { ok: true, json: async () => ({ balances: [], transferencias: [] }) };
     }
     return { ok: true, json: async () => [] };
