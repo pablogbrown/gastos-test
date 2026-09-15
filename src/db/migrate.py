@@ -22,6 +22,7 @@ _MIGRACIONES = (
     "0008_gasto_cuotas",
     "0009_suscripciones",
     "0010_gasto_suscripcion_moneda",
+    "0011_tarjetas_credito",
 )
 
 

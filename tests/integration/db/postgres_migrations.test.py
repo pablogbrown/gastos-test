@@ -231,6 +231,7 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
             "tareas",
             "historial_actividad",
             "suscripciones",
+            "tarjetas_credito",
         } <= tablas
 
         # El enum de rol se creó como tipo nativo de Postgres, no como texto libre.
@@ -252,6 +253,21 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert "moneda" in columnas_suscripcion
         assert columnas_suscripcion["moneda"]["nullable"] is False
 
+        # T1 (spec `tarjetas-credito`): `tarjetas_credito` existe con sus
+        # columnas tras la migración 0011, con FKs reales a
+        # `casas`/`miembros`.
+        columnas_tarjeta = {c["name"]: c for c in inspector.get_columns("tarjetas_credito")}
+        assert "casa_id" in columnas_tarjeta
+        assert "miembro_id" in columnas_tarjeta
+        assert columnas_tarjeta["fecha_cierre_actual"]["nullable"] is False
+        assert columnas_tarjeta["fecha_vencimiento_actual"]["nullable"] is False
+        assert columnas_tarjeta["saldo_actual_ars"]["nullable"] is True
+        assert columnas_tarjeta["saldo_actual_usd"]["nullable"] is True
+        nombres_fk_tarjeta = {
+            fk["referred_table"] for fk in inspector.get_foreign_keys("tarjetas_credito")
+        }
+        assert {"casas", "miembros"} <= nombres_fk_tarjeta
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada
@@ -260,7 +276,8 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
 
         # Una tercera pasada (spec `gastos-multi-moneda`, T1 "Done When":
         # verificar idempotencia explícitamente para la migración nueva)
-        # tampoco debe lanzar.
+        # tampoco debe lanzar. Vale también para 0011 (spec
+        # `tarjetas-credito`).
         run_migrations(engine)
 
         # Comportamiento de default 'ARS' contra Postgres real: insertar un
