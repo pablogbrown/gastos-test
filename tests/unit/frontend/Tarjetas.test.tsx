@@ -94,6 +94,85 @@ describe("Tarjetas", () => {
     expect(await screen.findByText(/no puede estar vacío/)).toBeInTheDocument();
   });
 
+  it("TC-010: importar un resumen sube el PDF de inmediato y muestra el resultado sin confirmación", async () => {
+    let importado = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const metodo = init?.method ?? "GET";
+        if (url.endsWith("/resumen") && metodo === "POST") {
+          importado = true;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              gastos_creados: 6,
+              cuotas_creadas: 3,
+              suscripciones_vinculadas: 1,
+              tarjeta: tarjeta(),
+            }),
+          };
+        }
+        if (url.endsWith("/tarjetas") && metodo === "GET") {
+          return { ok: true, status: 200, json: async () => [tarjeta()] };
+        }
+        return { ok: true, status: 200, json: async () => [] };
+      })
+    );
+    const user = userEvent.setup();
+
+    render(<Tarjetas casaId={CASA_ID} />);
+    expect(await screen.findByText("Visa Platinum")).toBeInTheDocument();
+
+    const archivo = new File(["contenido-pdf"], "resumen.pdf", { type: "application/pdf" });
+    const input = screen.getByLabelText("Importar resumen Visa Platinum");
+    // Ningún diálogo de confirmación: seleccionar el archivo ya dispara
+    // la subida (REQ-007) — no hay un botón "Confirmar" intermedio que
+    // clickear entre esto y la aserción de abajo.
+    await user.upload(input, archivo);
+
+    expect(
+      await screen.findByText(
+        "Resumen importado: 6 gastos creados (3 en cuotas, 1 vinculados a suscripciones)."
+      )
+    ).toBeInTheDocument();
+    expect(importado).toBe(true);
+  });
+
+  it("muestra el error devuelto por la API cuando el PDF del resumen no es reconocido", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const metodo = init?.method ?? "GET";
+        if (url.endsWith("/resumen") && metodo === "POST") {
+          return {
+            ok: false,
+            status: 422,
+            statusText: "Unprocessable Entity",
+            json: async () => ({ detail: "El PDF no tiene el formato de resumen reconocido." }),
+          };
+        }
+        if (url.endsWith("/tarjetas") && metodo === "GET") {
+          return { ok: true, status: 200, json: async () => [tarjeta()] };
+        }
+        return { ok: true, status: 200, json: async () => [] };
+      })
+    );
+    const user = userEvent.setup();
+
+    render(<Tarjetas casaId={CASA_ID} />);
+    expect(await screen.findByText("Visa Platinum")).toBeInTheDocument();
+
+    const archivo = new File(["contenido-pdf"], "otro.pdf", { type: "application/pdf" });
+    await user.upload(screen.getByLabelText("Importar resumen Visa Platinum"), archivo);
+
+    expect(
+      await screen.findByText("El PDF no tiene el formato de resumen reconocido.")
+    ).toBeInTheDocument();
+  });
+
   it("elimina una tarjeta y la saca del listado", async () => {
     let eliminada = false;
     vi.stubGlobal(

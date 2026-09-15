@@ -268,6 +268,21 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         }
         assert {"casas", "miembros"} <= nombres_fk_tarjeta
 
+        # T1 (spec `importar-resumen-tarjeta`): `gastos.tarjeta_id` existe
+        # tras la migración 0012, nullable. Sin asserción de FK acá:
+        # `0002_gastos.py` crea `gastos` vía `create_all` sobre el modelo
+        # `Gasto` VIGENTE (incluye `tarjeta_id` desde el arranque en
+        # cualquier base nueva), así que el `ALTER TABLE ... ADD COLUMN IF
+        # NOT EXISTS ... REFERENCES` de `0012` nunca llega a ejecutarse
+        # contra una base creada desde cero por este mismo `run_migrations`
+        # — mismo comportamiento (y misma limitación, ya aceptada) que
+        # `suscripcion_id` (`0009`), que tampoco tiene FK real acá por la
+        # idéntica razón. La REFERENCES de `0012` sigue siendo correcta
+        # para el path real de producción: una base existente donde
+        # `gastos` ya existía SIN `tarjeta_id` antes de este deploy.
+        assert "tarjeta_id" in columnas_gasto
+        assert columnas_gasto["tarjeta_id"]["nullable"] is True
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada

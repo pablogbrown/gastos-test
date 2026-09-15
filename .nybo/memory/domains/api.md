@@ -22,5 +22,22 @@ api domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-15 | feature: importar-resumen-tarjeta | confidence: medium | verified: 2026-09-15 -->
+- [APIP-01] First file-upload endpoint in this project
+  (`POST .../resumen`, `src/api/routes/tarjetas.py`): a plain FastAPI
+  `archivo: UploadFile` parameter (no `= File(...)` default needed),
+  read via `await archivo.read()` inside an `async def` route handler —
+  every other route in this project is synchronous `def`, this is the
+  first `async def` too, required because `UploadFile.read()` is a
+  coroutine. Requires `python-multipart` as a runtime dependency (not
+  bundled with `fastapi` itself) — install it before adding a second
+  upload endpoint, don't assume it's already present. A recognized-but-
+  invalid-content error (the file parses as the right MIME type but the
+  wrong internal format) maps to 422, kept distinct from a plain
+  `ValidationError` (400, a malformed individual field) — see
+  `exceptions.py`'s `PdfFormatoNoReconocidoError` docstring for the
+  full 400-vs-422 rationale, reusable for any future "recognized
+  container, unrecognized content" upload.
+
 ## Gotchas
 <!-- Things that tripped us up -->

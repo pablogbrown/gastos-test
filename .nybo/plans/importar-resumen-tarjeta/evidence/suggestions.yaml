@@ -1,0 +1,38 @@
+questions_for_the_human:
+  - id: S001
+    status: open
+    text: >-
+      T3 required adding `python-multipart` to requirements.txt (needed
+      by FastAPI to parse multipart/form-data / UploadFile) — this
+      wasn't part of spec.md's confirmed exceptions (only `pdfplumber`
+      was explicitly confirmed with the user). Recorded as open decision
+      D001 in evidence/decisions.yaml (new-dependency is never
+      settleable at any trust level). Please confirm you're OK with this
+      dependency before /nybo-ship.
+
+quick_wins: []
+
+future_enhancements:
+  - id: S002
+    status: open
+    text: >-
+      The parser (pdf_resumen_parser.py) is deliberately scoped to the
+      exact BBVA Visa Platinum layout of the sample PDF. If a real user
+      resume differs even slightly (different header wording, different
+      column order), it will raise PdfFormatoNoReconocidoError rather
+      than parse it — expected per REQ-006/the spec's own scope warning,
+      but worth testing against the actual real-world PDF (not just the
+      synthetic reportlab fixtures used by this build's tests) before
+      relying on it in daily use.
+
+technical_debt:
+  - id: S003
+    status: open
+    text: >-
+      This project still has no coverage tool configured
+      (.nybo/foundation/stack.yaml -> quality_tools.coverage.tool: null),
+      so this build's verify step could not numerically check
+      nybo.config.yaml's testing.coverage_threshold (80) — a
+      pre-existing gap already flagged by prior builds (gastos-multi-
+      moneda, tarjetas-credito), not introduced by this spec. Run
+      /nybo-brownfield-bootstrap --quality to close it.

@@ -1,0 +1,30 @@
+decisions:
+  - id: D001
+    class: new-dependency
+    status: open
+    blocking: false
+    cycle: 1
+    task: T3
+    summary: >-
+      Agregado `python-multipart>=0.0.9,<1.0` a `requirements.txt` —
+      requerido por FastAPI para parsear `multipart/form-data`
+      (`UploadFile`) en `POST /casas/{casa_id}/tarjetas/{tarjeta_id}/resumen`
+      (T3, subida de PDF). No estaba en `spec.md`'s `exceptions` (que solo
+      confirmó `pdfplumber` como nueva dependencia con el usuario) — es
+      una dependencia técnica de FastAPI para el mecanismo de subida de
+      archivos que T3 ya especifica literalmente (multipart/form-data),
+      no una elección de negocio alternativa.
+    rationale: >-
+      `new-dependency` nunca es settleable en ningún trust level
+      (resolveDecisionAuthority — siempre defiere), incluido L2
+      (semi-autonomous, el nivel de este proyecto). Se tomó el camino
+      conservador: agregarla, porque no hay forma de implementar el
+      requisito explícito de T3 (subida de PDF vía multipart) en FastAPI
+      sin ella — la alternativa sería no poder completar T3 en absoluto.
+      Se deja este registro abierto para que el humano confirme
+      explícitamente la dependencia antes de shippear, en vez de que el
+      build la asuma silenciosamente como si fuera equivalente a
+      `pdfplumber` (que sí tuvo confirmación explícita).
+    options_considered:
+      - "Agregar python-multipart (elegida) — único camino funcional para UploadFile en FastAPI."
+      - "No declarar la dependencia y confiar en que ya esté instalada transitivamente — descartada: falla en un entorno limpio (pip install -r requirements.txt) con un error de FastAPI en tiempo de request, no en tiempo de instalación."
