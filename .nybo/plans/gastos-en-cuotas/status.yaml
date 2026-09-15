@@ -18,6 +18,8 @@ domains_referenced:
   - db.md
   - frontend.md
 branch: feat/gastos-en-cuotas
+pr_url: https://github.com/pablogbrown/gastos-test/pull/21
+pr_number: 21
 kind: single_spec
 latest_cycle: 1
 latest_evidence_path: .nybo/plans/gastos-en-cuotas/evidence/1/build-results.md
