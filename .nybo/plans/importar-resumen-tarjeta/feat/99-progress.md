@@ -32,9 +32,8 @@ automatizado real, verify en verde a nivel de spec (243 pytest + 93
 vitest, build/lint limpios, migración 0012 idempotente contra Postgres
 real, smoke en vivo end-to-end contra docker-compose confirmando
 REQ-001 a REQ-008/Outcome). 4 convenciones extraídas a memoria de
-proyecto. Una decisión abierta no bloqueante (`D001`, nueva dependencia
-`python-multipart`) pendiente de confirmación humana antes de
-`/nybo-ship`.
+proyecto. Decisión `D001` (nueva dependencia `python-multipart`)
+confirmada por el usuario y resuelta antes de `/nybo-ship`.
 
 ## History
 | # | Date | Event | Verdict | Smoke | Summary |
