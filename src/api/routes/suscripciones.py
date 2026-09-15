@@ -37,6 +37,10 @@ class SuscripcionCreate(BaseModel):
     # payload sin `categoria_id` llegue al servicio y sea rechazado con
     # 400 vía `ValidationError`, mismo criterio que `GastoCreate`.
     categoria_id: Optional[UUID] = None
+    # Spec `gastos-multi-moneda`: idem — Optional a nivel de esquema para
+    # que un valor inválido llegue al servicio y sea rechazado con 400
+    # vía `ValidationError` (TC-008). Ausente -> "ARS" (REQ-004).
+    moneda: Optional[str] = None
 
 
 class SuscripcionActivaUpdate(BaseModel):
@@ -53,6 +57,10 @@ class SuscripcionOut(BaseModel):
     activa: bool
     ultimo_mes_generado: Optional[str] = None
     creado_en: datetime
+    # Spec `gastos-multi-moneda`: siempre presente ("ARS" o "USD") —
+    # requerido, `suscripcion_service.crear_suscripcion` siempre persiste
+    # un valor válido.
+    moneda: str
 
     class Config:
         orm_mode = True
@@ -70,7 +78,12 @@ def crear_suscripcion_endpoint(
 ):
     try:
         return crear_suscripcion(
-            casa_id, payload.descripcion, payload.importe, payload.categoria_id, actor
+            casa_id,
+            payload.descripcion,
+            payload.importe,
+            payload.categoria_id,
+            actor,
+            moneda=payload.moneda or "ARS",
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

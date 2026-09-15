@@ -70,6 +70,11 @@ class GastoCreate(BaseModel):
     # que un valor inválido (0/negativo) llegue al servicio y sea
     # rechazado con 400 vía `ValidationError` (TC-005), no un 422.
     cuotas: Optional[int] = None
+    # Spec `gastos-multi-moneda`: idem — Optional a nivel de esquema para
+    # que un valor inválido (ej. "EUR") llegue al servicio y sea
+    # rechazado con 400 vía `ValidationError` (TC-008), no un 422
+    # genérico de Pydantic. Ausente -> "ARS" (REQ-001).
+    moneda: Optional[str] = None
 
 
 class ParticipanteOut(BaseModel):
@@ -96,6 +101,10 @@ class GastoOut(BaseModel):
     # Spec `gastos-suscripcion-mensual`: `None` para un gasto normal o en
     # cuotas — aditivo, independiente de los campos de cuotas de arriba.
     suscripcion_id: Optional[UUID] = None
+    # Spec `gastos-multi-moneda`: siempre presente ("ARS" o "USD") — a
+    # diferencia de `GastoCreate.moneda`, acá es requerido porque
+    # `gasto_service.registrar_gasto` siempre persiste un valor válido.
+    moneda: str
 
     class Config:
         orm_mode = True
@@ -107,6 +116,9 @@ class BalancePorMiembroOut(BaseModel):
     pago: Decimal
     correspondia: Decimal
     balance: Decimal
+    # Spec `gastos-multi-moneda`, REQ-002: la moneda de esta fila —
+    # `calcular_balance` ahora agrupa por (miembro, moneda).
+    moneda: str
 
     class Config:
         orm_mode = True
@@ -116,6 +128,9 @@ class TransferenciaOut(BaseModel):
     deudor_id: UUID
     acreedor_id: UUID
     monto: Decimal
+    # Spec `gastos-multi-moneda`, REQ-003: la moneda del grupo dentro del
+    # que se sugirió esta transferencia — nunca mezclada entre monedas.
+    moneda: str
 
     class Config:
         orm_mode = True
@@ -165,6 +180,7 @@ def registrar_gasto_endpoint(
             actor,
             participantes=payload.participantes,
             cuotas=payload.cuotas,
+            moneda=payload.moneda or "ARS",
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
