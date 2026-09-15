@@ -9,10 +9,10 @@
 - [x] T4 — Botón "Importar resumen" en Tarjetas
 
 ### Verify
-- [ ] Verificación end-to-end de la spec
+- [x] Verificación end-to-end de la spec
 
 ### Curate
-- [ ] Extracción de convenciones/aprendizajes
+- [x] Extracción de convenciones/aprendizajes
 
 #### Test Cases
 - [x] `[TC-001]` *[INTEGRATION]* — Importar actualiza cierre/vencimiento/saldo de la tarjeta
@@ -27,9 +27,17 @@
 - [x] `[TC-010]` *[UNIT]* — Botón "Importar resumen" sube y muestra el resumen sin confirmación
 
 ## Completion Summary
-_Pendiente — se completa al finalizar el build._
+4 tareas implementadas (T1-T4), 10/10 test cases resueltos a test
+automatizado real, verify en verde a nivel de spec (243 pytest + 93
+vitest, build/lint limpios, migración 0012 idempotente contra Postgres
+real, smoke en vivo end-to-end contra docker-compose confirmando
+REQ-001 a REQ-008/Outcome). 4 convenciones extraídas a memoria de
+proyecto. Una decisión abierta no bloqueante (`D001`, nueva dependencia
+`python-multipart`) pendiente de confirmación humana antes de
+`/nybo-ship`.
 
 ## History
 | # | Date | Event | Verdict | Smoke | Summary |
 |---|---|---|---|---|---|
 | 1 | 2026-09-15 | plan | — | — | Spec creada — 4 tareas, 10 test cases. Depende de `gastos-multi-moneda` y `tarjetas-credito` (build en ese orden). Nueva dependencia de backend: `pdfplumber` (confirmada con el usuario). |
+| 2 | 2026-09-15 | build | ready | pass | Pre-build: main (gastos-multi-moneda + tarjetas-credito shipped) mergeado sin conflictos, suite reverificada en verde, pusheado. T1-T4 implementados. Verify: 243 pytest + 93 vitest, build/lint limpios, migración 0012 idempotente contra Postgres real (efímera y persistida), smoke en vivo confirmado (screenshots en evidence/1/screenshots/). Curate: 4 convenciones extraídas (DBG-04, SERVP-03, SERVP-04, APIP-01). 1 decisión abierta no bloqueante (D001, python-multipart). |

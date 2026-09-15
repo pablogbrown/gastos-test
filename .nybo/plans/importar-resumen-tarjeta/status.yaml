@@ -1,5 +1,5 @@
 feature: importar-resumen-tarjeta
-status: approved
+status: ready
 profile: code
 action_type: ADD
 created_at: '2026-09-15'
@@ -15,10 +15,38 @@ branch: feat/importar-resumen-tarjeta
 pr_url: https://github.com/pablogbrown/gastos-test/pull/25
 pr_number: 25
 kind: single_spec
+latest_cycle: 1
+latest_evidence_path: evidence/1/build-results.md
+run_started_at: '2026-09-15T17:40:00.000Z'
+run_at: '2026-09-15T18:05:00.000Z'
+run_completed_at: '2026-09-15T18:05:00.000Z'
+run_duration: 1500
+verified_at: '2026-09-15T18:15:00.000Z'
+verified_duration: 600
+curated_at: '2026-09-15T18:20:00.000Z'
+curated_duration: 300
+cycles:
+  - cycle: 1
+    exit: ready
+    verdict: verified
+    summary: T1-T4 implemented; 243 pytest + 93 vitest green; postgres migration idempotency + live smoke confirmed on docker
 exceptions:
   - code: NEW_DEPENDENCY
     detail: Agrega pdfplumber a requirements.txt (confirmado con el usuario, "Stop and Ask First").
+  - code: NEW_DEPENDENCY
+    detail: >-
+      Agrega python-multipart a requirements.txt (requerido por FastAPI
+      para UploadFile, T3) — no confirmado explícitamente con el usuario
+      antes del build (new-dependency nunca es settleable en ningún
+      trust level); registrado como decisión abierta D001 en
+      evidence/decisions.yaml, pendiente de confirmación humana antes de
+      /nybo-ship.
 notes: |
   Depende de gastos-multi-moneda y tarjetas-credito (build en ese
   orden). Parser específico al formato BBVA Visa Platinum.
-  Rationale: spec.md. Build narrative: evidence/build-results.md.
+  Rationale: spec.md. Build narrative: evidence/1/build-results.md.
+  Pre-build: mergeado main (gastos-multi-moneda + tarjetas-credito ya
+  shippeadas) a feat/importar-resumen-tarjeta antes de T1 — merge
+  limpio sin conflictos, suite completa reverificada en verde (223
+  backend + 91 frontend, build/lint) post-merge, pusheado. Migración
+  0012 confirmada como el próximo número libre.
