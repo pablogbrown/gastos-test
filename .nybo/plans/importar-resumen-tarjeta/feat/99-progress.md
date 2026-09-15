@@ -6,7 +6,7 @@
 - [x] T1 — `pdf_resumen_parser` (puro); `Gasto.tarjeta_id`; dependencia `pdfplumber`
 - [x] T2 — `resumen_importer_service`; helpers de cuotas/suscripción detectada
 - [x] T3 — Endpoint de subida de PDF
-- [ ] T4 — Botón "Importar resumen" en Tarjetas
+- [x] T4 — Botón "Importar resumen" en Tarjetas
 
 ### Verify
 - [ ] Verificación end-to-end de la spec
@@ -24,7 +24,7 @@
 - [x] `[TC-007]` *[INTEGRATION]* — Comercio reconocido sin permiso cae a gasto suelto
 - [x] `[TC-008]` *[INTEGRATION]* — Líneas de impuestos/cargos nunca generan gastos
 - [x] `[TC-009]` *[INTEGRATION]* — PDF no reconocible rechazado, cero gastos creados (cubierto a nivel de parser en T1; integración completa en T2)
-- [ ] `[TC-010]` *[UNIT]* — Botón "Importar resumen" sube y muestra el resumen sin confirmación
+- [x] `[TC-010]` *[UNIT]* — Botón "Importar resumen" sube y muestra el resumen sin confirmación
 
 ## Completion Summary
 _Pendiente — se completa al finalizar el build._
