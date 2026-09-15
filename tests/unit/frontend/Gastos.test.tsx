@@ -277,4 +277,150 @@ describe("Gastos", () => {
     expect(screen.queryByLabelText("Cuotas (opcional)")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Todos los miembros")).not.toBeInTheDocument();
   });
+
+  it("TC-009: con Moneda en USD, el body enviado a registrarGasto incluye moneda: 'USD'", async () => {
+    const fetchMock = mockFetch();
+    let ultimoBodyPost: unknown = null;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        ultimoBodyPost = JSON.parse(String(init.body));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: "99999999-9999-9999-9999-999999999999",
+            casa_id: CASA_ID,
+            descripcion: "Compra en dólares",
+            importe: "20.00",
+            fecha: "2026-01-01",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+            moneda: "USD",
+          }),
+        };
+      }
+      if (url.endsWith("/categorias")) {
+        return {
+          ok: true,
+          json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
+        };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Compra en dólares");
+    await user.type(screen.getByLabelText("Importe"), "20");
+    await user.selectOptions(screen.getByLabelText("Moneda"), "USD");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
+    expect((ultimoBodyPost as { moneda: string }).moneda).toBe("USD");
+  });
+
+  it("no fuerza moneda: 'ARS' explícito en el body cuando Moneda queda en el default", async () => {
+    const fetchMock = mockFetch();
+    let ultimoBodyPost: unknown = null;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        ultimoBodyPost = JSON.parse(String(init.body));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: "10101010-1010-1010-1010-101010101010",
+            casa_id: CASA_ID,
+            descripcion: "Compra",
+            importe: "100.00",
+            fecha: "2026-01-01",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+            moneda: "ARS",
+          }),
+        };
+      }
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Compra");
+    await user.type(screen.getByLabelText("Importe"), "100");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
+    expect(ultimoBodyPost).not.toHaveProperty("moneda");
+  });
+
+  it("el selector Moneda viene preseleccionado en ARS", async () => {
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    const selector = (await screen.findByLabelText("Moneda")) as HTMLSelectElement;
+    expect(selector.value).toBe("ARS");
+  });
+
+  it("muestra el importe con prefijo US$ para un gasto en dólares, $ para uno en pesos", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.endsWith("/gastos")) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: "44444444-4444-4444-4444-444444444444",
+              casa_id: CASA_ID,
+              descripcion: "Compra semanal",
+              importe: "100.00",
+              fecha: "2026-01-01",
+              pagado_por: ADMIN_ID,
+              categoria_id: CATEGORIA_ID,
+              participantes: [],
+              moneda: "ARS",
+            },
+            {
+              id: "55555555-5555-5555-5555-555555555555",
+              casa_id: CASA_ID,
+              descripcion: "Compra en dólares",
+              importe: "20.00",
+              fecha: "2026-01-02",
+              pagado_por: ADMIN_ID,
+              categoria_id: CATEGORIA_ID,
+              participantes: [],
+              moneda: "USD",
+            },
+          ],
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    expect(await screen.findByText("$100.00")).toBeInTheDocument();
+    expect(await screen.findByText("US$20.00")).toBeInTheDocument();
+  });
 });

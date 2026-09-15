@@ -35,6 +35,10 @@ _MIGRACIONES = (
     # generar_gastos_pendientes` como primera línea, que requiere la
     # tabla `suscripciones`.
     "0009_suscripciones",
+    # 0011 (spec `tarjetas-credito`): `armar_dashboard` ahora llama a
+    # `obtener_tarjetas_con_alerta`, que requiere la tabla
+    # `tarjetas_credito`.
+    "0011_tarjetas_credito",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -46,6 +50,7 @@ _SERVICIOS_CON_SESSION = (
     "balance_service",
     "actividad_service",
     "suscripcion_service",
+    "tarjeta_service",
 )
 
 

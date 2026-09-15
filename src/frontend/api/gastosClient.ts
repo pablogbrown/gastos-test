@@ -33,6 +33,8 @@ export interface Gasto {
   cuota_grupo_id?: string | null;
   cuota_numero?: number | null;
   cuota_total?: number | null;
+  // Spec `gastos-multi-moneda`: siempre presente ("ARS" o "USD").
+  moneda: string;
 }
 
 export interface BalancePorMiembro {
@@ -41,12 +43,17 @@ export interface BalancePorMiembro {
   pago: string;
   correspondia: string;
   balance: string;
+  // Spec `gastos-multi-moneda`, REQ-002: la moneda de esta fila.
+  moneda: string;
 }
 
 export interface Transferencia {
   deudor_id: string;
   acreedor_id: string;
   monto: string;
+  // Spec `gastos-multi-moneda`, REQ-003: la moneda del grupo dentro del
+  // que se sugirió esta transferencia.
+  moneda: string;
 }
 
 export interface BalanceResponse {
@@ -62,6 +69,9 @@ export interface NuevoGasto {
   pagadoPor?: string;
   participantes?: string[];
   cuotas?: number;
+  // Spec `gastos-multi-moneda`: ausente -> "ARS" (default) en el
+  // backend — nunca se fuerza "ARS" explícito en el body.
+  moneda?: "ARS" | "USD";
 }
 
 const API_BASE = "/casas";
@@ -107,6 +117,7 @@ export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise
       pagado_por: gasto.pagadoPor,
       participantes: gasto.participantes,
       cuotas: gasto.cuotas,
+      moneda: gasto.moneda,
     }),
   });
   return parseJsonOrThrow<Gasto>(resp);

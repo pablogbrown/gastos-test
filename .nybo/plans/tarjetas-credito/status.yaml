@@ -1,0 +1,37 @@
+feature: tarjetas-credito
+status: shipped
+shipped_at: '2026-09-15T20:40:00Z'
+profile: code
+action_type: ADD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/tarjetas-credito
+pr_url: https://github.com/pablogbrown/gastos-test/pull/24
+pr_number: 24
+kind: single_spec
+latest_cycle: 1
+latest_evidence_path: evidence/1/build-results.md
+run_started_at: '2026-09-15T17:15:00.000Z'
+run_at: '2026-09-15T17:24:00.000Z'
+run_completed_at: '2026-09-15T17:24:00.000Z'
+run_duration: 540
+verified_at: '2026-09-15T17:30:00.000Z'
+verified_duration: 360
+curated_at: '2026-09-15T17:33:00.000Z'
+curated_duration: 180
+notes: |
+  Independiente de gastos-multi-moneda. Dependencia de
+  importar-resumen-tarjeta (build en ese orden).
+  Rationale: spec.md. Build narrative: evidence/build-results.md.
+  Pre-build: rebased/merged main (gastos-multi-moneda shipped, took
+  migration 0010) into feat/tarjetas-credito before T1 — full suite
+  (pytest 203 passed/1 skipped, vitest 85 passed, build, lint, postgres
+  migration idempotency) confirmed green post-merge, then pushed
+  (a5c2150..e5d569e). 0011 confirmed as next free migration number.

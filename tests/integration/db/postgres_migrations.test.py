@@ -35,6 +35,7 @@ import uuid
 import pytest
 import sqlalchemy
 from sqlalchemy.engine import make_url
+from sqlalchemy.orm import sessionmaker
 
 from src.db.migrate import run_migrations
 
@@ -230,6 +231,7 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
             "tareas",
             "historial_actividad",
             "suscripciones",
+            "tarjetas_credito",
         } <= tablas
 
         # El enum de rol se creó como tipo nativo de Postgres, no como texto libre.
@@ -242,11 +244,100 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert "suscripcion_id" in columnas_gasto
         assert columnas_gasto["suscripcion_id"]["nullable"] is True
 
+        # T1 (spec `gastos-multi-moneda`): `gastos.moneda`/
+        # `suscripciones.moneda` existen tras la migración 0010, NOT NULL
+        # con default 'ARS'.
+        assert "moneda" in columnas_gasto
+        assert columnas_gasto["moneda"]["nullable"] is False
+        columnas_suscripcion = {c["name"]: c for c in inspector.get_columns("suscripciones")}
+        assert "moneda" in columnas_suscripcion
+        assert columnas_suscripcion["moneda"]["nullable"] is False
+
+        # T1 (spec `tarjetas-credito`): `tarjetas_credito` existe con sus
+        # columnas tras la migración 0011, con FKs reales a
+        # `casas`/`miembros`.
+        columnas_tarjeta = {c["name"]: c for c in inspector.get_columns("tarjetas_credito")}
+        assert "casa_id" in columnas_tarjeta
+        assert "miembro_id" in columnas_tarjeta
+        assert columnas_tarjeta["fecha_cierre_actual"]["nullable"] is False
+        assert columnas_tarjeta["fecha_vencimiento_actual"]["nullable"] is False
+        assert columnas_tarjeta["saldo_actual_ars"]["nullable"] is True
+        assert columnas_tarjeta["saldo_actual_usd"]["nullable"] is True
+        nombres_fk_tarjeta = {
+            fk["referred_table"] for fk in inspector.get_foreign_keys("tarjetas_credito")
+        }
+        assert {"casas", "miembros"} <= nombres_fk_tarjeta
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
-        # con checkfirst=True, y el ALTER TABLE ... ADD COLUMN IF NOT
-        # EXISTS de 0009) — relevante porque main.py las corre en cada
+        # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
+        # EXISTS de 0008-0010) — relevante porque main.py las corre en cada
         # arranque del backend dentro de docker-compose.
         run_migrations(engine)
+
+        # Una tercera pasada (spec `gastos-multi-moneda`, T1 "Done When":
+        # verificar idempotencia explícitamente para la migración nueva)
+        # tampoco debe lanzar. Vale también para 0011 (spec
+        # `tarjetas-credito`).
+        run_migrations(engine)
+
+        # Comportamiento de default 'ARS' contra Postgres real: insertar un
+        # Gasto/Suscripcion sin `moneda` explícita (vía el ORM, mismo
+        # criterio que `Suscripcion.activa` — default de Python en el
+        # `Column`, no `server_default`) persiste "ARS", igual que ya
+        # cubre `tests/unit/db/gasto_suscripcion_moneda.test.py` contra
+        # SQLite.
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        try:
+            from src.db.models.casa import Casa
+            from src.db.models.categoria import Categoria
+            from src.db.models.gasto import Gasto
+            from src.db.models.miembro import Miembro, RolEnum
+            from src.db.models.suscripcion import Suscripcion
+
+            casa = Casa(id=uuid.uuid4(), nombre="Casa Postgres")
+            session.add(casa)
+            session.flush()
+            miembro = Miembro(
+                id=uuid.uuid4(),
+                casa_id=casa.id,
+                nombre="Pablo",
+                identificacion="P-1",
+                rol=RolEnum.ADMIN,
+            )
+            session.add(miembro)
+            categoria = Categoria(id=uuid.uuid4(), casa_id=casa.id, nombre="Supermercado")
+            session.add(categoria)
+            session.flush()
+            casa_id, miembro_id, categoria_id = casa.id, miembro.id, categoria.id
+
+            gasto = Gasto(
+                id=uuid.uuid4(),
+                casa_id=casa_id,
+                descripcion="Sin moneda explícita",
+                importe=10,
+                fecha=sqlalchemy.func.current_date(),
+                pagado_por=miembro_id,
+                categoria_id=categoria_id,
+            )
+            session.add(gasto)
+            suscripcion = Suscripcion(
+                id=uuid.uuid4(),
+                casa_id=casa_id,
+                descripcion="Sin moneda explícita",
+                importe=10,
+                categoria_id=categoria_id,
+                pagado_por=miembro_id,
+            )
+            session.add(suscripcion)
+            session.commit()
+
+            session.refresh(gasto)
+            session.refresh(suscripcion)
+            assert gasto.moneda == "ARS"
+            assert suscripcion.moneda == "ARS"
+        finally:
+            session.close()
     finally:
         engine.dispose()
 

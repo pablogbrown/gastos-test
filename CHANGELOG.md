@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- feat(gastos-multi-moneda): los gastos, cuotas y suscripciones ahora admiten pesos (ARS) o dólares (USD) — el balance de la casa se calcula y muestra por separado para cada moneda, sin sumar ni convertir entre sí, y las transferencias sugeridas nunca cruzan monedas.
+
+- feat(tarjetas-credito): nueva pantalla "Tarjetas" para registrar tarjetas de crédito (banco, últimos dígitos, cierre/vencimiento, saldo) y un banner de alerta en Inicio cuando el vencimiento de alguna tarjeta está a 7 días o menos, o ya venció.
+
 - feat(frontend): Added Login/Registro screens and JWT-based session storage on the frontend, replacing the X-Usuario-Id header. (`.nybo/plans/auth-frontend/`)
 
 - feat(auth): Added global Usuario entity with email/password registration and JWT login, replacing X-Usuario-Id header with real multi-casa membership resolution. (`.nybo/plans/auth-backend/`)

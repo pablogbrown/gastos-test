@@ -1,0 +1,113 @@
+{
+  "$schema_version": "2",
+  "feature_id": "tarjetas-credito",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/tarjetas-credito/feat/01-plan-01-modelo-tarjeta.md",
+      "files_touched": [
+        "src/db/models/tarjeta_credito.py",
+        "src/db/migrations/0011_tarjetas_credito.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "TarjetaCredito", "signature": "model", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "TarjetaCredito existe como tabla propia con FKs reales a casas/miembros, y la migración corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepción; la tabla tarjetas_credito existe con todas sus columnas.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/tarjetas-credito/feat/01-plan-02-tarjeta-service.md",
+      "files_touched": [
+        "src/services/tarjeta_service.py",
+        "tests/integration/services/tarjeta_service.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-007"],
+      "interfaces_produced": [
+        { "name": "crear_tarjeta", "signature": "(casa_id, miembro_id, banco, nombre, ultimos_digitos, fecha_cierre_actual, fecha_vencimiento_actual, actor) -> TarjetaCredito", "kind": "export" },
+        { "name": "obtener_tarjetas_con_alerta", "signature": "(casa_id) -> List[TarjetaAlerta]", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "TarjetaCredito" }
+      ],
+      "contract": {
+        "statement": "tarjeta_service ofrece CRUD completo y obtener_tarjetas_con_alerta calcula correctamente el umbral de 7 dias, incluyendo tarjetas ya vencidas.",
+        "postcondition": "Una tarjeta con vencimiento a 3 dias aparece en obtener_tarjetas_con_alerta con vencida=False; a -2 dias aparece con vencida=True; a 20 dias no aparece.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/tarjeta_service.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/tarjetas-credito/feat/01-plan-03-api-tarjetas.md",
+      "files_touched": [
+        "src/api/routes/tarjetas.py",
+        "src/api/main.py",
+        "src/api/routes/dashboard.py",
+        "src/services/dashboard_service.py",
+        "tests/integration/api/tarjetas_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "TarjetaOut", "signature": "schema", "kind": "export" },
+        { "name": "TarjetaAlertaOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "crear_tarjeta" },
+        { "from": "T2", "name": "obtener_tarjetas_con_alerta" }
+      ],
+      "contract": {
+        "statement": "Los endpoints CRUD de tarjetas funcionan sobre HTTP y el dashboard expone tarjetas_con_alerta.",
+        "postcondition": "POST/GET/PATCH/DELETE .../tarjetas responden correctamente; GET .../dashboard incluye tarjetas_con_alerta con la forma de TarjetaAlertaOut.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/tarjetas_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/tarjetas-credito/feat/01-plan-04-frontend-tarjetas.md",
+      "files_touched": [
+        "src/frontend/api/tarjetasClient.ts",
+        "src/frontend/pages/Tarjetas.tsx",
+        "src/frontend/AppNav.tsx",
+        "src/frontend/App.tsx",
+        "src/frontend/api/dashboardClient.ts",
+        "src/frontend/pages/InicioCasa.tsx",
+        "tests/unit/frontend/Tarjetas.test.tsx",
+        "tests/unit/frontend/InicioCasa.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 35,
+      "test_cases": ["TC-008", "TC-009"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "TarjetaOut" },
+        { "from": "T3", "name": "TarjetaAlertaOut" }
+      ],
+      "contract": {
+        "statement": "La pantalla Tarjetas permite CRUD completo y el banner de alerta se renderiza en Inicio cuando corresponde.",
+        "postcondition": "Crear una tarjeta desde el formulario la agrega al listado; con tarjetas_con_alerta no vacio, InicioCasa renderiza un Alert por cada una.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/InicioCasa.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
