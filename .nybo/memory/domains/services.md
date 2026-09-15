@@ -23,8 +23,50 @@ services domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-15 | feature: gastos-en-cuotas | confidence: medium | verified: 2026-09-15 -->
+- [SERVP-02] Month arithmetic (adding N calendar months to a `date`,
+  clamping the day when the target month is shorter — e.g. 31 ene + 1 mes
+  -> 28/29 feb) is done with stdlib only (`date.year`/`date.month` plus
+  `calendar.monthrange` for the day bound), never `python-dateutil` —
+  not a declared project dependency. `balance_service._rango_mes` already
+  used this technique for "first/last day of a month"; `gasto_service.
+  _sumar_meses` (spec `gastos-en-cuotas`) is the second independent case,
+  confirming it as the project's actual convention for this kind of date
+  math rather than a one-off. Reach for the same stdlib approach before
+  reaching for a new dependency the next time month/date arithmetic comes
+  up.
+
+<!-- added: 2026-09-15 | feature: invitar-miembro-pendiente | confidence: high | verified: 2026-09-15 -->
+- [SERVP-01] A function meant to be called FROM another service, as part of
+  that caller's own transaction (not from a route), takes an already-open
+  `session` as its first parameter instead of opening its own via
+  `get_session()` — the one deliberate exception to this module's usual
+  shape (every other function here opens/commits/closes its own session).
+  It never calls `session.commit()`/`session.close()` itself; the caller
+  owns the transaction boundary. Document the exception explicitly in the
+  function's own docstring so it isn't "fixed" later to match the module's
+  usual pattern. First example: `miembro_service.vincular_membresias_pendientes(session, usuario_id, email)`,
+  called from `auth_service.registrar_usuario` right after the new
+  `Usuario`'s own commit, so the Usuario's creation and its pending
+  memberships' linking are atomic (one rollback undoes both).
+
 ## Gotchas
 <!-- Things that tripped us up -->
 
 <!-- added: 2026-09-14 | feature: fix-membresia-duplicada-actor-2026-09-14 | confidence: high | verified: 2026-09-14 -->
 - [SERVG-01] A `.one_or_none()` query that assumes "at most one row" for an invariant enforced only in the service layer (no DB constraint) is a latent crash risk: if that invariant is ever violated (preexisting data, an unanticipated write path), SQLAlchemy raises `MultipleResultsFound`, which nothing in the call chain catches — it surfaces as an unhandled 500 (`resolver_actor_en_casa`'s original bug). When a query reads state that must never crash even if the invariant it depends on was broken by data that predates the guard, prefer `.order_by(<stable-column>).first()` — never raises, and gives a deterministic, repeatable result regardless of how many rows actually exist.
+
+<!-- added: 2026-09-15 | feature: invitar-miembro-pendiente | confidence: high | verified: 2026-09-15 -->
+- [SERVG-02] Calling `session.commit()` a SECOND time on the same
+  request/service call (e.g. to persist a side-effect that happened after
+  the "main" object was already committed and `session.refresh()`d)
+  expires that object's attributes again (SQLAlchemy's default
+  `expire_on_commit=True`). If the function returns that object without
+  refreshing it again, any attribute access after `session.close()` (in
+  the `finally`) raises `DetachedInstanceError` — not immediately, but at
+  the caller's first attribute read, which makes it look unrelated to the
+  actual cause. Whenever a function does N commits on an object it still
+  needs to return, call `session.refresh(obj)` again after the LAST
+  commit, not just after the first. Found in
+  `auth_service.registrar_usuario` after adding a second commit for
+  `vincular_membresias_pendientes`.

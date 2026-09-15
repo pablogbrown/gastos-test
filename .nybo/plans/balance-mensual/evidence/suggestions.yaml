@@ -1,0 +1,19 @@
+questions_for_the_human: []
+
+quick_wins: []
+
+future_enhancements: []
+
+technical_debt:
+  - id: S001
+    status: open
+    text: >-
+      This project has no coverage tool configured
+      (.nybo/foundation/stack.yaml -> quality_tools.coverage.tool: null),
+      so this build's verify step could not check the
+      nybo.config.yaml testing.coverage_threshold (80) numerically — a
+      pre-existing gap, not introduced by this spec. Run
+      /nybo-brownfield-bootstrap --quality to pick and validate a
+      coverage tool (e.g. coverage.py for the backend, v8/istanbul via
+      vitest for the frontend) before the next build that needs to lean
+      on that gate.

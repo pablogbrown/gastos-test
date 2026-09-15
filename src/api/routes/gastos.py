@@ -66,6 +66,10 @@ class GastoCreate(BaseModel):
     categoria_id: Optional[UUID] = None
     pagado_por: Optional[UUID] = None
     participantes: Optional[List[UUID]] = None
+    # Spec `gastos-en-cuotas`: idem — Optional a nivel de esquema para
+    # que un valor inválido (0/negativo) llegue al servicio y sea
+    # rechazado con 400 vía `ValidationError` (TC-005), no un 422.
+    cuotas: Optional[int] = None
 
 
 class ParticipanteOut(BaseModel):
@@ -85,6 +89,10 @@ class GastoOut(BaseModel):
     pagado_por: UUID
     categoria_id: UUID
     participantes: List[ParticipanteOut] = Field(default_factory=list)
+    # Spec `gastos-en-cuotas`: `None` para un gasto sin cuotas — aditivo.
+    cuota_grupo_id: Optional[UUID] = None
+    cuota_numero: Optional[int] = None
+    cuota_total: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -153,6 +161,7 @@ def registrar_gasto_endpoint(
             payload.pagado_por or actor,
             actor,
             participantes=payload.participantes,
+            cuotas=payload.cuotas,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -171,9 +180,13 @@ def listar_gastos_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_e
 
 
 @gastos_router.get("/{casa_id}/balance", response_model=BalanceResponse)
-def obtener_balance_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
+def obtener_balance_endpoint(
+    casa_id: UUID, mes: Optional[str] = None, actor: UUID = Depends(resolver_actor_en_casa)
+):
     try:
-        balances = calcular_balance(casa_id)
+        balances = calcular_balance(casa_id, mes)
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     transferencias = sugerir_transferencias(balances)

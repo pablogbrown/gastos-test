@@ -106,6 +106,101 @@ describe("Gastos", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/categoría/i);
   });
 
+  it("TC-007: envía cuotas en el body cuando el campo Cuotas está completado", async () => {
+    const fetchMock = mockFetch();
+    let ultimoBodyPost: unknown = null;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        ultimoBodyPost = JSON.parse(String(init.body));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: "55555555-5555-5555-5555-555555555555",
+            casa_id: CASA_ID,
+            descripcion: "Heladera (1/3)",
+            importe: "40000.00",
+            fecha: "2026-09-15",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+            cuota_grupo_id: "66666666-6666-6666-6666-666666666666",
+            cuota_numero: 1,
+            cuota_total: 3,
+          }),
+        };
+      }
+      if (url.endsWith("/categorias")) {
+        return {
+          ok: true,
+          json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
+        };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Heladera");
+    await user.type(screen.getByLabelText("Importe"), "120000");
+    await user.type(screen.getByLabelText("Cuotas (opcional)"), "3");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
+    expect((ultimoBodyPost as { cuotas: number }).cuotas).toBe(3);
+  });
+
+  it("no envía la clave cuotas cuando el campo Cuotas queda vacío", async () => {
+    const fetchMock = mockFetch();
+    let ultimoBodyPost: unknown = null;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        ultimoBodyPost = JSON.parse(String(init.body));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: "77777777-7777-7777-7777-777777777777",
+            casa_id: CASA_ID,
+            descripcion: "Compra",
+            importe: "100.00",
+            fecha: "2026-01-01",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+          }),
+        };
+      }
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Compra");
+    await user.type(screen.getByLabelText("Importe"), "100");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
+    expect(ultimoBodyPost).not.toHaveProperty("cuotas");
+  });
+
   it("permite seleccionar participantes explícitos cuando se desmarca 'todos'", async () => {
     render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
 

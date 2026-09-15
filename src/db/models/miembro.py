@@ -32,6 +32,15 @@ class Miembro(Base):
     `usuario_id`. Nullable porque filas sembradas antes de esta spec no
     tienen un Usuario asociado; toda alta nueva vía `crear_casa`/
     `agregar_miembro` la completa siempre.
+
+    `email_invitacion` (spec `invitar-miembro-pendiente`) guarda,
+    normalizado (recortado, minúsculas), el email con el que un
+    Administrador invitó a esta persona cuando todavía no tenía un
+    `Usuario` registrado — mientras tanto `usuario_id` queda `NULL` y la
+    fila está "pendiente". `registrar_usuario` busca por esta columna
+    para vincular `usuario_id` automáticamente en cuanto esa persona se
+    registra. Se conserva después de vincularse (nunca se borra), como
+    registro de auditoría de quién invitó a quién.
     """
 
     __tablename__ = "miembros"
@@ -42,6 +51,7 @@ class Miembro(Base):
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     casa_id = Column(GUID(), ForeignKey("casas.id"), nullable=False)
     usuario_id = Column(GUID(), ForeignKey("usuarios.id"), nullable=True)
+    email_invitacion = Column(String, nullable=True)
     nombre = Column(String, nullable=False)
     identificacion = Column(String, nullable=False)
     rol = Column(Enum(RolEnum), nullable=False)

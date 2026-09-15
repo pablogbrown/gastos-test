@@ -1,0 +1,96 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos-en-cuotas",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gastos-en-cuotas/feat/01-plan-01-columnas-cuota.md",
+      "files_touched": [
+        "src/db/models/gasto.py",
+        "src/db/migrations/0008_gasto_cuotas.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 15,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Gasto.cuota_grupo_id", "signature": "Optional[UUID]", "kind": "export" },
+        { "name": "Gasto.cuota_numero", "signature": "Optional[int]", "kind": "export" },
+        { "name": "Gasto.cuota_total", "signature": "Optional[int]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Gasto tiene columnas nullable cuota_grupo_id/cuota_numero/cuota_total, y la migración correspondiente corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas contra Postgres no lanza excepción, y las 3 columnas existen con el tipo esperado.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gastos-en-cuotas/feat/01-plan-02-registrar-gasto-en-cuotas.md",
+      "files_touched": [
+        "src/services/gasto_service.py",
+        "tests/integration/services/gasto_cuotas.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 35,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Gasto.cuota_grupo_id" }
+      ],
+      "contract": {
+        "statement": "registrar_gasto crea cuotas gastos consecutivos mes a mes cuando cuotas >= 2, y se comporta exactamente igual que hoy cuando cuotas es None.",
+        "postcondition": "Con cuotas=3, se crean 3 filas Gasto con el mismo cuota_grupo_id, cuota_numero 1..3, cuota_total 3, importes que suman exactamente el total, y fechas mensuales consecutivas; con cuotas=0 se lanza ValidationError; con cuotas=None el comportamiento es idéntico al existente.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/gasto_cuotas.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gastos-en-cuotas/feat/01-plan-03-api-cuotas.md",
+      "files_touched": [
+        "src/api/routes/gastos.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 10,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "registrar_gasto" }
+      ],
+      "contract": {
+        "statement": "POST /casas/{id}/gastos acepta cuotas en el body y GastoOut expone los campos de cuota.",
+        "postcondition": "Un POST con cuotas=3 en el body llega a registrar_gasto con ese valor; la respuesta incluye cuota_numero/cuota_total/cuota_grupo_id.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gastos-en-cuotas/feat/01-plan-04-frontend-cuotas.md",
+      "files_touched": [
+        "src/frontend/api/gastosClient.ts",
+        "src/frontend/pages/Gastos.tsx",
+        "tests/unit/frontend/Gastos.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 20,
+      "test_cases": ["TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El formulario Nuevo gasto ofrece un campo Cuotas opcional que se envía como número, nunca como 0/1 por conversión accidental de vacío.",
+        "postcondition": "Con el campo Cuotas en '3', el body enviado por registrarGasto incluye cuotas: 3; con el campo vacío, la clave cuotas está ausente del body.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Gastos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
