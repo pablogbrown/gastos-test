@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/importar-resumen-tarjeta
+pr_url: https://github.com/pablogbrown/gastos-test/pull/25
+pr_number: 25
 kind: single_spec
 exceptions:
   - code: NEW_DEPENDENCY
