@@ -1,0 +1,19 @@
+feature: gastos-suscripcion-mensual
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - frontend.md
+notes: |
+  Single spec: un solo flujo (suscripción -> generación mensual ->
+  cancelación) atravesando modelo->servicio->API->UI. Pasa el test de
+  deliverable-independiente respecto a gastos-en-cuotas (mecánica de
+  generación distinta: perezosa/indefinida vs. upfront/finita), por eso
+  quedaron como 2 specs separadas en vez de una. Depende de
+  balance-mensual (build en ese orden).

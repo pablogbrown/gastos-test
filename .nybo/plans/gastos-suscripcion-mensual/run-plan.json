@@ -1,0 +1,109 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos-suscripcion-mensual",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gastos-suscripcion-mensual/feat/01-plan-01-modelo-suscripcion.md",
+      "files_touched": [
+        "src/db/models/suscripcion.py",
+        "src/db/models/gasto.py",
+        "src/db/migrations/0009_suscripciones.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Suscripcion", "signature": "SQLAlchemy model", "kind": "class" },
+        { "name": "Gasto.suscripcion_id", "signature": "Optional[UUID]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Suscripcion existe como tabla propia, y Gasto tiene una FK opcional hacia ella; la migración corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas contra Postgres no lanza excepción, la tabla suscripciones existe, y gastos.suscripcion_id existe como columna nullable.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gastos-suscripcion-mensual/feat/01-plan-02-servicio-suscripciones.md",
+      "files_touched": [
+        "src/services/suscripcion_service.py",
+        "src/services/gasto_service.py",
+        "tests/integration/services/suscripcion.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        { "name": "suscripcion_service.crear_suscripcion", "signature": "(casa_id, descripcion, importe, categoria_id, actor) -> Suscripcion", "kind": "function" },
+        { "name": "suscripcion_service.listar_suscripciones", "signature": "(casa_id) -> List[Suscripcion]", "kind": "function" },
+        { "name": "suscripcion_service.cancelar_suscripcion", "signature": "(casa_id, suscripcion_id, actor) -> Suscripcion", "kind": "function" },
+        { "name": "suscripcion_service.generar_gastos_pendientes", "signature": "(casa_id) -> None", "kind": "function" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Suscripcion" }
+      ],
+      "contract": {
+        "statement": "Una suscripción activa genera automáticamente el gasto del mes actual al listar los gastos de la casa, sin duplicar ni reconstruir meses pasados, y deja de generar tras cancelarse.",
+        "postcondition": "Con una suscripción activa cuyo ultimo_mes_generado no es el mes actual, listar_gastos genera exactamente un Gasto nuevo con suscripcion_id apuntando a ella; una segunda llamada en el mismo mes no genera otro; tras cancelar_suscripcion, ninguna llamada futura genera un gasto nuevo para ella.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/suscripcion.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gastos-suscripcion-mensual/feat/01-plan-03-rutas-suscripciones.md",
+      "files_touched": [
+        "src/api/routes/suscripciones.py",
+        "src/api/main.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "suscripciones_router", "signature": "APIRouter", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "suscripcion_service" }
+      ],
+      "contract": {
+        "statement": "Las rutas POST/GET/PATCH de /casas/{id}/suscripciones exponen crear_suscripcion/listar_suscripciones/cancelar_suscripcion con los códigos HTTP esperados.",
+        "postcondition": "POST crea (201), GET lista, PATCH con activa=false cancela y con activa=true responde 400.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/suscripciones_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gastos-suscripcion-mensual/feat/01-plan-04-pantalla-suscripciones.md",
+      "files_touched": [
+        "src/frontend/api/suscripcionesClient.ts",
+        "src/frontend/pages/Suscripciones.tsx",
+        "src/frontend/pages/Gastos.tsx",
+        "src/frontend/AppNav.tsx",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/Suscripciones.test.tsx",
+        "tests/unit/frontend/Gastos.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 40,
+      "test_cases": ["TC-006", "TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La pantalla Suscripciones lista y permite cancelar (solo admin, solo activas); el formulario de Gastos puede crear una suscripción en vez de un gasto puntual.",
+        "postcondition": "Con una suscripción activa y una cancelada, la pantalla muestra ambas y el botón Cancelar solo en la activa; elegir el modo Suscripción mensual en Gastos llama a crearSuscripcion, no a registrarGasto.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Suscripciones.test.tsx,tests/unit/frontend/Gastos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
