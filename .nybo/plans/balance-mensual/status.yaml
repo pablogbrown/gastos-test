@@ -1,0 +1,17 @@
+feature: balance-mensual
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 3
+domain: services
+domains_referenced:
+  - services.md
+  - frontend.md
+notes: |
+  Single spec: un solo concern (filtrar por mes) atravesando
+  servicio->ruta->cliente->UI, sin boundary de actor que justifique
+  un split. Foundation para gastos-en-cuotas y
+  gastos-suscripcion-mensual (dependencia entre specs, no un split de
+  esta).
