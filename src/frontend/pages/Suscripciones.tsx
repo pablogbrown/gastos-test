@@ -49,6 +49,13 @@ export function Suscripciones({ casaId, rolUsuarioActual }: SuscripcionesProps) 
     void cargar();
   }, [cargar]);
 
+  /** Spec `gastos-multi-moneda`: prefijo `US$` para una suscripción en
+   * dólares, `$` (comportamiento actual) en cualquier otro caso — mismo
+   * criterio que `Gastos.tsx`. */
+  function importeConPrefijo(suscripcion: Suscripcion): string {
+    return `${suscripcion.moneda === "USD" ? "US$" : "$"}${suscripcion.importe}`;
+  }
+
   async function handleCancelar(suscripcionId: string) {
     setError(null);
     try {
@@ -85,7 +92,7 @@ export function Suscripciones({ casaId, rolUsuarioActual }: SuscripcionesProps) 
             {suscripciones.map((suscripcion) => (
               <TableRow key={suscripcion.id}>
                 <TableCell>{suscripcion.descripcion}</TableCell>
-                <TableCell>{suscripcion.importe}</TableCell>
+                <TableCell>{importeConPrefijo(suscripcion)}</TableCell>
                 <TableCell>
                   <Chip
                     label={suscripcion.activa ? "Activa" : "Inactiva"}

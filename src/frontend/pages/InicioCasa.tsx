@@ -58,6 +58,13 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
     return miembros.find((m) => m.id === miembroId)?.nombre ?? miembroId;
   }
 
+  // Spec `gastos-multi-moneda`: el mini-balance del dashboard filtra a
+  // solo filas en pesos — vista rápida, no reemplaza a la pantalla
+  // Balance completa (que sí muestra las secciones separadas por
+  // moneda). Una fila sin `moneda` explícita se trata como "ARS" —
+  // mismo default que el backend.
+  const balanceArs = dashboard.balance.filter((entrada) => (entrada.moneda ?? "ARS") === "ARS");
+
   return (
     <Box
       component="section"
@@ -111,11 +118,11 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
           <Typography variant="h6" component="h3" gutterBottom>
             Balance
           </Typography>
-          {dashboard.balance.length === 0 ? (
+          {balanceArs.length === 0 ? (
             <Typography color="text.secondary">Todavía no hay balance para mostrar.</Typography>
           ) : (
             <List dense>
-              {dashboard.balance.map((entrada) => (
+              {balanceArs.map((entrada) => (
                 <ListItem key={entrada.miembro_id} disableGutters>
                   <ListItemText primary={`${entrada.nombre}: ${entrada.balance}`} />
                 </ListItem>
