@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Gastos } from "../../../src/frontend/pages/Gastos";
+import * as suscripcionesClient from "../../../src/frontend/api/suscripcionesClient";
 
 const CASA_ID = "11111111-1111-1111-1111-111111111111";
 const ADMIN_ID = "22222222-2222-2222-2222-222222222222";
@@ -210,5 +211,70 @@ describe("Gastos", () => {
 
     await waitFor(() => expect(screen.getByLabelText("Participantes")).toBeInTheDocument());
     expect(screen.getByText("Administrador")).toBeInTheDocument();
+  });
+
+  it("TC-007 (spec gastos-suscripcion-mensual): con 'Suscripción mensual' elegido, llama a crearSuscripcion, no a registrarGasto", async () => {
+    const fetchMock = mockFetch();
+    let seLlamoAlEndpointDeGastosConPost = false;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        seLlamoAlEndpointDeGastosConPost = true;
+      }
+      if (url.endsWith("/categorias")) {
+        return {
+          ok: true,
+          json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
+        };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const crearSuscripcionSpy = vi
+      .spyOn(suscripcionesClient, "crearSuscripcion")
+      .mockResolvedValue({
+        id: "88888888-8888-8888-8888-888888888888",
+        casa_id: CASA_ID,
+        descripcion: "Netflix",
+        importe: "5000.00",
+        categoria_id: CATEGORIA_ID,
+        pagado_por: ADMIN_ID,
+        activa: true,
+        ultimo_mes_generado: "2026-09",
+        creado_en: "2026-09-15T00:00:00Z",
+      });
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Netflix");
+    await user.type(screen.getByLabelText("Importe"), "5000");
+    await user.selectOptions(screen.getByLabelText("Tipo de gasto"), "suscripcion");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(crearSuscripcionSpy).toHaveBeenCalledTimes(1));
+    expect(crearSuscripcionSpy).toHaveBeenCalledWith(
+      CASA_ID,
+      expect.objectContaining({ descripcion: "Netflix", importe: "5000" })
+    );
+    expect(seLlamoAlEndpointDeGastosConPost).toBe(false);
+
+    crearSuscripcionSpy.mockRestore();
+  });
+
+  it("oculta el campo Cuotas y la selección de participantes cuando el tipo es Suscripción mensual", async () => {
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    await screen.findByLabelText("Nuevo gasto");
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Tipo de gasto"), "suscripcion");
+
+    expect(screen.queryByLabelText("Cuotas (opcional)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Todos los miembros")).not.toBeInTheDocument();
   });
 });

@@ -11,6 +11,15 @@ propios servicios lo exponen para las specs dependientes.
 Spec `gastos-en-cuotas`: `registrar_gasto` acepta un `cuotas` opcional
 para repartir un gasto grande en N gastos mensuales consecutivos (ver
 `_generar_cuotas`/`_sumar_meses` más abajo).
+
+Spec `gastos-suscripcion-mensual`: `registrar_gasto` acepta también un
+`suscripcion_id` opcional, independiente de `cuotas` (un gasto generado
+por una suscripción nunca tiene `cuotas`, y viceversa) — puramente de
+etiquetado, para vincular el `Gasto` resultante a la `Suscripcion` que lo
+generó. `listar_gastos` llama a `suscripcion_service.
+generar_gastos_pendientes` como primera línea, antes de la query
+existente, para que las pantallas Gastos e Inicio disparen la generación
+perezosa del mes actual sin necesitar un scheduler nuevo.
 """
 import calendar
 import uuid
@@ -40,6 +49,7 @@ def registrar_gasto(
     actor: UUID,
     participantes: Optional[Iterable[UUID]] = None,
     cuotas: Optional[int] = None,
+    suscripcion_id: Optional[UUID] = None,
 ) -> Gasto:
     """Registra un Gasto y sus GastoParticipante asociados.
 
@@ -57,6 +67,10 @@ def registrar_gasto(
     explícitamente `1` se comporta exactamente igual que hoy (REQ-003):
     un único Gasto, sin ningún dato de cuota poblado. Solo `0` o un
     valor negativo, enviados explícitamente, son rechazados (REQ-004).
+
+    `suscripcion_id` (spec `gastos-suscripcion-mensual`): puramente de
+    etiquetado — un gasto generado por una suscripción nunca combina con
+    `cuotas` (`suscripcion_service` nunca los pasa juntos).
     """
     if cuotas is not None and cuotas <= 0:
         raise ValidationError("La cantidad de cuotas debe ser 2 o mayor.")
@@ -122,6 +136,7 @@ def registrar_gasto(
                 fecha=fecha,
                 pagado_por=pagado_por,
                 categoria_id=categoria_id,
+                suscripcion_id=suscripcion_id,
             )
             session.add(gasto)
             session.flush()
@@ -262,7 +277,19 @@ def listar_gastos(casa_id: UUID):
     """Historial de gastos de una casa, ordenado por fecha descendente
     (REQ-008/TC-010). Incluye gastos pagados por miembros ya
     desactivados: no se filtra por `Miembro.activo`.
+
+    Spec `gastos-suscripcion-mensual` (REQ-002): antes de la query
+    existente, dispara la generación perezosa del gasto del mes actual
+    para cada suscripción activa de la casa que todavía no lo tenga —
+    el "disparador" es la primera visita del mes a esta casa (pantalla
+    Gastos o Inicio, que ya llama a esta misma función), sin scheduler
+    nuevo. Import diferido (no al tope del módulo) para evitar un ciclo:
+    `suscripcion_service` importa `gasto_service.registrar_gasto`.
     """
+    from src.services import suscripcion_service
+
+    suscripcion_service.generar_gastos_pendientes(casa_id)
+
     session = get_session()
     try:
         if session.get(Casa, casa_id) is None:

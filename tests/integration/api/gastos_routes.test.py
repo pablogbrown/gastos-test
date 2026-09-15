@@ -53,10 +53,16 @@ def client(monkeypatch):
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email) para vincular al nuevo Miembro.
     migration_usuarios = importlib.import_module("src.db.migrations.0005_usuarios")
+    # 0009 (spec `gastos-suscripcion-mensual`): `GET /gastos` (`listar_
+    # gastos`) ahora dispara `suscripcion_service.
+    # generar_gastos_pendientes` como primera línea, que requiere la
+    # tabla `suscripciones`.
+    migration_suscripciones = importlib.import_module("src.db.migrations.0009_suscripciones")
     migration_casas.upgrade(engine)
     migration_gastos.upgrade(engine)
     migration_actividad.upgrade(engine)
     migration_usuarios.upgrade(engine)
+    migration_suscripciones.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
@@ -65,6 +71,7 @@ def client(monkeypatch):
     monkeypatch.setattr("src.services.gasto_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.balance_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.suscripcion_service.get_session", lambda: TestSession())
 
     app = FastAPI()
     app.include_router(casas_router)

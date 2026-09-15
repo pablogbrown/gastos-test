@@ -223,14 +223,28 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
 
         inspector = sqlalchemy.inspect(engine)
         tablas = set(inspector.get_table_names())
-        assert {"casas", "miembros", "gastos", "tareas", "historial_actividad"} <= tablas
+        assert {
+            "casas",
+            "miembros",
+            "gastos",
+            "tareas",
+            "historial_actividad",
+            "suscripciones",
+        } <= tablas
 
         # El enum de rol se creó como tipo nativo de Postgres, no como texto libre.
         columnas_miembro = {c["name"]: c for c in inspector.get_columns("miembros")}
         assert "rol" in columnas_miembro
 
+        # T1 (spec `gastos-suscripcion-mensual`): `gastos.suscripcion_id`
+        # existe como columna nullable tras la migración 0009.
+        columnas_gasto = {c["name"]: c for c in inspector.get_columns("gastos")}
+        assert "suscripcion_id" in columnas_gasto
+        assert columnas_gasto["suscripcion_id"]["nullable"] is True
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
-        # con checkfirst=True) — relevante porque main.py las corre en cada
+        # con checkfirst=True, y el ALTER TABLE ... ADD COLUMN IF NOT
+        # EXISTS de 0009) — relevante porque main.py las corre en cada
         # arranque del backend dentro de docker-compose.
         run_migrations(engine)
     finally:
