@@ -1,0 +1,115 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos-multi-moneda",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gastos-multi-moneda/feat/01-plan-01-columna-moneda.md",
+      "files_touched": [
+        "src/db/models/gasto.py",
+        "src/db/models/suscripcion.py",
+        "src/db/migrations/0010_gasto_suscripcion_moneda.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 15,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Gasto.moneda", "signature": "str", "kind": "export" },
+        { "name": "Suscripcion.moneda", "signature": "str", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Gasto y Suscripcion tienen columna moneda NOT NULL DEFAULT 'ARS', y la migración corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepción; ambas columnas existen con default 'ARS'.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gastos-multi-moneda/feat/01-plan-02-servicios-moneda.md",
+      "files_touched": [
+        "src/services/gasto_service.py",
+        "src/services/suscripcion_service.py",
+        "src/services/balance_service.py",
+        "tests/integration/services/gasto_moneda.test.py",
+        "tests/integration/services/suscripcion_moneda.test.py",
+        "tests/unit/services/balance_moneda.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-007"],
+      "interfaces_produced": [
+        { "name": "BalancePorMiembro.moneda", "signature": "str", "kind": "export" },
+        { "name": "Transferencia.moneda", "signature": "str", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Gasto.moneda" },
+        { "from": "T1", "name": "Suscripcion.moneda" }
+      ],
+      "contract": {
+        "statement": "registrar_gasto/crear_suscripcion validan y persisten moneda; calcular_balance agrupa por (miembro, moneda) sin filas USD en 0; sugerir_transferencias nunca cruza monedas.",
+        "postcondition": "Con actividad en ARS y USD el mismo mes, calcular_balance devuelve filas de ambas monedas, USD solo para miembros con actividad; sugerir_transferencias no empareja monedas distintas; moneda invalida lanza ValidationError.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/gasto_moneda.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gastos-multi-moneda/feat/01-plan-03-api-moneda.md",
+      "files_touched": [
+        "src/api/routes/gastos.py",
+        "src/api/routes/suscripciones.py",
+        "tests/integration/api/gastos_moneda_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 15,
+      "test_cases": ["TC-008"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "registrar_gasto" },
+        { "from": "T2", "name": "crear_suscripcion" }
+      ],
+      "contract": {
+        "statement": "Los endpoints de gastos/suscripciones/balance aceptan y exponen moneda; una moneda invalida responde 400.",
+        "postcondition": "POST .../gastos con moneda='EUR' responde 400; GET .../balance y GET .../suscripciones incluyen moneda en cada fila.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_moneda_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gastos-multi-moneda/feat/01-plan-04-frontend-moneda.md",
+      "files_touched": [
+        "src/frontend/api/gastosClient.ts",
+        "src/frontend/api/suscripcionesClient.ts",
+        "src/frontend/pages/Gastos.tsx",
+        "src/frontend/pages/Suscripciones.tsx",
+        "src/frontend/pages/Balance.tsx",
+        "src/frontend/pages/InicioCasa.tsx",
+        "tests/unit/frontend/Gastos.test.tsx",
+        "tests/unit/frontend/Balance.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 30,
+      "test_cases": ["TC-009", "TC-010"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "GastoOut.moneda" },
+        { "from": "T3", "name": "BalancePorMiembroOut.moneda" }
+      ],
+      "contract": {
+        "statement": "El formulario Nuevo gasto ofrece un selector Moneda; Balance renderiza secciones separadas por moneda sin total combinado.",
+        "postcondition": "Con Moneda='USD' seleccionado, el body enviado incluye moneda: 'USD'; con actividad en ambas monedas, Balance.tsx renderiza 2 secciones sin ningun elemento que sume ambas.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Balance.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+feature: gastos-multi-moneda
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/gastos-multi-moneda
+kind: single_spec
+notes: |
+  Foundation para tarjetas-credito e importar-resumen-tarjeta.
+  Rationale: spec.md. Build narrative: evidence/build-results.md.
