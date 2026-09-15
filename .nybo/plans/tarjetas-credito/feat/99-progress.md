@@ -5,7 +5,7 @@
 ### Tasks
 - [x] T1 — Modelo `TarjetaCredito` + migración
 - [x] T2 — `tarjeta_service` (CRUD + cálculo de alerta)
-- [ ] T3 — Rutas de tarjetas; dashboard expone alertas
+- [x] T3 — Rutas de tarjetas; dashboard expone alertas
 - [ ] T4 — Pantalla "Tarjetas"; banner en Inicio
 
 ### Verify

@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 
 from src.api.dependencies import resolver_actor_en_casa
 from src.api.routes.gastos import BalancePorMiembroOut, GastoOut
+from src.api.routes.tarjetas import TarjetaAlertaOut
 from src.api.schemas import HistorialTareaOut, MiembroOut, RankingEntryOut, TareaOut
 from src.services.actividad_service import obtener_actividad
 from src.services.dashboard_service import armar_dashboard
@@ -43,6 +44,10 @@ class DashboardOut(BaseModel):
         default_factory=list, alias="tareasCompletadasRecientes"
     )
     ranking: List[RankingEntryOut] = Field(default_factory=list)
+    # Spec `tarjetas-credito`, REQ-004 (aditivo).
+    tarjetas_con_alerta: List[TarjetaAlertaOut] = Field(
+        default_factory=list, alias="tarjetasConAlerta"
+    )
 
     class Config:
         allow_population_by_field_name = True
@@ -75,6 +80,7 @@ def obtener_inicio_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_
         tareas_pendientes=dashboard.tareas_pendientes,
         tareas_completadas_recientes=dashboard.tareas_completadas_recientes,
         ranking=dashboard.ranking,
+        tarjetas_con_alerta=dashboard.tarjetas_con_alerta,
     )
 
 

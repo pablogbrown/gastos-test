@@ -53,12 +53,17 @@ def db_session(monkeypatch):
     # dispara `suscripcion_service.generar_gastos_pendientes` como primera
     # línea, que requiere la tabla `suscripciones`.
     migration_suscripciones = importlib.import_module("src.db.migrations.0009_suscripciones")
+    # 0011 (spec `tarjetas-credito`): `armar_dashboard` ahora llama a
+    # `obtener_tarjetas_con_alerta`, que requiere la tabla
+    # `tarjetas_credito`.
+    migration_tarjetas = importlib.import_module("src.db.migrations.0011_tarjetas_credito")
     migration_casas.upgrade(engine)
     migration_gastos.upgrade(engine)
     migration_tareas.upgrade(engine)
     migration_actividad.upgrade(engine)
     migration_usuarios.upgrade(engine)
     migration_suscripciones.upgrade(engine)
+    migration_tarjetas.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
@@ -70,6 +75,7 @@ def db_session(monkeypatch):
     monkeypatch.setattr("src.services.tarea_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.ranking_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.suscripcion_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.tarjeta_service.get_session", lambda: TestSession())
     yield TestSession
 
 
