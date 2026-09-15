@@ -42,6 +42,9 @@ export interface GastosProps {
  * envío llame a `crearSuscripcion` en vez de `registrarGasto`. */
 type TipoGasto = "unico" | "cuotas" | "suscripcion";
 
+/** Spec `gastos-multi-moneda`: moneda de un gasto o suscripción. */
+type Moneda = "ARS" | "USD";
+
 /** Pantalla "Gastos" (REQ-001, REQ-002, REQ-003, REQ-008): formulario de
  * alta de un gasto y su historial. "Todos los miembros" viene
  * preseleccionado (REQ-003); el historial no filtra por `activo` — la
@@ -57,6 +60,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
   const [categoriaId, setCategoriaId] = useState("");
   const [cuotas, setCuotas] = useState("");
   const [tipoGasto, setTipoGasto] = useState<TipoGasto>("unico");
+  const [moneda, setMoneda] = useState<Moneda>("ARS");
   const [nuevaCategoria, setNuevaCategoria] = useState("");
   const [todosLosMiembros, setTodosLosMiembros] = useState(true);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -95,13 +99,22 @@ export function Gastos({ casaId, miembros }: GastosProps) {
     event.preventDefault();
     setError(null);
     try {
+      // Spec `gastos-multi-moneda`: nunca se fuerza "ARS" explícito en el
+      // body — el backend ya lo asume por default (mismo patrón
+      // vacío->undefined que `cuotas`).
+      const monedaEnviada = moneda === "ARS" ? undefined : moneda;
       if (tipoGasto === "suscripcion") {
         // Spec `gastos-suscripcion-mensual`, TC-007: el modo "Suscripción
         // mensual" llama a `crearSuscripcion`, nunca a `registrarGasto` —
         // sin cuotas ni selección de participantes (siempre "todos los
         // miembros", igual que `crear_suscripcion` ya hace del lado del
         // servicio).
-        await crearSuscripcion(casaId, { descripcion, importe, categoriaId });
+        await crearSuscripcion(casaId, {
+          descripcion,
+          importe,
+          categoriaId,
+          moneda: monedaEnviada,
+        });
       } else {
         await registrarGasto(casaId, {
           descripcion,
@@ -110,6 +123,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
           categoriaId,
           participantes: todosLosMiembros ? undefined : seleccionados,
           cuotas: cuotas === "" ? undefined : Number(cuotas),
+          moneda: monedaEnviada,
         });
       }
       setDescripcion("");
@@ -118,6 +132,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
       setCategoriaId("");
       setCuotas("");
       setTipoGasto("unico");
+      setMoneda("ARS");
       setTodosLosMiembros(true);
       setSeleccionados([]);
       await cargar();
@@ -142,6 +157,12 @@ export function Gastos({ casaId, miembros }: GastosProps) {
 
   function nombreCategoria(id: string): string {
     return categorias.find((categoria) => categoria.id === id)?.nombre ?? id;
+  }
+
+  /** Spec `gastos-multi-moneda`: prefijo `US$` para un gasto en dólares,
+   * `$` (comportamiento actual) en cualquier otro caso. */
+  function importeConPrefijo(gasto: Gasto): string {
+    return `${gasto.moneda === "USD" ? "US$" : "$"}${gasto.importe}`;
   }
 
   return (
@@ -196,6 +217,22 @@ export function Gastos({ casaId, miembros }: GastosProps) {
               onChange={(event) => setImporte(event.target.value)}
               size="small"
             />
+
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel htmlFor="moneda-gasto" shrink>
+                Moneda
+              </InputLabel>
+              <Select
+                native
+                id="moneda-gasto"
+                label="Moneda"
+                value={moneda}
+                onChange={(event) => setMoneda(event.target.value as Moneda)}
+              >
+                <option value="ARS">ARS</option>
+                <option value="USD">USD</option>
+              </Select>
+            </FormControl>
 
             <TextField
               id="fecha-gasto"
@@ -324,7 +361,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
               <TableRow key={gasto.id}>
                 <TableCell>{gasto.fecha}</TableCell>
                 <TableCell>{gasto.descripcion}</TableCell>
-                <TableCell>{gasto.importe}</TableCell>
+                <TableCell>{importeConPrefijo(gasto)}</TableCell>
                 <TableCell>{nombreCategoria(gasto.categoria_id)}</TableCell>
               </TableRow>
             ))}

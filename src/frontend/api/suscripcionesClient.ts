@@ -17,12 +17,17 @@ export interface Suscripcion {
   activa: boolean;
   ultimo_mes_generado: string | null;
   creado_en: string;
+  // Spec `gastos-multi-moneda`: siempre presente ("ARS" o "USD").
+  moneda: string;
 }
 
 export interface NuevaSuscripcion {
   descripcion: string;
   importe: string;
   categoriaId: string;
+  // Spec `gastos-multi-moneda`: ausente -> "ARS" (default) en el
+  // backend — nunca se fuerza "ARS" explícito en el body.
+  moneda?: "ARS" | "USD";
 }
 
 const API_BASE = "/casas";
@@ -53,6 +58,7 @@ export async function crearSuscripcion(
       descripcion: suscripcion.descripcion,
       importe: suscripcion.importe,
       categoria_id: suscripcion.categoriaId,
+      moneda: suscripcion.moneda,
     }),
   });
   return parseJsonOrThrow<Suscripcion>(resp);

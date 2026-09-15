@@ -6,7 +6,7 @@
 - [x] T1 — `Gasto`/`Suscripcion` guardan `moneda`; migración
 - [x] T2 — Servicios propagan y separan por moneda
 - [x] T3 — API expone `moneda`
-- [ ] T4 — Selector de moneda; Balance por secciones
+- [x] T4 — Selector de moneda; Balance por secciones
 
 ### Verify
 - [ ] Verificación end-to-end de la spec
@@ -15,16 +15,16 @@
 - [ ] Extracción de convenciones/aprendizajes
 
 #### Test Cases
-- [ ] `[TC-001]` *[INTEGRATION]* — Gasto en USD persiste correctamente
-- [ ] `[TC-002]` *[INTEGRATION]* — Sin moneda, default ARS (control)
-- [ ] `[TC-003]` *[INTEGRATION]* — Balance separado por moneda con actividad en ambas
-- [ ] `[TC-004]` *[UNIT]* — Sin actividad en USD, ninguna fila USD
-- [ ] `[TC-005]` *[UNIT]* — Transferencias nunca cruzan moneda
-- [ ] `[TC-006]` *[INTEGRATION]* — Suscripción en USD genera gasto en USD
-- [ ] `[TC-007]` *[INTEGRATION]* — Cuotas mantienen la misma moneda
-- [ ] `[TC-008]` *[INTEGRATION]* — Moneda inválida rechazada con 400
-- [ ] `[TC-009]` *[UNIT]* — Formulario envía `moneda` en el body
-- [ ] `[TC-010]` *[UNIT]* — Balance renderiza secciones separadas sin total combinado
+- [x] `[TC-001]` *[INTEGRATION]* — Gasto en USD persiste correctamente
+- [x] `[TC-002]` *[INTEGRATION]* — Sin moneda, default ARS (control)
+- [x] `[TC-003]` *[INTEGRATION]* — Balance separado por moneda con actividad en ambas
+- [x] `[TC-004]` *[UNIT]* — Sin actividad en USD, ninguna fila USD
+- [x] `[TC-005]` *[UNIT]* — Transferencias nunca cruzan moneda
+- [x] `[TC-006]` *[INTEGRATION]* — Suscripción en USD genera gasto en USD
+- [x] `[TC-007]` *[INTEGRATION]* — Cuotas mantienen la misma moneda
+- [x] `[TC-008]` *[INTEGRATION]* — Moneda inválida rechazada con 400
+- [x] `[TC-009]` *[UNIT]* — Formulario envía `moneda` en el body
+- [x] `[TC-010]` *[UNIT]* — Balance renderiza secciones separadas sin total combinado
 
 ## Completion Summary
 _Pendiente — se completa al finalizar el build._

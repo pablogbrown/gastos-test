@@ -16,10 +16,38 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
-import { BalanceResponse, esApiError, obtenerBalance } from "../api/gastosClient";
+import {
+  BalancePorMiembro,
+  BalanceResponse,
+  esApiError,
+  obtenerBalance,
+  Transferencia,
+} from "../api/gastosClient";
 
 export interface BalanceProps {
   casaId: string;
+}
+
+/** Spec `gastos-multi-moneda`, REQ-002/TC-010: nombre de sección por
+ * moneda — "Pesos" se muestra siempre (comportamiento actual); "Dólares"
+ * solo si hay al menos una fila en USD. Una fila sin `moneda` explícita
+ * (fixtures/backends viejos) se trata como "ARS" — mismo default que el
+ * backend. */
+const NOMBRE_SECCION: Record<string, string> = { ARS: "Pesos", USD: "Dólares" };
+
+function nombreSeccion(moneda: string): string {
+  return NOMBRE_SECCION[moneda] ?? moneda;
+}
+
+function agruparPorMoneda<T extends { moneda?: string }>(filas: T[]): Map<string, T[]> {
+  const grupos = new Map<string, T[]>();
+  for (const fila of filas) {
+    const moneda = fila.moneda ?? "ARS";
+    const grupo = grupos.get(moneda) ?? [];
+    grupo.push(fila);
+    grupos.set(moneda, grupo);
+  }
+  return grupos;
 }
 
 /** Pantalla "Balance" (REQ-005, REQ-006): cuánto pagó y le correspondía
@@ -72,53 +100,91 @@ export function Balance({ casaId }: BalanceProps) {
 
       {!error && !balance && <Typography>Cargando balance...</Typography>}
 
-      {!error && balance && (
-        <>
-          <TableContainer component={Paper} variant="outlined">
-            <Table sx={{ minWidth: 320 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Miembro</TableCell>
-                  <TableCell>Pagó</TableCell>
-                  <TableCell>Le correspondía</TableCell>
-                  <TableCell>Balance</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {balance.balances.map((miembro) => (
-                  <TableRow key={miembro.miembro_id}>
-                    <TableCell>{miembro.nombre}</TableCell>
-                    <TableCell>{miembro.pago}</TableCell>
-                    <TableCell>{miembro.correspondia}</TableCell>
-                    <TableCell>{miembro.balance}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+      {!error && balance && (() => {
+        // Spec `gastos-multi-moneda` (REQ-002/TC-010): una sección
+        // independiente por moneda, cada una con su propia tabla y sus
+        // propias transferencias sugeridas — nunca un total combinado.
+        // "Pesos" (ARS) se muestra siempre, aunque no tenga filas;
+        // "Dólares" (o cualquier otra moneda) solo si tiene actividad.
+        const gruposBalances = agruparPorMoneda<BalancePorMiembro>(balance.balances);
+        const gruposTransferencias = agruparPorMoneda<Transferencia>(balance.transferencias);
+        if (!gruposBalances.has("ARS")) {
+          gruposBalances.set("ARS", []);
+        }
+        const monedas = [
+          "ARS",
+          ...Array.from(gruposBalances.keys())
+            .filter((moneda) => moneda !== "ARS")
+            .sort(),
+        ];
 
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" component="h3" gutterBottom>
-                Transferencias sugeridas
-              </Typography>
-              {balance.transferencias.length === 0 ? (
-                <Typography color="text.secondary">No hay transferencias pendientes.</Typography>
-              ) : (
-                <List dense>
-                  {balance.transferencias.map((transferencia, indice) => (
-                    <ListItem key={indice} disableGutters>
-                      <ListItemText
-                        primary={`${nombreDe(transferencia.deudor_id)} debe transferir ${transferencia.monto} a ${nombreDe(transferencia.acreedor_id)}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+        return (
+          <>
+            {monedas.map((moneda) => {
+              const filasBalance = gruposBalances.get(moneda) ?? [];
+              const filasTransferencias = gruposTransferencias.get(moneda) ?? [];
+              return (
+                <Box
+                  key={moneda}
+                  component="section"
+                  aria-label={`Balance en ${nombreSeccion(moneda)}`}
+                  sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                >
+                  <Typography variant="h6" component="h3">
+                    {nombreSeccion(moneda)}
+                  </Typography>
+
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table sx={{ minWidth: 320 }}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Miembro</TableCell>
+                          <TableCell>Pagó</TableCell>
+                          <TableCell>Le correspondía</TableCell>
+                          <TableCell>Balance</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filasBalance.map((miembro) => (
+                          <TableRow key={miembro.miembro_id}>
+                            <TableCell>{miembro.nombre}</TableCell>
+                            <TableCell>{miembro.pago}</TableCell>
+                            <TableCell>{miembro.correspondia}</TableCell>
+                            <TableCell>{miembro.balance}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="subtitle1" component="h4" gutterBottom>
+                        Transferencias sugeridas
+                      </Typography>
+                      {filasTransferencias.length === 0 ? (
+                        <Typography color="text.secondary">
+                          No hay transferencias pendientes.
+                        </Typography>
+                      ) : (
+                        <List dense>
+                          {filasTransferencias.map((transferencia, indice) => (
+                            <ListItem key={indice} disableGutters>
+                              <ListItemText
+                                primary={`${nombreDe(transferencia.deudor_id)} debe transferir ${transferencia.monto} a ${nombreDe(transferencia.acreedor_id)}`}
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              );
+            })}
+          </>
+        );
+      })()}
     </Box>
   );
 }
