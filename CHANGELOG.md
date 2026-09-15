@@ -42,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(frontend): Ranking y el inicio de la casa muestran el nombre del miembro en vez de su UUID crudo, tanto en la tabla completa de Ranking como en el mini-ranking de la pantalla de Inicio.
 - fix(frontend): crear una tarea con el campo Puntos vacío ahora muestra el error de validación correspondiente en vez de crear silenciosamente una tarea de 0 puntos.
 
+### Changed
+
+- feat(services): el Balance ahora se filtra por mes (selector en la pantalla, mes actual por defecto) en vez de sumar todo el historial de gastos desde siempre — base necesaria para que un gasto futuro (cuotas, suscripciones) no infle la deuda de hoy.
+
 ### Added
 
 - feat(auth): un Administrador puede agregar como miembro a alguien que todavía no tiene cuenta — queda como "Pendiente" y se vincula automáticamente en cuanto esa persona se registra con el mismo email.

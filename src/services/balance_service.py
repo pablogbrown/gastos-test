@@ -6,9 +6,11 @@ el cálculo agregado de balance cambian por razones distintas — nuevas
 reglas de división de un gasto vs. nuevas formas de presentar el saldo
 de una casa.
 """
+import calendar
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
-from typing import List
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 from sqlalchemy import func
@@ -17,7 +19,7 @@ from src.db.base import get_session
 from src.db.models.casa import Casa
 from src.db.models.gasto import Gasto, GastoParticipante
 from src.db.models.miembro import Miembro
-from src.services.exceptions import NotFoundError
+from src.services.exceptions import NotFoundError, ValidationError
 
 
 @dataclass
@@ -36,12 +38,33 @@ class Transferencia:
     monto: Decimal
 
 
-def calcular_balance(casa_id: UUID) -> List[BalancePorMiembro]:
+def _rango_mes(mes: Optional[str]) -> Tuple[date, date]:
+    """Resuelve `mes` (`YYYY-MM`, o `None` para el mes calendario actual)
+    al primer y último día de ese mes (spec `balance-mensual`, REQ-001/
+    REQ-002/REQ-003)."""
+    if mes is None:
+        hoy = date.today()
+        anio, numero_mes = hoy.year, hoy.month
+    else:
+        try:
+            anio, numero_mes = (int(parte) for parte in mes.split("-"))
+            if not (1 <= numero_mes <= 12):
+                raise ValueError
+        except ValueError as exc:
+            raise ValidationError(f"Formato de mes inválido: {mes!r}. Se espera 'YYYY-MM'.") from exc
+    ultimo_dia = calendar.monthrange(anio, numero_mes)[1]
+    return date(anio, numero_mes, 1), date(anio, numero_mes, ultimo_dia)
+
+
+def calcular_balance(casa_id: UUID, mes: Optional[str] = None) -> List[BalancePorMiembro]:
     """Balance por miembro: total pagado menos total correspondiente
-    (REQ-005). Incluye a todo miembro de la casa, activo o no —
-    REQ-007/REQ-008 exigen que el historial y sus efectos sobrevivan a
-    la desactivación de un miembro.
+    (REQ-005), filtrado por mes (spec `balance-mensual`, REQ-001/REQ-002)
+    — sin `mes`, usa el mes calendario actual. Incluye a todo miembro de
+    la casa, activo o no — REQ-007/REQ-008 exigen que el historial y sus
+    efectos sobrevivan a la desactivación de un miembro.
     """
+    desde, hasta = _rango_mes(mes)
+
     session = get_session()
     try:
         if session.get(Casa, casa_id) is None:
@@ -52,6 +75,7 @@ def calcular_balance(casa_id: UUID) -> List[BalancePorMiembro]:
         pagos = dict(
             session.query(Gasto.pagado_por, func.sum(Gasto.importe))
             .filter(Gasto.casa_id == casa_id)
+            .filter(Gasto.fecha.between(desde, hasta))
             .group_by(Gasto.pagado_por)
             .all()
         )
@@ -61,6 +85,7 @@ def calcular_balance(casa_id: UUID) -> List[BalancePorMiembro]:
             )
             .join(Gasto, Gasto.id == GastoParticipante.gasto_id)
             .filter(Gasto.casa_id == casa_id)
+            .filter(Gasto.fecha.between(desde, hasta))
             .group_by(GastoParticipante.miembro_id)
             .all()
         )
