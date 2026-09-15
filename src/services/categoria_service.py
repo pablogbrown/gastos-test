@@ -79,3 +79,43 @@ def listar_categorias(casa_id: UUID):
         return session.query(Categoria).filter(Categoria.casa_id == casa_id).all()
     finally:
         session.close()
+
+
+def obtener_o_crear_categoria(casa_id: UUID, nombre: str, actor: UUID) -> Categoria:
+    """Find-or-create de una categoría por nombre (case-insensitive) —
+    spec `importar-resumen-tarjeta`: usada para asignar la categoría
+    "Importado" a todo gasto de un resumen sin categoría inferible del
+    PDF, sin duplicar la fila si ya existe (a diferencia de `crear_
+    categoria`, que rechaza un nombre duplicado con `ValidationError`).
+
+    A diferencia de `crear_categoria`, no exige rol Administrador: la
+    importación de un resumen ya validó sus propios permisos aguas
+    arriba (`resumen_importer_service`); esta función es un detalle de
+    implementación interno, no una operación de catálogo expuesta al
+    usuario.
+    """
+    session = get_session()
+    try:
+        if session.get(Casa, casa_id) is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+
+        nombre_normalizado = nombre.strip()
+        existente = (
+            session.query(Categoria)
+            .filter(Categoria.casa_id == casa_id)
+            .filter(Categoria.nombre.ilike(nombre_normalizado))
+            .one_or_none()
+        )
+        if existente is not None:
+            return existente
+
+        categoria = Categoria(id=uuid.uuid4(), casa_id=casa_id, nombre=nombre_normalizado)
+        session.add(categoria)
+        session.commit()
+        session.refresh(categoria)
+        return categoria
+    except NotFoundError:
+        session.rollback()
+        raise
+    finally:
+        session.close()

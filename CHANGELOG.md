@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - feat(tarjetas-credito): nueva pantalla "Tarjetas" para registrar tarjetas de crédito (banco, últimos dígitos, cierre/vencimiento, saldo) y un banner de alerta en Inicio cuando el vencimiento de alguna tarjeta está a 7 días o menos, o ya venció.
 
+- feat(importar-resumen-tarjeta): subir el PDF de un resumen (BBVA Visa Platinum) actualiza la tarjeta y crea automáticamente cada gasto del resumen, sin ningún paso de revisión — detecta compras en cuotas en curso (importando solo las cuotas restantes) y suscripciones conocidas (Netflix, Spotify, Disney+), vinculándolas a los mecanismos ya existentes; las líneas de impuestos y cargos nunca se importan.
+
 - feat(frontend): Added Login/Registro screens and JWT-based session storage on the frontend, replacing the X-Usuario-Id header. (`.nybo/plans/auth-frontend/`)
 
 - feat(auth): Added global Usuario entity with email/password registration and JWT login, replacing X-Usuario-Id header with real multi-casa membership resolution. (`.nybo/plans/auth-backend/`)

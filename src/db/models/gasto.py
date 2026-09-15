@@ -32,6 +32,16 @@ class Gasto(Base):
     sin conversión entre monedas en ningún lado del sistema. Todas las
     cuotas de una misma compra comparten la misma `moneda`
     (`_crear_gastos_en_cuotas`, `gasto_service.py`).
+
+    `tarjeta_id` (spec `importar-resumen-tarjeta`): `NULL` para un gasto
+    no originado en la importación de un resumen; identifica de qué
+    `TarjetaCredito` vino un consumo importado. Sin `ForeignKey()` a nivel
+    de modelo, mismo criterio que `suscripcion_id`/`cuota_grupo_id` de
+    arriba — la integridad referencial real en Postgres la agrega
+    `0012_gasto_tarjeta_id.py` vía `ALTER TABLE ... REFERENCES
+    tarjetas_credito(id)` (SQL crudo, no metadata de SQLAlchemy), evitando
+    depender de que `tarjeta_credito.py` ya esté importado en todo
+    contexto donde se importe este módulo.
     """
 
     __tablename__ = "gastos"
@@ -60,6 +70,7 @@ class Gasto(Base):
     # existe de verdad en la base.
     suscripcion_id = Column(GUID(), nullable=True)
     moneda = Column(String(3), nullable=False, default="ARS")
+    tarjeta_id = Column(GUID(), nullable=True)
 
     participantes = relationship(
         "GastoParticipante", back_populates="gasto", cascade="all, delete-orphan"

@@ -18,6 +18,7 @@ import {
   crearTarjeta,
   eliminarTarjeta,
   esApiError,
+  importarResumen,
   listarTarjetas,
   actualizarTarjeta,
 } from "../api/tarjetasClient";
@@ -54,6 +55,7 @@ export function Tarjetas({ casaId }: TarjetasProps) {
   const [fechaCierre, setFechaCierre] = useState("");
   const [fechaVencimiento, setFechaVencimiento] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [mensajeImportacion, setMensajeImportacion] = useState<string | null>(null);
   const [ediciones, setEdiciones] = useState<Record<string, EdicionFila>>({});
 
   const cargar = useCallback(async () => {
@@ -131,6 +133,25 @@ export function Tarjetas({ casaId }: TarjetasProps) {
     }
   }
 
+  /** REQ-007: sube el PDF de inmediato al seleccionarlo, sin ningún
+   * diálogo de confirmación previo — importación 100% automática, mismo
+   * criterio que el resto de las acciones de esta pantalla. */
+  async function handleImportarResumen(tarjetaId: string, archivo: File) {
+    setError(null);
+    setMensajeImportacion(null);
+    try {
+      const resultado = await importarResumen(casaId, tarjetaId, archivo);
+      setMensajeImportacion(
+        `Resumen importado: ${resultado.gastos_creados} gastos creados ` +
+          `(${resultado.cuotas_creadas} en cuotas, ` +
+          `${resultado.suscripciones_vinculadas} vinculados a suscripciones).`
+      );
+      await cargar();
+    } catch (err) {
+      setError(esApiError(err) ? err.detail : "No se pudo importar el resumen.");
+    }
+  }
+
   return (
     <Box
       component="section"
@@ -142,6 +163,7 @@ export function Tarjetas({ casaId }: TarjetasProps) {
       </Typography>
 
       {error && <Alert severity="error">{error}</Alert>}
+      {mensajeImportacion && <Alert severity="success">{mensajeImportacion}</Alert>}
 
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Box
@@ -267,7 +289,7 @@ export function Tarjetas({ casaId }: TarjetasProps) {
                     <Chip label="Activa" color="success" size="small" />
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: "flex", gap: 1 }}>
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                       <Button
                         type="button"
                         size="small"
@@ -282,6 +304,25 @@ export function Tarjetas({ casaId }: TarjetasProps) {
                         onClick={() => handleEliminar(tarjeta.id)}
                       >
                         Eliminar
+                      </Button>
+                      <Button type="button" size="small" component="label">
+                        Importar resumen
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          hidden
+                          aria-label={`Importar resumen ${tarjeta.nombre}`}
+                          onChange={(event) => {
+                            const archivo = event.target.files?.[0];
+                            // Permite volver a seleccionar el mismo archivo
+                            // más adelante (el evento `change` no dispara
+                            // dos veces seguidas con el mismo valor).
+                            event.target.value = "";
+                            if (archivo) {
+                              void handleImportarResumen(tarjeta.id, archivo);
+                            }
+                          }}
+                        />
                       </Button>
                     </Box>
                   </TableCell>

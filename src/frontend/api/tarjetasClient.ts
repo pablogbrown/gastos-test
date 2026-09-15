@@ -37,6 +37,14 @@ export interface ActualizacionTarjeta {
   saldoActualUsd?: string;
 }
 
+// spec `importar-resumen-tarjeta`, T4.
+export interface ResumenImportado {
+  gastos_creados: number;
+  cuotas_creadas: number;
+  suscripciones_vinculadas: number;
+  tarjeta: Tarjeta;
+}
+
 const API_BASE = "/casas";
 
 async function parseJsonOrThrow<T>(resp: Response): Promise<T | null> {
@@ -98,4 +106,24 @@ export async function eliminarTarjeta(casaId: string, tarjetaId: string): Promis
     method: "DELETE",
   });
   await parseJsonOrThrow<null>(resp);
+}
+
+/** Sube el PDF de un resumen (spec `importar-resumen-tarjeta`, REQ-001 a
+ * REQ-007): sin ningún paso de confirmación previo (REQ-007), la
+ * importación queda hecha en cuanto la promesa resuelve. Sin `Content-
+ * Type` manual en el header — `FormData` deja que el browser fije el
+ * boundary correcto de `multipart/form-data`, mismo criterio documentado
+ * en `01-plan-04-frontend-importar.md`. */
+export async function importarResumen(
+  casaId: string,
+  tarjetaId: string,
+  archivo: File
+): Promise<ResumenImportado> {
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/tarjetas/${tarjetaId}/resumen`, {
+    method: "POST",
+    body: formData,
+  });
+  return (await parseJsonOrThrow<ResumenImportado>(resp))!;
 }

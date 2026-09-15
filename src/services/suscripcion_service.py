@@ -16,16 +16,17 @@ responsabilidad, mismo principio ya establecido en el proyecto).
 """
 import uuid
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
 from src.db.models.categoria import Categoria
+from src.db.models.miembro import RolEnum
 from src.db.models.suscripcion import Suscripcion
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 from src.services.gasto_service import MONEDAS_VALIDAS
-from src.services.miembro_service import _validar_actor_admin
+from src.services.miembro_service import _obtener_miembro_o_none, _validar_actor_admin
 
 
 def _mes_actual() -> str:
@@ -127,6 +128,116 @@ def crear_suscripcion(
         session.commit()
         session.refresh(suscripcion_actualizada)
         return suscripcion_actualizada
+    finally:
+        session.close()
+
+
+def _mes_de(fecha: date) -> str:
+    return f"{fecha.year:04d}-{fecha.month:02d}"
+
+
+def registrar_suscripcion_detectada(
+    casa_id: UUID,
+    descripcion: str,
+    importe,
+    categoria_id: Optional[UUID],
+    pagado_por: UUID,
+    actor: UUID,
+    moneda: str,
+    fecha: date,
+    tarjeta_id: Optional[UUID] = None,
+) -> Tuple[Optional[Suscripcion], bool]:
+    """Vincula una línea de consumo de un comercio reconocido (Netflix,
+    Spotify, Disney+) a una Suscripcion de la casa — spec `importar-
+    resumen-tarjeta`, REQ-004.
+
+    A diferencia de `crear_suscripcion` (que genera de inmediato un gasto
+    fechado "hoy" además de crear la Suscripcion), esta función registra
+    el gasto con la fecha/importe/moneda REALES del resumen — nunca "hoy"
+    — y dejar `ultimo_mes_generado` en el mes de esa fecha para que la
+    generación perezosa mensual (`generar_gastos_pendientes`) no lo
+    duplique después.
+
+    Devuelve `(Suscripcion, False)` si encontró o creó una Suscripcion
+    (el gasto ya quedó registrado y vinculado dentro de esta misma
+    llamada — el caller no necesita registrarlo de nuevo). Devuelve
+    `(None, True)` cuando no existía una Suscripcion activa con esa
+    descripción y `actor` no es Administrador de la casa: crear una
+    Suscripcion nueva requiere Administrador (REQ-004); en ese caso NO se
+    registra ningún gasto acá — el `bool=True` le indica al caller
+    (`resumen_importer_service`) que esa línea debe importarse como un
+    gasto suelto en su lugar, sin abortar el resto de la importación.
+    """
+    # Import diferido: mismo motivo que `crear_suscripcion` (evita el
+    # ciclo `gasto_service` -> `suscripcion_service`).
+    from src.services.gasto_service import registrar_gasto
+
+    session = get_session()
+    try:
+        if session.get(Casa, casa_id) is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+
+        descripcion_normalizada = descripcion.strip()
+        existente = (
+            session.query(Suscripcion)
+            .filter(Suscripcion.casa_id == casa_id, Suscripcion.activa.is_(True))
+            .filter(Suscripcion.descripcion.ilike(descripcion_normalizada))
+            .one_or_none()
+        )
+
+        if existente is not None:
+            suscripcion_id = existente.id
+        else:
+            actor_miembro = _obtener_miembro_o_none(session, casa_id, actor)
+            es_administrador = (
+                actor_miembro is not None
+                and actor_miembro.activo
+                and actor_miembro.rol == RolEnum.ADMIN
+            )
+            if not es_administrador:
+                return None, True
+
+            nueva = Suscripcion(
+                id=uuid.uuid4(),
+                casa_id=casa_id,
+                descripcion=descripcion_normalizada,
+                importe=importe,
+                categoria_id=categoria_id,
+                pagado_por=pagado_por,
+                activa=True,
+                ultimo_mes_generado=None,
+                moneda=moneda,
+            )
+            session.add(nueva)
+            session.commit()
+            session.refresh(nueva)
+            suscripcion_id = nueva.id
+    except NotFoundError:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+    registrar_gasto(
+        casa_id,
+        descripcion_normalizada,
+        importe,
+        fecha,
+        categoria_id,
+        pagado_por,
+        actor,
+        suscripcion_id=suscripcion_id,
+        moneda=moneda,
+        tarjeta_id=tarjeta_id,
+    )
+
+    session = get_session()
+    try:
+        suscripcion_actualizada = session.get(Suscripcion, suscripcion_id)
+        suscripcion_actualizada.ultimo_mes_generado = _mes_de(fecha)
+        session.commit()
+        session.refresh(suscripcion_actualizada)
+        return suscripcion_actualizada, False
     finally:
         session.close()
 

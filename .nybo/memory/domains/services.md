@@ -62,6 +62,40 @@ services domain
   `Usuario`'s own commit, so the Usuario's creation and its pending
   memberships' linking are atomic (one rollback undoes both).
 
+<!-- added: 2026-09-15 | feature: importar-resumen-tarjeta | confidence: medium | verified: 2026-09-15 -->
+- [SERVP-03] When a new caller needs "only the REMAINING part of a
+  series already in progress" (e.g. cuotas `N..M` of a purchase that
+  started before this system knew about it) rather than "a brand-new
+  series from 1", write a dedicated sibling function
+  (`gasto_service.registrar_gasto_cuotas_restantes`) instead of adding a
+  starting-point parameter to the existing "start fresh" function
+  (`_crear_gastos_en_cuotas`). The two have genuinely different inputs
+  (a total to divide vs. an already-known per-installment amount) and
+  different invariants (`1..N` vs `cuota_actual..cuota_total`) — forcing
+  them into one function via an optional parameter would let a caller
+  pass an inconsistent combination (e.g. a starting point with a
+  bundled amount for the trend "starts at 1" caller to accidentally
+  divide by the wrong count). Both share the real reusable primitives
+  (`_dividir_importe`, `_sumar_meses`, `_resolver_participantes`) — only
+  the top-level orchestration differs. Same shape as `SERVP-02`'s
+  reusable-primitive rule: share the math, not the top-level flow, once
+  the callers' invariants genuinely diverge.
+
+<!-- added: 2026-09-15 | feature: importar-resumen-tarjeta | confidence: medium | verified: 2026-09-15 -->
+- [SERVP-04] When a new caller wants a resource-creation function's
+  find-or-create/permission logic but NOT one of its side effects (e.g.
+  `suscripcion_service.crear_suscripcion` also generates a gasto dated
+  "today", which would be wrong for a caller importing a historical
+  transaction with its own real date/amount), write a dedicated variant
+  (`registrar_suscripcion_detectada`) rather than adding a flag to
+  suppress the side effect on the original. A boolean flag threaded
+  through a function whose entire other behavior stays identical
+  quietly turns "today, always" into "today, unless told otherwise" for
+  every existing caller too, and every future reader has to check the
+  flag's default to know which behavior applies where. A dedicated
+  function keeps each caller's actual contract explicit at the call
+  site instead of hidden in an argument.
+
 ## Gotchas
 <!-- Things that tripped us up -->
 

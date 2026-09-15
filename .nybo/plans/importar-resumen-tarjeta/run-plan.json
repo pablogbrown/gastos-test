@@ -1,0 +1,109 @@
+{
+  "$schema_version": "2",
+  "feature_id": "importar-resumen-tarjeta",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/importar-resumen-tarjeta/feat/01-plan-01-parser-pdf.md",
+      "files_touched": [
+        "requirements.txt",
+        "src/services/pdf_resumen_parser.py",
+        "src/services/exceptions.py",
+        "src/db/models/gasto.py",
+        "src/db/migrations/0012_gasto_tarjeta_id.py",
+        "src/db/migrate.py",
+        "tests/unit/services/pdf_resumen_parser.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 60,
+      "test_cases": ["TC-008", "TC-009"],
+      "interfaces_produced": [
+        { "name": "parse_resumen_bbva", "signature": "(pdf_bytes: bytes) -> ResumenParseado", "kind": "export" },
+        { "name": "Gasto.tarjeta_id", "signature": "Optional[UUID]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "parse_resumen_bbva extrae correctamente cierre/vencimiento/saldo y consumos (excluyendo impuestos/cargos), y lanza PdfFormatoNoReconocidoError ante un PDF no reconocible.",
+        "postcondition": "Contra el PDF de muestra (o fixture equivalente), ResumenParseado tiene fecha_cierre_actual=2026-08-27, fecha_vencimiento_actual=2026-09-07, y consumos no incluye ninguna linea de COMISION PLATINUM/IMPUESTO DE SELLOS/etc; un PDF arbitrario lanza PdfFormatoNoReconocidoError.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/services/pdf_resumen_parser.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/importar-resumen-tarjeta/feat/01-plan-02-importer-service.md",
+      "files_touched": [
+        "src/services/resumen_importer_service.py",
+        "src/services/suscripcion_service.py",
+        "src/services/gasto_service.py",
+        "src/services/categoria_service.py",
+        "tests/integration/services/resumen_importer.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 75,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-007"],
+      "interfaces_produced": [
+        { "name": "importar_resumen", "signature": "(casa_id, tarjeta_id, pdf_bytes, actor) -> ResumenImportado", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "parse_resumen_bbva" },
+        { "from": "T1", "name": "Gasto.tarjeta_id" }
+      ],
+      "contract": {
+        "statement": "importar_resumen actualiza la tarjeta y enruta cada consumo al mecanismo correcto (gasto normal / cuotas restantes / suscripcion detectada), respetando permisos y sin duplicar suscripciones existentes.",
+        "postcondition": "Con el PDF de muestra, la tarjeta queda actualizada, los consumos en cuotas generan solo las cuotas restantes, los comercios reconocidos se vinculan a una Suscripcion (nueva o existente) segun corresponda, y las lineas de impuestos/cargos no generan gastos.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/resumen_importer.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/importar-resumen-tarjeta/feat/01-plan-03-api-importar.md",
+      "files_touched": [
+        "src/api/routes/tarjetas.py",
+        "tests/integration/api/importar_resumen_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "ResumenImportadoOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "importar_resumen" }
+      ],
+      "contract": {
+        "statement": "POST /casas/{id}/tarjetas/{id}/resumen sube un PDF y devuelve el resumen de la importacion, traduciendo PdfFormatoNoReconocidoError a 422.",
+        "postcondition": "Un POST con el PDF de muestra responde 200 con los contadores esperados; un PDF no reconocible responde 422 sin crear gastos.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/importar_resumen_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/importar-resumen-tarjeta/feat/01-plan-04-frontend-importar.md",
+      "files_touched": [
+        "src/frontend/api/tarjetasClient.ts",
+        "src/frontend/pages/Tarjetas.tsx",
+        "tests/unit/frontend/Tarjetas.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 25,
+      "test_cases": ["TC-010"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "ResumenImportadoOut" }
+      ],
+      "contract": {
+        "statement": "El boton Importar resumen sube el PDF de inmediato (sin confirmacion) y muestra el resultado.",
+        "postcondition": "Seleccionar un archivo PDF dispara la subida y renderiza el resumen de gastos/cuotas/suscripciones creados, sin ningun dialogo de confirmacion previo.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tarjetas.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

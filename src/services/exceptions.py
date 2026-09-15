@@ -35,3 +35,16 @@ class InvalidCredentialsError(Exception):
     ocurrió permitiría enumerar emails registrados. Las rutas de la API
     (T3) la mapean siempre a 401.
     """
+
+
+class PdfFormatoNoReconocidoError(Exception):
+    """El PDF subido no tiene el formato de resumen reconocido por
+    `pdf_resumen_parser.parse_resumen_bbva` (spec `importar-resumen-
+    tarjeta`, REQ-006, TC-009).
+
+    Se lanza en cuanto falta alguno de los marcadores esperados del
+    encabezado (cierre/vencimiento) — nunca se devuelve un `ResumenParseado`
+    parcial. Las rutas de la API (T3) la mapean a 422, distinguiéndola de
+    un 400 (`ValidationError`, dato con forma inválida) porque acá el
+    documento en sí no es el esperado, no un campo puntual mal formado.
+    """

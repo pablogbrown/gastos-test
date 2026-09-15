@@ -49,6 +49,36 @@ db domain
   new FK is added to an existing migration, verify against real Postgres
   (not just SQLite) before considering it verified.
 
+<!-- added: 2026-09-15 | feature: importar-resumen-tarjeta | confidence: high | verified: 2026-09-15 -->
+- [DBG-04] Even after correctly following DBG-02/DBG-03 (plain `Column`,
+  no model-level `ForeignKey()`, real constraint added via a later
+  migration's raw `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...
+  REFERENCES`), the FK still silently never attaches on a database
+  created FRESH by `run_migrations` in one pass (an ephemeral test
+  Postgres, or any brand-new environment) — because the table's OWN
+  creating migration (e.g. `0002_gastos.py`'s `create_all(tables=
+  [Gasto.__table__])`) reads `Gasto.__table__` from the CURRENT, live
+  model class, which already includes every column ever added to
+  `Gasto` (including the newest one) at the time that early migration
+  runs — the column exists from the very first `create_all`, so the
+  later migration's `ADD COLUMN IF NOT EXISTS` is a no-op and its
+  `REFERENCES` clause never executes. This is invisible to a test that
+  only checks "does the column exist" — it does — and only surfaces by
+  additionally checking `inspector.get_foreign_keys(...)` after a
+  from-scratch `run_migrations()` run. The `REFERENCES` clause is NOT
+  dead code: it's exactly what fires on the real, non-fresh path — an
+  existing deployment whose `gastos` table predates the new column (a
+  persisted `docker-compose` volume, a real production database) — as
+  confirmed live against this project's own persisted dev DB, where the
+  same column DID get a real `gastos_tarjeta_id_fkey`. `suscripcion_id`
+  (`0009`) has had this exact same fresh-DB gap since it was added;
+  nobody had checked for it explicitly until this spec's migration test
+  started asserting FK presence. When verifying a new FK column, always
+  check BOTH paths — a from-scratch `run_migrations()` AND a database
+  that already had the owning table before this migration — a from-
+  scratch-only check reports a false negative FOR THE COLUMN'S FK even
+  though the migration file is completely correct.
+
 <!-- added: 2026-09-14 | feature: fix-historial-desactivacion-miembro | confidence: high | verified: 2026-09-14 -->
 - [DB-01] Adding a new member to a `sqlalchemy.Enum(SomePythonEnum)` column
   (e.g. a new `TipoActividadEnum` value) is invisible on SQLite (the table
