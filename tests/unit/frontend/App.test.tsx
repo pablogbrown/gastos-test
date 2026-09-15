@@ -55,6 +55,7 @@ function mockFetchConMiembros(miembros: unknown[]) {
           tareasPendientes: [],
           tareasCompletadasRecientes: [],
           ranking: [],
+          tarjetasConAlerta: [],
         }),
       };
     }
@@ -132,6 +133,7 @@ describe("App — gate de sesión", () => {
               tareasPendientes: [],
               tareasCompletadasRecientes: [],
               ranking: [],
+              tarjetasConAlerta: [],
             }),
           };
         }

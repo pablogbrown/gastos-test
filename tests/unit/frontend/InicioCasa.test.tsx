@@ -18,6 +18,7 @@ function dashboardVacio() {
     tareasPendientes: [],
     tareasCompletadasRecientes: [],
     ranking: [],
+    tarjetasConAlerta: [],
   };
 }
 
@@ -59,6 +60,7 @@ function dashboardConDatos() {
       { id: "h1", tarea_id: "t2", miembro_id: ANA_ID, completada_en: "2026-01-02T10:00:00", puntos_obtenidos: 8 },
     ],
     ranking: [{ miembroId: ANA_ID, puntos: 8 }],
+    tarjetasConAlerta: [],
   };
 }
 
@@ -111,6 +113,65 @@ describe("InicioCasa", () => {
 
     expect(await screen.findByText("Ana: 8 pts")).toBeInTheDocument();
     expect(screen.queryByText(`${ANA_ID}: 8 pts`)).not.toBeInTheDocument();
+  });
+
+  it("renderiza el banner de alerta con nombre y fecha para una tarjeta próxima a vencer (TC-008)", async () => {
+    const dashboard = {
+      ...dashboardVacio(),
+      tarjetasConAlerta: [
+        {
+          id: "tj1",
+          nombre: "Visa Platinum",
+          banco: "BBVA",
+          fecha_vencimiento_actual: "2026-09-07",
+          dias_para_vencimiento: 6,
+          vencida: false,
+        },
+      ],
+    };
+    vi.stubGlobal("fetch", mockFetch(dashboard));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    const alerta = await screen.findByText(/Visa Platinum/);
+    expect(alerta).toHaveTextContent("Visa Platinum");
+    expect(alerta).toHaveTextContent("BBVA");
+    expect(alerta).toHaveTextContent("2026-09-07");
+    expect(alerta).toHaveTextContent("6");
+    expect(alerta.closest('[role="alert"]')).not.toBeNull();
+  });
+
+  it("marca con severidad error el banner de una tarjeta ya vencida", async () => {
+    const dashboard = {
+      ...dashboardVacio(),
+      tarjetasConAlerta: [
+        {
+          id: "tj2",
+          nombre: "Mastercard Black",
+          banco: "Galicia",
+          fecha_vencimiento_actual: "2026-08-20",
+          dias_para_vencimiento: -5,
+          vencida: true,
+        },
+      ],
+    };
+    vi.stubGlobal("fetch", mockFetch(dashboard));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    const texto = await screen.findByText(/Mastercard Black/);
+    const alerta = texto.closest('[role="alert"]');
+    expect(alerta).not.toBeNull();
+    expect(alerta?.className).toMatch(/colorError|standardError/);
+  });
+
+  it("no muestra ningún banner cuando tarjetasConAlerta está vacío", async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardVacio()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    await screen.findByText("Todavía no hay gastos registrados.");
+    expect(screen.queryAllByRole("alert")).toHaveLength(0);
   });
 
   it("muestra un error devuelto por la API al fallar la carga del dashboard", async () => {

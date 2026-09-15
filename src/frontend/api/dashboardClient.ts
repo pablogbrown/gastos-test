@@ -32,6 +32,21 @@ export interface Actividad {
   descripcion: string;
 }
 
+/** Spec `tarjetas-credito`, REQ-004: tarjeta activa cuyo vencimiento está
+ * a `UMBRAL_ALERTA_DIAS` días o menos, o ya venció. Mismo shape que
+ * `TarjetaAlertaOut` (backend) — snake_case, sin alias (ver
+ * `dashboard.py`: solo el campo contenedor `tarjetasConAlerta` se
+ * camelCasea, no los objetos que contiene, mismo criterio que
+ * `gastosRecientes`/`Gasto`). */
+export interface TarjetaAlerta {
+  id: string;
+  nombre: string;
+  banco: string;
+  fecha_vencimiento_actual: string;
+  dias_para_vencimiento: number;
+  vencida: boolean;
+}
+
 export interface DashboardCasa {
   miembros: Miembro[];
   gastosRecientes: Gasto[];
@@ -39,6 +54,7 @@ export interface DashboardCasa {
   tareasPendientes: Tarea[];
   tareasCompletadasRecientes: HistorialTarea[];
   ranking: RankingEntry[];
+  tarjetasConAlerta: TarjetaAlerta[];
 }
 
 const API_BASE = "/casas";
