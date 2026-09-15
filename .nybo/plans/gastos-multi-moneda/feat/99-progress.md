@@ -4,7 +4,7 @@
 
 ### Tasks
 - [x] T1 — `Gasto`/`Suscripcion` guardan `moneda`; migración
-- [ ] T2 — Servicios propagan y separan por moneda
+- [x] T2 — Servicios propagan y separan por moneda
 - [ ] T3 — API expone `moneda`
 - [ ] T4 — Selector de moneda; Balance por secciones
 
