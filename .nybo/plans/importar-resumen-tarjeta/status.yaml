@@ -1,5 +1,6 @@
 feature: importar-resumen-tarjeta
-status: ready
+status: shipped
+shipped_at: '2026-09-15T21:00:00Z'
 profile: code
 action_type: ADD
 created_at: '2026-09-15'
