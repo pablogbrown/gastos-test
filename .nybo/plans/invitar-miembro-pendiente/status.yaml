@@ -1,0 +1,17 @@
+feature: invitar-miembro-pendiente
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - auth.md
+  - db.md
+  - frontend.md
+notes: |
+  Single spec: un solo flujo (invitar -> vincular al registrarse)
+  consumido por 2 servicios y 1 pantalla; no pasa el test de
+  deliverable-independiente si se separa alta/vinculación/UI.
