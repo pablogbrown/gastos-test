@@ -22,6 +22,10 @@ class Suscripcion(Base):
     es lo que `suscripcion_service.generar_gastos_pendientes` usa para
     decidir si ya generó el gasto del mes actual — nunca reconstruye
     retroactivamente meses pasados (REQ-002).
+
+    `moneda` (spec `gastos-multi-moneda`): `"ARS"` (default) o `"USD"` —
+    fija desde la creación (no hay endpoint de edición hoy); cada gasto
+    generado mensualmente hereda esta misma moneda.
     """
 
     __tablename__ = "suscripciones"
@@ -35,6 +39,7 @@ class Suscripcion(Base):
     activa = Column(Boolean, default=True, nullable=False)
     ultimo_mes_generado = Column(String, nullable=True)
     creado_en = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    moneda = Column(String(3), nullable=False, default="ARS")
 
     def __repr__(self):  # pragma: no cover - solo para debugging
         return (
