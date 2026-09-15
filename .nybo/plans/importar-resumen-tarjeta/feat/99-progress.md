@@ -5,7 +5,7 @@
 ### Tasks
 - [x] T1 — `pdf_resumen_parser` (puro); `Gasto.tarjeta_id`; dependencia `pdfplumber`
 - [x] T2 — `resumen_importer_service`; helpers de cuotas/suscripción detectada
-- [ ] T3 — Endpoint de subida de PDF
+- [x] T3 — Endpoint de subida de PDF
 - [ ] T4 — Botón "Importar resumen" en Tarjetas
 
 ### Verify

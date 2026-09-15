@@ -16,11 +16,17 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from src.api.dependencies import resolver_actor_en_casa
-from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
+from src.services.exceptions import (
+    NotFoundError,
+    PdfFormatoNoReconocidoError,
+    PermissionDeniedError,
+    ValidationError,
+)
+from src.services.resumen_importer_service import importar_resumen
 from src.services.tarjeta_service import (
     actualizar_tarjeta,
     crear_tarjeta,
@@ -60,6 +66,20 @@ class TarjetaOut(BaseModel):
     saldo_actual_usd: Optional[Decimal] = None
     activa: bool
     creado_en: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class ResumenImportadoOut(BaseModel):
+    """Respuesta de `POST .../resumen` (spec `importar-resumen-tarjeta`,
+    REQ-001 a REQ-004): contadores de la importación + la tarjeta ya
+    actualizada con los datos del resumen."""
+
+    gastos_creados: int
+    cuotas_creadas: int
+    suscripciones_vinculadas: int
+    tarjeta: TarjetaOut
 
     class Config:
         orm_mode = True
@@ -147,6 +167,44 @@ def eliminar_tarjeta_endpoint(
 ):
     try:
         eliminar_tarjeta(casa_id, tarjeta_id, actor)
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@tarjetas_router.post(
+    "/{casa_id}/tarjetas/{tarjeta_id}/resumen",
+    response_model=ResumenImportadoOut,
+)
+async def importar_resumen_endpoint(
+    casa_id: UUID,
+    tarjeta_id: UUID,
+    archivo: UploadFile,
+    actor: UUID = Depends(resolver_actor_en_casa),
+):
+    """Sube el PDF de un resumen (spec `importar-resumen-tarjeta`,
+    REQ-001 a REQ-007): actualiza la tarjeta y crea automáticamente los
+    gastos de cada consumo — sin ningún paso de confirmación (REQ-007).
+
+    `PdfFormatoNoReconocidoError` -> 422 (documento no reconocible, no un
+    dato con forma inválida — distinto criterio de `ValidationError`,
+    ver Design Rationale de `01-plan-03-api-importar.md`).
+    """
+    contenido = await archivo.read()
+    try:
+        return importar_resumen(casa_id, tarjeta_id, contenido, actor)
+    except PdfFormatoNoReconocidoError as exc:
+        # `HTTP_422_UNPROCESSABLE_ENTITY`, no la variante `_CONTENT` más
+        # nueva: `requirements.txt` declara `fastapi>=0.110`, y la
+        # variante nueva no existe en versiones de esa franja anteriores
+        # a la que trae este entorno — la deprecation warning que emite
+        # la versión instalada es inofensiva (no falla tests ni build).
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except PermissionDeniedError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except NotFoundError as exc:

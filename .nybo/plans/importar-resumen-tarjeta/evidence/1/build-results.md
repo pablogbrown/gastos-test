@@ -6,7 +6,7 @@ updated: '2026-09-15T00:00:00Z'
 exit: in-progress
 verdict: pending
 judgment:
-  entries: 5
+  entries: 6
 observations:
   entries: 0
 ---
@@ -75,6 +75,15 @@ merge pusheado.
   creados (X en cuotas, Y vinculados a suscripciones)") como "N total,
   desglosado en X e Y". `00-overview.md`/T2 no lo dejaban 100% explícito;
   T3/T4 no tienen tests que dependan de la interpretación contraria.
+- **J006** T3 requirió agregar `python-multipart` a `requirements.txt`
+  (necesaria para que FastAPI parsee `multipart/form-data`/`UploadFile`)
+  — no estaba en `spec.md`'s `exceptions` (que solo confirmó `pdfplumber`
+  con el usuario). `new-dependency` nunca es settleable en ningún trust
+  level: registrada como decisión abierta no bloqueante `D001` en
+  `evidence/decisions.yaml` en vez de asumirla silenciosamente — el build
+  continuó (es un requisito técnico ineludible de lo que T3 ya
+  especificaba), pero queda pendiente de confirmación explícita del
+  humano antes de shippear.
 
 ### Observations
 
