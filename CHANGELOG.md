@@ -45,3 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - feat(services): el Balance ahora se filtra por mes (selector en la pantalla, mes actual por defecto) en vez de sumar todo el historial de gastos desde siempre — base necesaria para que un gasto futuro (cuotas, suscripciones) no infle la deuda de hoy.
+
+### Added
+
+- feat(auth): un Administrador puede agregar como miembro a alguien que todavía no tiene cuenta — queda como "Pendiente" y se vincula automáticamente en cuanto esa persona se registra con el mismo email.

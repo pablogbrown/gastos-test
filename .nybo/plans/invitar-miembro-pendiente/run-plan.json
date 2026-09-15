@@ -1,0 +1,97 @@
+{
+  "$schema_version": "2",
+  "feature_id": "invitar-miembro-pendiente",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/invitar-miembro-pendiente/feat/01-plan-01-membresia-pendiente.md",
+      "files_touched": [
+        "src/db/models/miembro.py",
+        "src/db/migrations/0007_miembro_email_invitacion.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 15,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Miembro.email_invitacion", "signature": "Optional[str]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Miembro tiene una columna email_invitacion nullable, y la migración correspondiente corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas contra Postgres no lanza excepción, y la columna existe con el tipo esperado.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal ya existente en ese archivo (fix fix-test-migraciones-borra-tabla-real) — nunca operar sobre DATABASE_URL directamente.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/invitar-miembro-pendiente/feat/01-plan-02-agregar-miembro-pendiente.md",
+      "files_touched": [
+        "src/services/miembro_service.py",
+        "tests/integration/api/miembro_invitacion_pendiente.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 25,
+      "test_cases": ["TC-001", "TC-002", "TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Miembro.email_invitacion" }
+      ],
+      "contract": {
+        "statement": "agregar_miembro crea una membresía pendiente cuando el email no corresponde a ningún Usuario registrado, en vez de rechazar la operación.",
+        "postcondition": "POST /casas/{id}/miembros con un email sin Usuario registrado responde 201 con usuario_id null; un segundo intento con el mismo email en la misma casa responde 400.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/miembro_invitacion_pendiente.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/invitar-miembro-pendiente/feat/01-plan-03-vincular-al-registrarse.md",
+      "files_touched": [
+        "src/services/miembro_service.py",
+        "src/services/auth_service.py",
+        "tests/integration/api/miembro_invitacion_pendiente.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 25,
+      "test_cases": ["TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        { "name": "vincular_membresias_pendientes", "signature": "(session, usuario_id: UUID, email: str) -> None", "kind": "function" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Miembro.email_invitacion" }
+      ],
+      "contract": {
+        "statement": "Registrar un Usuario vincula automáticamente cualquier membresía pendiente que coincida con su email, en cualquier casa.",
+        "postcondition": "POST /auth/registro con un email que tiene N membresías pendientes deja las N filas Miembro correspondientes con usuario_id seteado al nuevo Usuario.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/miembro_invitacion_pendiente.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/invitar-miembro-pendiente/feat/01-plan-04-frontend-estado-pendiente.md",
+      "files_touched": [
+        "src/frontend/pages/Miembros.tsx",
+        "tests/unit/frontend/Miembros.test.tsx"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 15,
+      "test_cases": ["TC-007", "TC-008"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Miembros.tsx distingue una membresía pendiente (usuario_id null) de Activo/Inactivo, y no ofrece Desactivar para ella.",
+        "postcondition": "Una fila con usuario_id null renderiza el Chip 'Pendiente' y no muestra el botón Desactivar; una fila con usuario_id no-null sigue mostrando Activo/Inactivo y Desactivar sin cambios.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

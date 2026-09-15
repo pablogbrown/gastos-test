@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from src.db.base import get_session
 from src.db.models.usuario import Usuario
 from src.services.exceptions import ConflictError, InvalidCredentialsError, ValidationError
+from src.services.miembro_service import vincular_membresias_pendientes
 
 # Mismo patrón que `DATABASE_URL` en `src/db/base.py`: variable de entorno
 # con un default de desarrollo si no está seteada. En un despliegue real
@@ -48,6 +49,13 @@ def registrar_usuario(email: str, password: str, nombre: Optional[str] = None) -
     texto plano (TC-001). Rechaza un email ya registrado con
     `ConflictError` (409, TC-002) — no una `ValidationError` (400), para
     distinguir "dato con forma inválida" de "el recurso ya existe".
+
+    Spec `invitar-miembro-pendiente` (REQ-002): tras crear el Usuario,
+    vincula automáticamente cualquier membresía `Miembro` pendiente que
+    haya sido invitada con este mismo email (en cualquier casa) —
+    `vincular_membresias_pendientes` comparte esta misma sesión/
+    transacción, para que el alta del Usuario y la vinculación de sus
+    membresías sean atómicas.
     """
     if not email or not str(email).strip():
         raise ValidationError("El email no puede estar vacío.")
@@ -79,6 +87,15 @@ def registrar_usuario(email: str, password: str, nombre: Optional[str] = None) -
                 f"Ya existe un usuario registrado con el email {email_normalizado!r}."
             ) from exc
         session.refresh(usuario)
+
+        vincular_membresias_pendientes(session, usuario.id, email_normalizado)
+        session.commit()
+        # El commit anterior expira los atributos de `usuario` (default de
+        # SQLAlchemy) — se refresca de nuevo para que el objeto devuelto
+        # siga siendo utilizable después de `session.close()` en el
+        # `finally`, exactamente igual que el primer `refresh` de arriba.
+        session.refresh(usuario)
+
         return usuario
     except (ValidationError, ConflictError):
         session.rollback()

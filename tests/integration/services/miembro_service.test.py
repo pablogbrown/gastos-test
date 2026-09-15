@@ -15,7 +15,7 @@ from sqlalchemy.pool import StaticPool
 
 from src.db.models.usuario import Usuario
 from src.services.casa_service import crear_casa
-from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
+from src.services.exceptions import PermissionDeniedError, ValidationError
 from src.services.miembro_service import (
     agregar_miembro,
     desactivar_miembro,
@@ -79,13 +79,19 @@ def test_admin_agrega_miembro_valido(db_session):
     assert miembro.usuario_id == ana_usuario.id
 
 
-def test_agregar_miembro_con_email_de_usuario_inexistente_es_rechazado(db_session):
+def test_agregar_miembro_con_email_de_usuario_inexistente_crea_membresia_pendiente(db_session):
+    """Spec `invitar-miembro-pendiente` (REQ-001): reemplaza el comportamiento
+    anterior (`NotFoundError`) — ahora se crea la membresía igual, sin
+    `usuario_id`, guardando el email invitado para vincularlo después."""
     usuario_id = uuid.uuid4()
     casa = crear_casa("Casa Brown", usuario_id)
     admin_id = casa.miembros[0].id
 
-    with pytest.raises(NotFoundError):
-        agregar_miembro(casa.id, "Ana", "ANA1", "no-registrado@example.com", admin_id)
+    miembro = agregar_miembro(casa.id, "Ana", "ANA1", "no-registrado@example.com", admin_id)
+
+    assert miembro.usuario_id is None
+    assert miembro.email_invitacion == "no-registrado@example.com"
+    assert miembro.activo is True
 
 
 def test_miembro_no_admin_no_puede_agregar_miembros(db_session):

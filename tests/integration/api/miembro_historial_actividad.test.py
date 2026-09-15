@@ -20,7 +20,7 @@ from src.db.models.historial_actividad import TipoActividadEnum
 from src.db.models.usuario import Usuario
 from src.services.actividad_service import obtener_actividad
 from src.services.casa_service import crear_casa
-from src.services.exceptions import NotFoundError, PermissionDeniedError
+from src.services.exceptions import PermissionDeniedError
 from src.services.miembro_service import agregar_miembro, desactivar_miembro
 
 _MIGRACIONES = (
@@ -97,17 +97,21 @@ def test_desactivar_miembro_exitoso_registra_actividad_miembro_desactivado(db_se
     assert entrada_baja.miembro_id == ana.id
 
 
-def test_agregar_miembro_rechazado_no_agrega_actividad(db_session):
-    """TC-003 (alta): email no registrado no debe dejar rastro en el
-    historial, ya que la operación de negocio nunca llegó a confirmarse."""
+def test_agregar_miembro_con_email_inexistente_si_agrega_actividad(db_session):
+    """Spec `invitar-miembro-pendiente` (REQ-001): un email sin Usuario
+    registrado ya no rechaza el alta (antes lanzaba `NotFoundError` y no
+    dejaba rastro) — ahora crea una membresía pendiente real, que sí
+    queda confirmada y por lo tanto sí registra actividad, igual que
+    cualquier otra alta exitosa."""
     usuario_id = uuid.uuid4()
     casa = crear_casa("Casa Brown", usuario_id)
     admin_id = casa.miembros[0].id
 
-    with pytest.raises(NotFoundError):
-        agregar_miembro(casa.id, "Ana", "ANA1", "no-registrado@example.com", admin_id)
+    miembro = agregar_miembro(casa.id, "Ana", "ANA1", "no-registrado@example.com", admin_id)
 
-    assert obtener_actividad(casa.id) == []
+    tipos = [entrada.tipo for entrada in obtener_actividad(casa.id)]
+    assert TipoActividadEnum.MIEMBRO_AGREGADO in tipos
+    assert miembro.usuario_id is None
 
 
 def test_desactivar_miembro_rechazado_no_agrega_actividad(db_session):
