@@ -213,6 +213,50 @@ def test_historial_incluye_gastos_de_miembros_desactivados(client):
     assert "Gasto de Ana" in descripciones
 
 
+def test_balance_con_mes_de_formato_invalido_devuelve_400(client):
+    """TC-003 (spec `balance-mensual`) a nivel HTTP — re-verifica lo que
+    `tests/integration/services/balance_mensual.test.py` (T1) prueba a
+    nivel de excepción de servicio."""
+    casa, usuario_id, _admin_id = _crear_casa(client)
+
+    resp = client.get(
+        f"/casas/{casa['id']}/balance?mes=fecha-invalida",
+        headers=_bearer(usuario_id),
+    )
+    assert resp.status_code == 400
+
+
+def test_balance_con_mes_explicito_filtra_los_gastos(client):
+    """Spec `balance-mensual`: el query param `mes` se propaga a
+    `calcular_balance` — un gasto de agosto no aparece al consultar
+    septiembre."""
+    casa, usuario_id, admin_id = _crear_casa(client)
+    categoria = _crear_categoria(client, casa["id"], usuario_id)
+
+    client.post(
+        f"/casas/{casa['id']}/gastos",
+        json={
+            "descripcion": "Gasto de agosto",
+            "importe": "100.00",
+            "fecha": "2026-08-15",
+            "categoria_id": categoria["id"],
+        },
+        headers=_bearer(usuario_id),
+    )
+
+    balance_agosto = client.get(
+        f"/casas/{casa['id']}/balance?mes=2026-08", headers=_bearer(usuario_id)
+    ).json()
+    por_id_agosto = {b["miembro_id"]: b for b in balance_agosto["balances"]}
+    assert por_id_agosto[admin_id]["pago"] == 100.0
+
+    balance_septiembre = client.get(
+        f"/casas/{casa['id']}/balance?mes=2026-09", headers=_bearer(usuario_id)
+    ).json()
+    por_id_septiembre = {b["miembro_id"]: b for b in balance_septiembre["balances"]}
+    assert por_id_septiembre[admin_id]["pago"] == 0
+
+
 def test_historial_ordenado_por_fecha_descendente(client):
     casa, usuario_id, _admin_id = _crear_casa(client)
     categoria = _crear_categoria(client, casa["id"], usuario_id)

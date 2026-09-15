@@ -12,6 +12,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
@@ -28,27 +29,22 @@ export interface BalanceProps {
 export function Balance({ casaId }: BalanceProps) {
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Spec `balance-mensual` (REQ-004): mes preseleccionado = mes actual,
+  // mismo formato `YYYY-MM` que espera el backend.
+  const [mes, setMes] = useState<string>(() => new Date().toISOString().slice(0, 7));
 
   const cargar = useCallback(async () => {
     try {
-      const data = await obtenerBalance(casaId);
+      const data = await obtenerBalance(casaId, mes);
       setBalance(data);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar el balance.");
     }
-  }, [casaId]);
+  }, [casaId, mes]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
-
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
-  }
-
-  if (!balance) {
-    return <Typography>Cargando balance...</Typography>;
-  }
 
   function nombreDe(miembroId: string): string {
     return balance?.balances.find((b) => b.miembro_id === miembroId)?.nombre ?? miembroId;
@@ -56,53 +52,73 @@ export function Balance({ casaId }: BalanceProps) {
 
   return (
     <Box component="section" aria-label="Balance" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h5" component="h2">
-        Balance
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+        <Typography variant="h5" component="h2">
+          Balance
+        </Typography>
 
-      <TableContainer component={Paper} variant="outlined">
-        <Table sx={{ minWidth: 320 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Miembro</TableCell>
-              <TableCell>Pagó</TableCell>
-              <TableCell>Le correspondía</TableCell>
-              <TableCell>Balance</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {balance.balances.map((miembro) => (
-              <TableRow key={miembro.miembro_id}>
-                <TableCell>{miembro.nombre}</TableCell>
-                <TableCell>{miembro.pago}</TableCell>
-                <TableCell>{miembro.correspondia}</TableCell>
-                <TableCell>{miembro.balance}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+        <TextField
+          id="mes-balance"
+          label="Mes"
+          type="month"
+          value={mes}
+          onChange={(event) => setMes(event.target.value)}
+          size="small"
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </Box>
 
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="h6" component="h3" gutterBottom>
-            Transferencias sugeridas
-          </Typography>
-          {balance.transferencias.length === 0 ? (
-            <Typography color="text.secondary">No hay transferencias pendientes.</Typography>
-          ) : (
-            <List dense>
-              {balance.transferencias.map((transferencia, indice) => (
-                <ListItem key={indice} disableGutters>
-                  <ListItemText
-                    primary={`${nombreDe(transferencia.deudor_id)} debe transferir ${transferencia.monto} a ${nombreDe(transferencia.acreedor_id)}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </CardContent>
-      </Card>
+      {error && <Alert severity="error">{error}</Alert>}
+
+      {!error && !balance && <Typography>Cargando balance...</Typography>}
+
+      {!error && balance && (
+        <>
+          <TableContainer component={Paper} variant="outlined">
+            <Table sx={{ minWidth: 320 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Miembro</TableCell>
+                  <TableCell>Pagó</TableCell>
+                  <TableCell>Le correspondía</TableCell>
+                  <TableCell>Balance</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {balance.balances.map((miembro) => (
+                  <TableRow key={miembro.miembro_id}>
+                    <TableCell>{miembro.nombre}</TableCell>
+                    <TableCell>{miembro.pago}</TableCell>
+                    <TableCell>{miembro.correspondia}</TableCell>
+                    <TableCell>{miembro.balance}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom>
+                Transferencias sugeridas
+              </Typography>
+              {balance.transferencias.length === 0 ? (
+                <Typography color="text.secondary">No hay transferencias pendientes.</Typography>
+              ) : (
+                <List dense>
+                  {balance.transferencias.map((transferencia, indice) => (
+                    <ListItem key={indice} disableGutters>
+                      <ListItemText
+                        primary={`${nombreDe(transferencia.deudor_id)} debe transferir ${transferencia.monto} a ${nombreDe(transferencia.acreedor_id)}`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </Box>
   );
 }
