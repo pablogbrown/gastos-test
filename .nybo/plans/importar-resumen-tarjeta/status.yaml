@@ -1,0 +1,22 @@
+feature: importar-resumen-tarjeta
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/importar-resumen-tarjeta
+kind: single_spec
+exceptions:
+  - code: NEW_DEPENDENCY
+    detail: Agrega pdfplumber a requirements.txt (confirmado con el usuario, "Stop and Ask First").
+notes: |
+  Depende de gastos-multi-moneda y tarjetas-credito (build en ese
+  orden). Parser específico al formato BBVA Visa Platinum.
+  Rationale: spec.md. Build narrative: evidence/build-results.md.
