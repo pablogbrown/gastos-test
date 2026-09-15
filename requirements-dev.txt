@@ -1,3 +1,7 @@
 -r requirements.txt
 pytest>=8.0,<9.0
 httpx>=0.27,<1.0
+# `reportlab` (spec `importar-resumen-tarjeta`, T1): genera el PDF de
+# fixture sintético usado por `tests/unit/services/pdf_resumen_parser.
+# test.py` — nunca se usa fuera de tests, no pertenece a `requirements.txt`.
+reportlab>=4.0,<6.0
