@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/gastos-multi-moneda
+pr_url: https://github.com/pablogbrown/gastos-test/pull/23
+pr_number: 23
 kind: single_spec
 notes: |
   Foundation para tarjetas-credito e importar-resumen-tarjeta.
