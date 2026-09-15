@@ -19,6 +19,7 @@ domains_referenced:
   - db.md
   - frontend.md
 branch: feat/invitar-miembro-pendiente
+pr_url: https://github.com/pablogbrown/gastos-test/pull/19
 pr_number: 19
 kind: single_spec
 latest_cycle: 1
