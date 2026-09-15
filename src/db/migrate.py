@@ -20,6 +20,7 @@ _MIGRACIONES = (
     "0006_miembro_desactivado_enum_value",
     "0007_miembro_email_invitacion",
     "0008_gasto_cuotas",
+    "0009_suscripciones",
 )
 
 

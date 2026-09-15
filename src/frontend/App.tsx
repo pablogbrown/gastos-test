@@ -20,6 +20,7 @@ import { Miembros } from "./pages/Miembros";
 import { Ranking } from "./pages/Ranking";
 import { Registro } from "./pages/Registro";
 import { SelectorCasas } from "./pages/SelectorCasas";
+import { Suscripciones } from "./pages/Suscripciones";
 import { Tareas } from "./pages/Tareas";
 
 type VistaSinSesion = "login" | "registro";
@@ -124,6 +125,9 @@ export function App() {
         )}
         {pantalla === "ranking" && <Ranking casaId={casaActual.id} miembros={miembros} />}
         {pantalla === "actividad" && <HistorialActividad casaId={casaActual.id} />}
+        {pantalla === "suscripciones" && (
+          <Suscripciones casaId={casaActual.id} rolUsuarioActual={rolUsuarioActual} />
+        )}
       </Box>
     </Box>
   );

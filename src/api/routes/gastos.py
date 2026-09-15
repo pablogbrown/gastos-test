@@ -93,6 +93,9 @@ class GastoOut(BaseModel):
     cuota_grupo_id: Optional[UUID] = None
     cuota_numero: Optional[int] = None
     cuota_total: Optional[int] = None
+    # Spec `gastos-suscripcion-mensual`: `None` para un gasto normal o en
+    # cuotas — aditivo, independiente de los campos de cuotas de arriba.
+    suscripcion_id: Optional[UUID] = None
 
     class Config:
         orm_mode = True

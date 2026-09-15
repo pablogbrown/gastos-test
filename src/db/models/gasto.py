@@ -20,6 +20,13 @@ class Gasto(Base):
     gasto con `cuotas >= 2` — `cuota_grupo_id` comparte el mismo valor
     entre las N filas de una misma compra, `cuota_numero` va de 1 a
     `cuota_total`.
+
+    `suscripcion_id` (spec `gastos-suscripcion-mensual`): `NULL` para un
+    gasto normal o en cuotas; poblada cuando este `Gasto` fue generado
+    (al crear la suscripción, o automáticamente al listar gastos) por una
+    `Suscripcion` — puramente de etiquetado, independiente de `cuotas`
+    (un gasto generado por una suscripción nunca tiene `cuotas`, y
+    viceversa).
     """
 
     __tablename__ = "gastos"
@@ -34,6 +41,19 @@ class Gasto(Base):
     cuota_grupo_id = Column(GUID(), nullable=True)
     cuota_numero = Column(Integer, nullable=True)
     cuota_total = Column(Integer, nullable=True)
+    # Sin `ForeignKey()` a nivel de modelo (a diferencia de `categoria_id`/
+    # `pagado_por`) deliberadamente: `0002_gastos.py` crea la tabla
+    # `gastos` ANTES de que exista `Suscripcion` en el orden de
+    # migraciones (`0009`), y una `ForeignKey` de SQLAlchemy exige que la
+    # tabla referenciada ya esté registrada en `Base.metadata` en ese
+    # momento — si no, `create_all`/`run_migrations` explota con
+    # `NoReferencedTableError`. Mismo criterio que `cuota_grupo_id`
+    # (columna plana, sin FK de SQLAlchemy). La integridad referencial
+    # real en Postgres la agrega `0009_suscripciones.py` vía `ALTER TABLE
+    # ... REFERENCES suscripciones(id)` (SQL crudo, no metadata de
+    # SQLAlchemy) — ahí sí, porque para ese momento `suscripciones` ya
+    # existe de verdad en la base.
+    suscripcion_id = Column(GUID(), nullable=True)
 
     participantes = relationship(
         "GastoParticipante", back_populates="gasto", cascade="all, delete-orphan"

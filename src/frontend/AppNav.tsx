@@ -5,6 +5,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PeopleIcon from "@mui/icons-material/People";
 import RankingIcon from "@mui/icons-material/EmojiEvents";
+import SuscripcionesIcon from "@mui/icons-material/Subscriptions";
 import TareasIcon from "@mui/icons-material/Checklist";
 import AppBar from "@mui/material/AppBar";
 import BottomNavigation from "@mui/material/BottomNavigation";
@@ -25,11 +26,13 @@ export type Pantalla =
   | "balance"
   | "tareas"
   | "ranking"
-  | "actividad";
+  | "actividad"
+  | "suscripciones";
 
-/** Las 7 secciones de navegación (spec `ui-modernization`, REQ-002),
- * compartidas entre `BottomNavigation` (mobile) y `AppBar`/`Tabs`
- * (desktop) — mismo orden, mismos íconos, mismo estado `pantalla`. */
+/** Las 8 secciones de navegación (spec `ui-modernization`, REQ-002;
+ * `gastos-suscripcion-mensual` agrega "Suscripciones"), compartidas
+ * entre `BottomNavigation` (mobile) y `AppBar`/`Tabs` (desktop) — mismo
+ * orden, mismos íconos, mismo estado `pantalla`. */
 export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] = [
   { value: "inicio", label: "Inicio", icon: <HomeIcon /> },
   { value: "miembros", label: "Miembros", icon: <PeopleIcon /> },
@@ -38,6 +41,7 @@ export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] 
   { value: "tareas", label: "Tareas", icon: <TareasIcon /> },
   { value: "ranking", label: "Ranking", icon: <RankingIcon /> },
   { value: "actividad", label: "Actividad", icon: <ActivityIcon /> },
+  { value: "suscripciones", label: "Suscripciones", icon: <SuscripcionesIcon /> },
 ];
 
 export interface AppNavProps {

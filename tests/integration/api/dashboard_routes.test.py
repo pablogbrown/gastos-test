@@ -34,6 +34,11 @@ _MIGRACIONES = (
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email), y las rutas requieren JWT.
     "0005_usuarios",
+    # 0009 (spec `gastos-suscripcion-mensual`): `listar_gastos` (llamado
+    # por `GET /inicio` vía `armar_dashboard`) ahora dispara
+    # `suscripcion_service.generar_gastos_pendientes` como primera línea,
+    # que requiere la tabla `suscripciones`.
+    "0009_suscripciones",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -44,6 +49,7 @@ _SERVICIOS_CON_SESSION = (
     "ranking_service",
     "balance_service",
     "actividad_service",
+    "suscripcion_service",
 )
 
 

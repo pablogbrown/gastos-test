@@ -28,11 +28,19 @@ import {
   listarGastos,
   registrarGasto,
 } from "../api/gastosClient";
+import { crearSuscripcion } from "../api/suscripcionesClient";
 
 export interface GastosProps {
   casaId: string;
   miembros: Miembro[];
 }
+
+/** "Tipo de gasto" (spec `gastos-suscripcion-mensual`): Único (default) /
+ * En cuotas (spec `gastos-en-cuotas`, sin cambios de comportamiento) /
+ * Suscripción mensual — mutuamente excluyente con el campo Cuotas:
+ * elegir "Suscripción mensual" oculta/ignora ese campo y hace que el
+ * envío llame a `crearSuscripcion` en vez de `registrarGasto`. */
+type TipoGasto = "unico" | "cuotas" | "suscripcion";
 
 /** Pantalla "Gastos" (REQ-001, REQ-002, REQ-003, REQ-008): formulario de
  * alta de un gasto y su historial. "Todos los miembros" viene
@@ -48,6 +56,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
   const [fecha, setFecha] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [cuotas, setCuotas] = useState("");
+  const [tipoGasto, setTipoGasto] = useState<TipoGasto>("unico");
   const [nuevaCategoria, setNuevaCategoria] = useState("");
   const [todosLosMiembros, setTodosLosMiembros] = useState(true);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -86,24 +95,40 @@ export function Gastos({ casaId, miembros }: GastosProps) {
     event.preventDefault();
     setError(null);
     try {
-      await registrarGasto(casaId, {
-        descripcion,
-        importe,
-        fecha,
-        categoriaId,
-        participantes: todosLosMiembros ? undefined : seleccionados,
-        cuotas: cuotas === "" ? undefined : Number(cuotas),
-      });
+      if (tipoGasto === "suscripcion") {
+        // Spec `gastos-suscripcion-mensual`, TC-007: el modo "Suscripción
+        // mensual" llama a `crearSuscripcion`, nunca a `registrarGasto` —
+        // sin cuotas ni selección de participantes (siempre "todos los
+        // miembros", igual que `crear_suscripcion` ya hace del lado del
+        // servicio).
+        await crearSuscripcion(casaId, { descripcion, importe, categoriaId });
+      } else {
+        await registrarGasto(casaId, {
+          descripcion,
+          importe,
+          fecha,
+          categoriaId,
+          participantes: todosLosMiembros ? undefined : seleccionados,
+          cuotas: cuotas === "" ? undefined : Number(cuotas),
+        });
+      }
       setDescripcion("");
       setImporte("");
       setFecha("");
       setCategoriaId("");
       setCuotas("");
+      setTipoGasto("unico");
       setTodosLosMiembros(true);
       setSeleccionados([]);
       await cargar();
     } catch (err) {
-      setError(esApiError(err) ? err.detail : "No se pudo registrar el gasto.");
+      setError(
+        esApiError(err)
+          ? err.detail
+          : tipoGasto === "suscripcion"
+            ? "No se pudo crear la suscripción."
+            : "No se pudo registrar el gasto."
+      );
     }
   }
 
@@ -202,36 +227,64 @@ export function Gastos({ casaId, miembros }: GastosProps) {
               </Select>
             </FormControl>
 
-            <TextField
-              id="cuotas-gasto"
-              label="Cuotas (opcional)"
-              type="number"
-              value={cuotas}
-              onChange={(event) => setCuotas(event.target.value)}
-              size="small"
-            />
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel htmlFor="tipo-gasto" shrink>
+                Tipo de gasto
+              </InputLabel>
+              <Select
+                native
+                id="tipo-gasto"
+                label="Tipo de gasto"
+                value={tipoGasto}
+                onChange={(event) => setTipoGasto(event.target.value as TipoGasto)}
+              >
+                <option value="unico">Único</option>
+                <option value="cuotas">En cuotas</option>
+                <option value="suscripcion">Suscripción mensual</option>
+              </Select>
+            </FormControl>
+
+            {tipoGasto !== "suscripcion" && (
+              <TextField
+                id="cuotas-gasto"
+                label="Cuotas (opcional)"
+                type="number"
+                value={cuotas}
+                onChange={(event) => setCuotas(event.target.value)}
+                size="small"
+              />
+            )}
           </Box>
 
-          {Number(cuotas) >= 2 && (
+          {tipoGasto === "suscripcion" && (
+            <Typography variant="body2" color="text.secondary">
+              Se va a generar un gasto de este mes en adelante, todos los meses, hasta que
+              canceles la suscripción — repartido entre todos los miembros.
+            </Typography>
+          )}
+
+          {tipoGasto !== "suscripcion" && Number(cuotas) >= 2 && (
             <Typography variant="body2" color="text.secondary">
               Se van a crear {Number(cuotas)} gastos, uno por mes.
             </Typography>
           )}
 
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  id="todos-los-miembros"
-                  checked={todosLosMiembros}
-                  onChange={(event) => setTodosLosMiembros(event.target.checked)}
-                />
-              }
-              label="Todos los miembros"
-            />
-          </FormGroup>
+          {tipoGasto !== "suscripcion" && (
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    id="todos-los-miembros"
+                    checked={todosLosMiembros}
+                    onChange={(event) => setTodosLosMiembros(event.target.checked)}
+                  />
+                }
+                label="Todos los miembros"
+              />
+            </FormGroup>
+          )}
 
-          {!todosLosMiembros && (
+          {tipoGasto !== "suscripcion" && !todosLosMiembros && (
             <FormGroup aria-label="Participantes">
               {miembros.map((miembro) => (
                 <FormControlLabel
