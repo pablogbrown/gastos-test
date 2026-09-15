@@ -74,4 +74,82 @@ describe("Balance", () => {
     );
     expect(llamadaConMesElegido).toBe(true);
   });
+
+  it("TC-010: con actividad en ambas monedas, renderiza dos secciones separadas sin ningún total combinado", async () => {
+    const ANA_ID = "33333333-3333-3333-3333-333333333333";
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/balance")) {
+        return {
+          ok: true,
+          json: async () => ({
+            balances: [
+              {
+                miembro_id: ADMIN_ID,
+                nombre: "Administrador",
+                pago: "40000",
+                correspondia: "20000",
+                balance: "20000",
+                moneda: "ARS",
+              },
+              {
+                miembro_id: ANA_ID,
+                nombre: "Ana",
+                pago: "0",
+                correspondia: "20000",
+                balance: "-20000",
+                moneda: "ARS",
+              },
+              {
+                miembro_id: ADMIN_ID,
+                nombre: "Administrador",
+                pago: "0",
+                correspondia: "20",
+                balance: "-20",
+                moneda: "USD",
+              },
+              {
+                miembro_id: ANA_ID,
+                nombre: "Ana",
+                pago: "40",
+                correspondia: "20",
+                balance: "20",
+                moneda: "USD",
+              },
+            ],
+            transferencias: [
+              { deudor_id: ANA_ID, acreedor_id: ADMIN_ID, monto: "20000", moneda: "ARS" },
+              { deudor_id: ADMIN_ID, acreedor_id: ANA_ID, monto: "20", moneda: "USD" },
+            ],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Balance casaId={CASA_ID} />);
+
+    expect(await screen.findByText("Pesos")).toBeInTheDocument();
+    expect(await screen.findByText("Dólares")).toBeInTheDocument();
+
+    // Cada sección tiene su propia tabla — el nombre "Administrador"
+    // aparece una vez por sección (fila propia), nunca en un total
+    // combinado que sume ambas monedas.
+    expect(screen.getAllByText("Administrador")).toHaveLength(2);
+    expect(screen.getAllByText("Ana")).toHaveLength(2);
+
+    // Ninguna suma/total combinando ambas monedas en pantalla.
+    expect(screen.queryByText(/total/i)).not.toBeInTheDocument();
+  });
+
+  it("sin actividad en USD, solo renderiza la sección Pesos", async () => {
+    const fetchMock = mockFetch();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Balance casaId={CASA_ID} />);
+
+    expect(await screen.findByText("Pesos")).toBeInTheDocument();
+    expect(screen.queryByText("Dólares")).not.toBeInTheDocument();
+  });
 });

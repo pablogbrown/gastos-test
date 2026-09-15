@@ -27,6 +27,11 @@ class Gasto(Base):
     `Suscripcion` — puramente de etiquetado, independiente de `cuotas`
     (un gasto generado por una suscripción nunca tiene `cuotas`, y
     viceversa).
+
+    `moneda` (spec `gastos-multi-moneda`): `"ARS"` (default) o `"USD"` —
+    sin conversión entre monedas en ningún lado del sistema. Todas las
+    cuotas de una misma compra comparten la misma `moneda`
+    (`_crear_gastos_en_cuotas`, `gasto_service.py`).
     """
 
     __tablename__ = "gastos"
@@ -54,6 +59,7 @@ class Gasto(Base):
     # SQLAlchemy) — ahí sí, porque para ese momento `suscripciones` ya
     # existe de verdad en la base.
     suscripcion_id = Column(GUID(), nullable=True)
+    moneda = Column(String(3), nullable=False, default="ARS")
 
     participantes = relationship(
         "GastoParticipante", back_populates="gasto", cascade="all, delete-orphan"

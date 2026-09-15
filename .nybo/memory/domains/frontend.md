@@ -78,7 +78,7 @@ frontend domain
   (the one actually being tested) takes effect. Keep this flag if the
   Vitest `poolOptions` config is ever touched again.
 
-<!-- added: 2026-09-14 | feature: fix-validacion-puntos-tarea-2026-09-14 | confidence: medium | verified: 2026-09-14 -->
+<!-- added: 2026-09-14 | feature: fix-validacion-puntos-tarea-2026-09-14 | confidence: high | verified: 2026-09-15 -->
 - When a numeric form field maps to a backend `Optional[int] = None`
   whose *absence* (not `0`) intentionally triggers a business-rule
   validation (see `src/api/schemas.py`'s comment on `puntos`), never
@@ -88,3 +88,10 @@ frontend domain
   `value === "" ? undefined : Number(value)`, so `JSON.stringify` omits
   the key. `Tareas.tsx`'s `handleCrear` had this bug for `puntos`; check
   any other optional-numeric form field against the same pattern.
+  Generalizes beyond empty-string numerics: `gastos-en-cuotas`'s `cuotas`
+  field and `gastos-multi-moneda`'s `moneda` selector (which defaults
+  visibly to `"ARS"` in the UI but is only sent in the body when the
+  user picks `"USD"`, via `moneda === "ARS" ? undefined : moneda`) reuse
+  the same "never send the backend's own default explicitly" shape —
+  confirmed a 3rd time, promote to the reflex for any optional field
+  with a backend-side default.

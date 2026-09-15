@@ -9,6 +9,28 @@ db domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- [DBP-01] added: 2026-09-15 | feature: gastos-multi-moneda | confidence: high | verified: 2026-09-15 -->
+- [DBP-01] A `NOT NULL` column with a simple default (a single constant,
+  not something dynamic) is declared as a plain Python-side
+  `Column(..., nullable=False, default="ARS")` — never `server_default`
+  — consistent across `Suscripcion.activa`, and now
+  `Gasto.moneda`/`Suscripcion.moneda`. This is deliberate, not an
+  oversight: it means the default only applies when a row is inserted
+  through the ORM. Confirmed live (spec `gastos-multi-moneda`, T1) that
+  this has a real split behavior depending on how the column reaches an
+  existing Postgres database: (a) a brand-new table created by
+  `create_all` (a fresh ephemeral Postgres, or any SQLite test) gets the
+  column with no SQL-level default at all — a raw-SQL `INSERT` omitting
+  it would fail; (b) a column added to an *already-existing* table via a
+  migration's `ALTER TABLE ... ADD COLUMN ... DEFAULT 'ARS'` (the
+  additive-migration pattern, see `0008`-`0010`) DOES leave a real
+  SQL-level default in place (`information_schema.columns.column_default`
+  shows `'ARS'::character varying`) — because the ALTER statement itself
+  says so, regardless of the model's own Python-only default. Never
+  assume "the model doesn't declare `server_default`" implies "no
+  Postgres-level default exists anywhere" — check which path created the
+  column before reasoning about raw-SQL insert safety.
+
 ## Gotchas
 <!-- Things that tripped us up -->
 

@@ -24,6 +24,7 @@ from src.db.models.casa import Casa
 from src.db.models.categoria import Categoria
 from src.db.models.suscripcion import Suscripcion
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
+from src.services.gasto_service import MONEDAS_VALIDAS
 from src.services.miembro_service import _validar_actor_admin
 
 
@@ -38,6 +39,7 @@ def crear_suscripcion(
     importe,
     categoria_id: Optional[UUID],
     actor: UUID,
+    moneda: str = "ARS",
 ) -> Suscripcion:
     """Crea una Suscripcion activa y genera de inmediato el gasto del mes
     actual (REQ-001). Requiere que `actor` sea Administrador activo de la
@@ -46,6 +48,11 @@ def crear_suscripcion(
     El gasto generado se reparte entre los miembros activos igual que un
     gasto normal (misma lógica de `gasto_service.registrar_gasto`, sin
     selección de participantes al crear la suscripción).
+
+    `moneda` (spec `gastos-multi-moneda`, REQ-004/REQ-006): `"ARS"`
+    (default) o `"USD"` — fija desde la creación (no hay endpoint de
+    edición hoy); cada gasto que esta suscripción genere mensualmente
+    hereda esta misma moneda.
     """
     # Import diferido: evita el ciclo `gasto_service` -> `suscripcion_service`
     # (`listar_gastos` importa este módulo dentro de la función, ver ahí).
@@ -57,6 +64,8 @@ def crear_suscripcion(
         raise ValidationError("El importe de la suscripción debe ser mayor a cero.")
     if categoria_id is None:
         raise ValidationError("La suscripción debe tener una categoría asignada.")
+    if moneda not in MONEDAS_VALIDAS:
+        raise ValidationError(f"Moneda inválida: {moneda!r}. Debe ser 'ARS' o 'USD'.")
 
     session = get_session()
     try:
@@ -82,6 +91,7 @@ def crear_suscripcion(
             pagado_por=actor,
             activa=True,
             ultimo_mes_generado=None,
+            moneda=moneda,
         )
         session.add(suscripcion)
         session.commit()
@@ -107,6 +117,7 @@ def crear_suscripcion(
         suscripcion.pagado_por,
         actor,
         suscripcion_id=suscripcion.id,
+        moneda=suscripcion.moneda,
     )
 
     session = get_session()
@@ -181,6 +192,9 @@ def generar_gastos_pendientes(casa_id: UUID) -> None:
     que `casa_id` exista: si no existe, simplemente no hay Suscripcion
     alguna que iterar (no-op) — la validación de "casa existe" sigue
     siendo responsabilidad exclusiva de `listar_gastos`.
+
+    `moneda` (spec `gastos-multi-moneda`, REQ-004): cada gasto generado
+    hereda la `moneda` de su Suscripcion — nunca la de otra.
     """
     from src.services.gasto_service import registrar_gasto
 
@@ -201,12 +215,13 @@ def generar_gastos_pendientes(casa_id: UUID) -> None:
         # `registrar_gasto` (que abre la suya propia) — evita anidar
         # sesiones/transacciones sobre el mismo engine.
         datos_pendientes = [
-            (s.id, s.descripcion, s.importe, s.categoria_id, s.pagado_por) for s in pendientes
+            (s.id, s.descripcion, s.importe, s.categoria_id, s.pagado_por, s.moneda)
+            for s in pendientes
         ]
     finally:
         session.close()
 
-    for suscripcion_id, descripcion, importe, categoria_id, pagado_por in datos_pendientes:
+    for suscripcion_id, descripcion, importe, categoria_id, pagado_por, moneda in datos_pendientes:
         registrar_gasto(
             casa_id,
             descripcion,
@@ -216,6 +231,7 @@ def generar_gastos_pendientes(casa_id: UUID) -> None:
             pagado_por,
             pagado_por,
             suscripcion_id=suscripcion_id,
+            moneda=moneda,
         )
 
         session = get_session()

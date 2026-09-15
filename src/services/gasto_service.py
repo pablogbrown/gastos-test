@@ -38,6 +38,13 @@ from src.services.actividad_service import registrar_actividad
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 from src.services.miembro_service import requiere_membresia_activa
 
+# Spec `gastos-multi-moneda`, REQ-006: únicos valores válidos de `moneda`
+# para un Gasto o una Suscripcion — hardcodeados acá (no una entidad de
+# catálogo, ver Design Rationale de T1) en vez de en `balance_service.py`
+# porque este módulo es el punto de entrada de validación (`registrar_
+# gasto`); `suscripcion_service.py` reutiliza esta misma constante.
+MONEDAS_VALIDAS = {"ARS", "USD"}
+
 
 def registrar_gasto(
     casa_id: UUID,
@@ -50,6 +57,7 @@ def registrar_gasto(
     participantes: Optional[Iterable[UUID]] = None,
     cuotas: Optional[int] = None,
     suscripcion_id: Optional[UUID] = None,
+    moneda: str = "ARS",
 ) -> Gasto:
     """Registra un Gasto y sus GastoParticipante asociados.
 
@@ -71,6 +79,11 @@ def registrar_gasto(
     `suscripcion_id` (spec `gastos-suscripcion-mensual`): puramente de
     etiquetado — un gasto generado por una suscripción nunca combina con
     `cuotas` (`suscripcion_service` nunca los pasa juntos).
+
+    `moneda` (spec `gastos-multi-moneda`, REQ-001/REQ-006): `"ARS"`
+    (default) o `"USD"` — cualquier otro valor es rechazado. Todas las
+    cuotas de una misma compra comparten la `moneda` del gasto original
+    (REQ-005/TC-007).
     """
     if cuotas is not None and cuotas <= 0:
         raise ValidationError("La cantidad de cuotas debe ser 2 o mayor.")
@@ -82,6 +95,8 @@ def registrar_gasto(
         raise ValidationError("El importe del gasto debe ser mayor a cero.")
     if categoria_id is None:
         raise ValidationError("El gasto debe tener una categoría asignada.")
+    if moneda not in MONEDAS_VALIDAS:
+        raise ValidationError(f"Moneda inválida: {moneda!r}. Debe ser 'ARS' o 'USD'.")
 
     if not requiere_membresia_activa(casa_id, actor):
         raise PermissionDeniedError("El actor no es un miembro activo de esta casa.")
@@ -126,6 +141,7 @@ def registrar_gasto(
                 categoria_id,
                 miembros_participantes,
                 cuotas,
+                moneda,
             )
         else:
             gasto = Gasto(
@@ -137,6 +153,7 @@ def registrar_gasto(
                 pagado_por=pagado_por,
                 categoria_id=categoria_id,
                 suscripcion_id=suscripcion_id,
+                moneda=moneda,
             )
             session.add(gasto)
             session.flush()
@@ -188,6 +205,7 @@ def _crear_gastos_en_cuotas(
     categoria_id: UUID,
     miembros_participantes,
     cuotas: int,
+    moneda: str = "ARS",
 ) -> List[Gasto]:
     """Crea `cuotas` filas `Gasto`, una por mes consecutivo a partir de
     `fecha`, compartiendo un `cuota_grupo_id` (spec `gastos-en-cuotas`,
@@ -195,6 +213,10 @@ def _crear_gastos_en_cuotas(
     repartir el importe total entre las `cuotas`, y otra vez por cuota
     para repartir esa parte entre `miembros_participantes` — mismo
     criterio de ajuste de redondeo (última parte) en ambos niveles.
+
+    `moneda` (spec `gastos-multi-moneda`, REQ-005/TC-007): se propaga sin
+    cambios a las N cuotas generadas — ninguna parte de una misma compra
+    puede tener una moneda distinta de las demás.
     """
     partes_cuotas = _dividir_importe(importe_decimal, cuotas)
     cuota_grupo_id = uuid.uuid4()
@@ -212,6 +234,7 @@ def _crear_gastos_en_cuotas(
             cuota_grupo_id=cuota_grupo_id,
             cuota_numero=i + 1,
             cuota_total=cuotas,
+            moneda=moneda,
         )
         session.add(gasto)
         session.flush()
