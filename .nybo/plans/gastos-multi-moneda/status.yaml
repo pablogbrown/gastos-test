@@ -1,5 +1,5 @@
 feature: gastos-multi-moneda
-status: approved
+status: verified
 profile: code
 action_type: ADD
 created_at: '2026-09-15'
@@ -15,6 +15,14 @@ branch: feat/gastos-multi-moneda
 pr_url: https://github.com/pablogbrown/gastos-test/pull/23
 pr_number: 23
 kind: single_spec
+latest_cycle: 1
+latest_evidence_path: evidence/1/build-results.md
+run_started_at: '2026-09-15T19:40:32.000Z'
+run_at: '2026-09-15T19:50:48.000Z'
+run_completed_at: '2026-09-15T19:50:48.000Z'
+run_duration: 616
+verified_at: '2026-09-15T19:58:51.000Z'
+verified_duration: 483
 notes: |
   Foundation para tarjetas-credito e importar-resumen-tarjeta.
   Rationale: spec.md. Build narrative: evidence/build-results.md.
