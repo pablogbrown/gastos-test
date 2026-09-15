@@ -1,0 +1,17 @@
+feature: gastos-en-cuotas
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-15'
+approved_at: '2026-09-15'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - frontend.md
+notes: |
+  Single spec: un solo flujo (dividir un gasto en cuotas) atravesando
+  modelo->servicio->API->UI. Depende de balance-mensual (build en ese
+  orden) para que la semántica de "pendiente para más adelante" tenga
+  sentido — no es un split de esa spec, es una dependencia entre specs.
