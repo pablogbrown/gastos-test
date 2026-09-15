@@ -95,7 +95,10 @@ def test_balance_pablo_mas_30000_ana_menos_30000_segun_ejemplo_del_documento(db_
         participantes=[pablo_id, ana.id],
     )
 
-    balance = calcular_balance(casa.id)
+    # Los gastos son de enero 2026 (spec `balance-mensual`: sin `mes`
+    # explícito, `calcular_balance` ahora filtra por el mes calendario
+    # actual, no por el mes de estos gastos de prueba).
+    balance = calcular_balance(casa.id, mes="2026-01")
     por_id = {b.miembro_id: b for b in balance}
 
     assert por_id[pablo_id].pago == Decimal("80000.00")
@@ -136,7 +139,7 @@ def test_transferencia_sugerida_exacta_entre_deudor_y_acreedor(db_session):
         participantes=[pablo_id, ana.id],
     )
 
-    balance = calcular_balance(casa.id)
+    balance = calcular_balance(casa.id, mes="2026-01")
     transferencias = sugerir_transferencias(balance)
 
     assert len(transferencias) == 1

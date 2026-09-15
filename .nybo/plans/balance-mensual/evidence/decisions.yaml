@@ -1,0 +1,8 @@
+decisions: []
+# No open blocking or non-blocking decisions. Both judgment calls made
+# during this build (updating two pre-existing tests whose fixed
+# January-2026 dates collided with the new "default = current month"
+# behavior, and fixing a stale URL matcher in MuiRestyle.test.tsx) were
+# within builder authority at trust level semi-autonomous
+# (spec-deviation class) — see evidence/1/build-results.md's Judgment
+# section for the full rationale.
