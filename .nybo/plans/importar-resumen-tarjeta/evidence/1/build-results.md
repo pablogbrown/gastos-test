@@ -6,7 +6,7 @@ updated: '2026-09-15T00:00:00Z'
 exit: in-progress
 verdict: pending
 judgment:
-  entries: 3
+  entries: 5
 observations:
   entries: 0
 ---
@@ -59,6 +59,22 @@ merge pusheado.
   dentro de la libertad explícita que daba `01-plan-01-parser-pdf.md`
   ("decisión de implementación libre siempre que TC-002/003/004/008/009
   queden cubiertos").
+- **J004** `resumen_importer_service.importar_resumen` parsea el PDF
+  ANTES de validar que `tarjeta_id` existe/pertenece a la casa (el plan
+  listaba el orden inverso) — se fusionó la validación de existencia de
+  la tarjeta con la llamada a `tarjeta_service.actualizar_tarjeta` (que
+  ya la hace por su cuenta, lanzando `NotFoundError`), evitando una
+  lectura separada solo para esa validación. Sin impacto en ningún TC
+  (ninguno ejercita la combinación "tarjeta inexistente + PDF también mal
+  formado" para distinguir qué error debería ganar). Deviation dentro de
+  `spec-deviation`, settleable en L2.
+- **J005** `ResumenImportado.gastos_creados` es el TOTAL de filas `Gasto`
+  persistidas por la importación (incluye las de `cuotas_creadas` y las
+  vinculadas a `suscripciones_vinculadas` — no una cuarta categoría
+  aparte), interpretando literalmente el mensaje de T4 ("N gastos
+  creados (X en cuotas, Y vinculados a suscripciones)") como "N total,
+  desglosado en X e Y". `00-overview.md`/T2 no lo dejaban 100% explícito;
+  T3/T4 no tienen tests que dependan de la interpretación contraria.
 
 ### Observations
 

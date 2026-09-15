@@ -58,6 +58,7 @@ def registrar_gasto(
     cuotas: Optional[int] = None,
     suscripcion_id: Optional[UUID] = None,
     moneda: str = "ARS",
+    tarjeta_id: Optional[UUID] = None,
 ) -> Gasto:
     """Registra un Gasto y sus GastoParticipante asociados.
 
@@ -84,6 +85,11 @@ def registrar_gasto(
     (default) o `"USD"` — cualquier otro valor es rechazado. Todas las
     cuotas de una misma compra comparten la `moneda` del gasto original
     (REQ-005/TC-007).
+
+    `tarjeta_id` (spec `importar-resumen-tarjeta`): puramente de
+    etiquetado, sin validación adicional — `None` (default) es un gasto
+    no originado en una importación de resumen; identifica de qué
+    `TarjetaCredito` vino el consumo cuando sí lo es.
     """
     if cuotas is not None and cuotas <= 0:
         raise ValidationError("La cantidad de cuotas debe ser 2 o mayor.")
@@ -142,6 +148,7 @@ def registrar_gasto(
                 miembros_participantes,
                 cuotas,
                 moneda,
+                tarjeta_id,
             )
         else:
             gasto = Gasto(
@@ -154,6 +161,7 @@ def registrar_gasto(
                 categoria_id=categoria_id,
                 suscripcion_id=suscripcion_id,
                 moneda=moneda,
+                tarjeta_id=tarjeta_id,
             )
             session.add(gasto)
             session.flush()
@@ -206,6 +214,7 @@ def _crear_gastos_en_cuotas(
     miembros_participantes,
     cuotas: int,
     moneda: str = "ARS",
+    tarjeta_id: Optional[UUID] = None,
 ) -> List[Gasto]:
     """Crea `cuotas` filas `Gasto`, una por mes consecutivo a partir de
     `fecha`, compartiendo un `cuota_grupo_id` (spec `gastos-en-cuotas`,
@@ -217,6 +226,9 @@ def _crear_gastos_en_cuotas(
     `moneda` (spec `gastos-multi-moneda`, REQ-005/TC-007): se propaga sin
     cambios a las N cuotas generadas — ninguna parte de una misma compra
     puede tener una moneda distinta de las demás.
+
+    `tarjeta_id` (spec `importar-resumen-tarjeta`): se propaga sin
+    cambios a las N cuotas generadas, igual que `moneda`.
     """
     partes_cuotas = _dividir_importe(importe_decimal, cuotas)
     cuota_grupo_id = uuid.uuid4()
@@ -235,6 +247,7 @@ def _crear_gastos_en_cuotas(
             cuota_numero=i + 1,
             cuota_total=cuotas,
             moneda=moneda,
+            tarjeta_id=tarjeta_id,
         )
         session.add(gasto)
         session.flush()
@@ -251,6 +264,136 @@ def _crear_gastos_en_cuotas(
         gastos_creados.append(gasto)
 
     return gastos_creados
+
+
+def registrar_gasto_cuotas_restantes(
+    casa_id: UUID,
+    descripcion: str,
+    importe_por_cuota,
+    fecha_inicio,
+    cuota_actual: int,
+    cuota_total: int,
+    categoria_id: UUID,
+    pagado_por: UUID,
+    actor: UUID,
+    moneda: str = "ARS",
+    tarjeta_id: Optional[UUID] = None,
+) -> List[Gasto]:
+    """Registra solo las cuotas RESTANTES de una compra en curso —
+    `cuota_actual` (inclusive) hasta `cuota_total`, una por mes
+    consecutivo desde `fecha_inicio` — spec `importar-resumen-tarjeta`,
+    REQ-003/TC-004.
+
+    A diferencia de `_crear_gastos_en_cuotas` (que siempre arranca una
+    serie nueva de `1..N` dividiendo un importe total), acá el resumen ya
+    trae el importe de CADA cuota individual — `importe_por_cuota` se usa
+    tal cual, sin dividir, en cada una de las `cuota_total - cuota_actual
+    + 1` filas generadas; todas comparten un mismo `cuota_grupo_id` nuevo
+    (esta serie de cuotas restantes es su propio grupo, independiente de
+    cualquier grupo que ya existiera para las cuotas anteriores, que esta
+    spec no tiene forma de conocer ni necesita reconciliar).
+
+    Reutiliza `_sumar_meses`/`_dividir_importe`/`_resolver_participantes`
+    — nunca reimplementa el reparto entre participantes ni la aritmética
+    de fechas, mismo criterio que el resto de `gasto_service`.
+    """
+    if cuota_actual is None or cuota_total is None or cuota_actual < 1 or cuota_total < cuota_actual:
+        raise ValidationError(
+            "cuota_actual/cuota_total inválidos: se requiere 1 <= cuota_actual <= cuota_total."
+        )
+    if not descripcion or not str(descripcion).strip():
+        raise ValidationError("La descripción del gasto no puede estar vacía.")
+    if importe_por_cuota is None or Decimal(str(importe_por_cuota)) <= 0:
+        raise ValidationError("El importe de cada cuota debe ser mayor a cero.")
+    if categoria_id is None:
+        raise ValidationError("El gasto debe tener una categoría asignada.")
+    if moneda not in MONEDAS_VALIDAS:
+        raise ValidationError(f"Moneda inválida: {moneda!r}. Debe ser 'ARS' o 'USD'.")
+
+    if not requiere_membresia_activa(casa_id, actor):
+        raise PermissionDeniedError("El actor no es un miembro activo de esta casa.")
+
+    session = get_session()
+    try:
+        if session.get(Casa, casa_id) is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+
+        categoria = (
+            session.query(Categoria)
+            .filter(Categoria.id == categoria_id, Categoria.casa_id == casa_id)
+            .one_or_none()
+        )
+        if categoria is None:
+            raise ValidationError("La categoría indicada no existe en esta casa.")
+
+        pagador = (
+            session.query(Miembro)
+            .filter(Miembro.casa_id == casa_id, Miembro.id == pagado_por)
+            .one_or_none()
+        )
+        if pagador is None:
+            raise NotFoundError(f"El miembro {pagado_por} no existe en la casa {casa_id}.")
+
+        miembros_participantes = _resolver_participantes(session, casa_id, None)
+        if not miembros_participantes:
+            raise ValidationError(
+                "No hay miembros activos disponibles para dividir el gasto."
+            )
+
+        importe_decimal = Decimal(str(importe_por_cuota)).quantize(Decimal("0.01"))
+        cuota_grupo_id = uuid.uuid4()
+        cantidad_restantes = cuota_total - cuota_actual + 1
+        gastos_creados: List[Gasto] = []
+
+        for i in range(cantidad_restantes):
+            gasto = Gasto(
+                id=uuid.uuid4(),
+                casa_id=casa_id,
+                descripcion=descripcion.strip(),
+                importe=importe_decimal,
+                fecha=_sumar_meses(fecha_inicio, i),
+                pagado_por=pagado_por,
+                categoria_id=categoria_id,
+                cuota_grupo_id=cuota_grupo_id,
+                cuota_numero=cuota_actual + i,
+                cuota_total=cuota_total,
+                moneda=moneda,
+                tarjeta_id=tarjeta_id,
+            )
+            session.add(gasto)
+            session.flush()
+
+            partes_participantes = _dividir_importe(importe_decimal, len(miembros_participantes))
+            for miembro, parte_participante in zip(miembros_participantes, partes_participantes):
+                session.add(
+                    GastoParticipante(
+                        gasto_id=gasto.id,
+                        miembro_id=miembro.id,
+                        monto_correspondiente=parte_participante,
+                    )
+                )
+            gastos_creados.append(gasto)
+
+        session.commit()
+        for gasto_creado in gastos_creados:
+            session.refresh(gasto_creado)
+            _ = gasto_creado.participantes
+
+        for gasto_creado in gastos_creados:
+            registrar_actividad(
+                casa_id,
+                TipoActividadEnum.GASTO_REGISTRADO,
+                pagado_por,
+                f"{pagador.nombre} registró un gasto de ${gasto_creado.importe} "
+                f"({gasto_creado.descripcion}).",
+            )
+
+        return gastos_creados
+    except (ValidationError, PermissionDeniedError, NotFoundError):
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def _sumar_meses(fecha: date, n: int) -> date:
