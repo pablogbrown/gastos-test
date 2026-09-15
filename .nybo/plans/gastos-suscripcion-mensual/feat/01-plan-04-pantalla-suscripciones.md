@@ -40,9 +40,9 @@ no dos pantallas distintas.
 T3 — necesita las rutas HTTP nuevas.
 
 ## Done When
-- [ ] TC-006, TC-007 pasan.
-- [ ] `npm run build` sin errores de tipos.
-- [ ] `npm run test -- --run` completo sigue en verde.
+- [x] TC-006, TC-007 pasan.
+- [x] `npm run build` sin errores de tipos.
+- [x] `npm run test -- --run` completo sigue en verde.
 
 ## Interfaces Produced
 Ninguna nueva de negocio — nuevos módulos de cliente/pantalla, sin

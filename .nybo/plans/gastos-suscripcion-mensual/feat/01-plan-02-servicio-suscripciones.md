@@ -48,8 +48,8 @@ el proyecto).
 T1 — necesita el modelo `Suscripcion` y `Gasto.suscripcion_id`.
 
 ## Done When
-- [ ] TC-001 a TC-005 pasan.
-- [ ] `pytest tests/` completo sigue en verde — en particular,
+- [x] TC-001 a TC-005 pasan.
+- [x] `pytest tests/` completo sigue en verde — en particular,
       `listar_gastos` sin ninguna suscripción activa en la casa se
       comporta exactamente igual que antes (ningún test existente de
       `gastos`/`dashboard` se rompe).

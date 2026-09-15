@@ -42,8 +42,8 @@ todavía no haya generado ningún gasto este mes.
 Ninguna — primera tarea.
 
 ## Done When
-- [ ] Suite completa en verde con el modelo nuevo.
-- [ ] Migración corre limpia e idempotente contra Postgres real (base
+- [x] Suite completa en verde con el modelo nuevo.
+- [x] Migración corre limpia e idempotente contra Postgres real (base
       temporal, nunca `DATABASE_URL` directo).
 
 ## Interfaces Produced

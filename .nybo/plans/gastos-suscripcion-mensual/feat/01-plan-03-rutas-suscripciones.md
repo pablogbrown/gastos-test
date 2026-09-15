@@ -35,8 +35,8 @@ recurso HTTP en su propio módulo, todos bajo el prefijo compartido
 T2 — necesita las funciones de `suscripcion_service`.
 
 ## Done When
-- [ ] `pytest tests/` completo sigue en verde.
-- [ ] Los 3 endpoints responden los códigos esperados (verificado ya a
+- [x] `pytest tests/` completo sigue en verde.
+- [x] Los 3 endpoints responden los códigos esperados (verificado ya a
       nivel servicio en T2; acá se confirma que el payload/response HTTP
       tiene la forma correcta).
 
