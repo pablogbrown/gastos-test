@@ -1,5 +1,6 @@
 feature: balance-mensual
-status: ready
+status: shipped
+shipped_at: '2026-09-15T16:05:00Z'
 profile: code
 action_type: UPD
 created_at: '2026-09-15'
