@@ -8,11 +8,18 @@ orden de migraciones — ver Design Rationale de T1.
 Cómo obtiene un Postgres real:
 1. Si `TEST_DATABASE_URL` (o `DATABASE_URL`, cuando ya apunta a Postgres —
    caso `docker compose exec backend pytest`, con el servicio `db` ya
-   arriba) está seteada, se usa tal cual: no se administra su ciclo de
-   vida, se asume que ya está lista para aceptar conexiones.
+   arriba) está seteada, se usa como *servidor* (no como base de datos):
+   se crea una base de datos temporal nueva en ese mismo server y se
+   opera solo sobre ella — nunca directamente sobre la base apuntada por
+   la URL (fix `fix-test-migraciones-borra-tabla-real`: antes, un test de
+   este archivo hacía `DROP TABLE`/`DROP TYPE` en su `finally` contra la
+   base real del docker-compose de desarrollo, borrando `historial_
+   actividad` de la base compartida cada vez que corría la suite contra
+   Postgres real).
 2. Si no, se levanta un contenedor `postgres:16-alpine` efímero vía
    `docker run` en un puerto libre del host, se espera a que acepte
-   conexiones, y se lo destruye al terminar.
+   conexiones, y se lo destruye al terminar (ya aislado por diseño — no
+   toca el punto 1).
 3. Si el binario `docker` no está disponible o el daemon no responde, el
    test se skippea con un motivo explícito — no se asume el resultado por
    inspección de código, pero tampoco se rompe la suite en un entorno sin
@@ -27,8 +34,42 @@ import uuid
 
 import pytest
 import sqlalchemy
+from sqlalchemy.engine import make_url
 
 from src.db.migrate import run_migrations
+
+
+def _crear_base_temporal(dsn_servidor: str) -> str:
+    """Crea una base de datos nueva y vacía en el mismo server que `dsn_servidor`
+    apunta, y devuelve la URL a esa base — nunca opera sobre la base original."""
+    url_base = make_url(dsn_servidor)
+    nombre_temporal = f"test_migrations_{uuid.uuid4().hex[:12]}"
+    admin_engine = sqlalchemy.create_engine(
+        url_base.set(database="postgres"), isolation_level="AUTOCOMMIT"
+    )
+    try:
+        with admin_engine.connect() as conn:
+            conn.execute(sqlalchemy.text(f'CREATE DATABASE "{nombre_temporal}"'))
+    finally:
+        admin_engine.dispose()
+    # `str(URL)`/`repr(URL)` enmascaran la contraseña como "***" a propósito
+    # (no filtrarla en logs) — hay que pedir el string real explícitamente.
+    return url_base.set(database=nombre_temporal).render_as_string(hide_password=False)
+
+
+def _borrar_base_temporal(dsn_servidor: str, dsn_temporal: str) -> None:
+    nombre_temporal = make_url(dsn_temporal).database
+    url_base = make_url(dsn_servidor)
+    admin_engine = sqlalchemy.create_engine(
+        url_base.set(database="postgres"), isolation_level="AUTOCOMMIT"
+    )
+    try:
+        with admin_engine.connect() as conn:
+            conn.execute(
+                sqlalchemy.text(f'DROP DATABASE IF EXISTS "{nombre_temporal}" WITH (FORCE)')
+            )
+    finally:
+        admin_engine.dispose()
 
 _CONTAINER_NAME = "taskia-test-postgres-migrations"
 
@@ -73,7 +114,15 @@ def postgres_dsn():
         else None
     )
     if externa:
-        yield externa
+        # Nunca operar directamente sobre la base apuntada por `externa` —
+        # en `docker compose exec backend pytest` eso ES la base real de
+        # desarrollo. Crear una base temporal en el mismo server y usar
+        # solo esa; se borra al terminar, la base real queda intacta.
+        temporal = _crear_base_temporal(externa)
+        try:
+            yield temporal
+        finally:
+            _borrar_base_temporal(externa, temporal)
         return
 
     if not _docker_disponible():
@@ -104,6 +153,66 @@ def postgres_dsn():
         yield dsn
     finally:
         subprocess.run(["docker", "rm", "-f", _CONTAINER_NAME], capture_output=True)
+
+
+def test_dsn_externa_nunca_se_toca_directamente():
+    """Regresión (fix `fix-test-migraciones-borra-tabla-real`): cuando
+    `DATABASE_URL` ya apunta a Postgres (caso `docker compose exec backend
+    pytest`, contra la base real de desarrollo), el fixture `postgres_dsn`
+    debe operar sobre una base temporal nueva — nunca sobre la base
+    original — y esa base temporal debe desaparecer al terminar, dejando
+    la original completamente intacta.
+
+    No usa el fixture `postgres_dsn` (module-scoped, ya consumido por los
+    tests de arriba) — ejercita `_crear_base_temporal`/`_borrar_base_temporal`
+    directo, contra `DATABASE_URL` si está seteada a Postgres, para poder
+    inspeccionar el nombre de la base ANTES de que el fixture la reemplace.
+    """
+    externa = os.environ.get("DATABASE_URL")
+    if not (externa or "").startswith("postgresql"):
+        pytest.skip("Requiere DATABASE_URL apuntando a Postgres real (docker-compose).")
+
+    nombre_original = make_url(externa).database
+
+    temporal = _crear_base_temporal(externa)
+    try:
+        assert make_url(temporal).database != nombre_original
+
+        # La base temporal debe existir y ser distinta de la original.
+        temp_engine = sqlalchemy.create_engine(temporal)
+        with temp_engine.connect() as conn:
+            assert conn.execute(sqlalchemy.text("select current_database()")).scalar() == make_url(
+                temporal
+            ).database
+        temp_engine.dispose()
+    finally:
+        _borrar_base_temporal(externa, temporal)
+
+    # La base temporal ya no debe existir tras el cleanup.
+    admin_engine = sqlalchemy.create_engine(
+        make_url(externa).set(database="postgres"), isolation_level="AUTOCOMMIT"
+    )
+    try:
+        with admin_engine.connect() as conn:
+            existe = conn.execute(
+                sqlalchemy.text("SELECT 1 FROM pg_database WHERE datname = :nombre"),
+                {"nombre": make_url(temporal).database},
+            ).scalar()
+        assert existe is None
+    finally:
+        admin_engine.dispose()
+
+    # La base ORIGINAL sigue intacta — sigue existiendo y sigue siendo la
+    # misma (no fue reemplazada ni renombrada).
+    original_engine = sqlalchemy.create_engine(externa)
+    try:
+        with original_engine.connect() as conn:
+            assert (
+                conn.execute(sqlalchemy.text("select current_database()")).scalar()
+                == nombre_original
+            )
+    finally:
+        original_engine.dispose()
 
 
 def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
