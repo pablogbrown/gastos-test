@@ -66,3 +66,18 @@ Multi-moneda (ARS/USD) en gastos, cuotas y suscripciones: columna `moneda` (migr
 3. Balance con actividad en ambas monedas → 2 secciones "Pesos"/"Dólares" independientes, cada una con su tabla y transferencias propias, sin total combinado (TC-010).
    ![Balance con dos secciones separadas](./screenshots/balance-dos-secciones.jpg)
 4. Mes sin actividad USD → solo se renderiza "Pesos" (control TC-004/TC-010).
+
+### Curation
+
+- `.nybo/memory/domains/db.md`: agregado `[DBP-01]` — columna `NOT NULL`
+  con default simple usa `Column(..., default=...)` (Python-side), nunca
+  `server_default`; documentado el comportamiento real contra Postgres
+  según si la tabla ya existía (ALTER deja default SQL real) o se creó
+  nueva (`create_all`, sin default SQL). Tercera instancia del patrón
+  (`activa`, ahora `moneda` x2) — cruza el umbral de "visto varias veces".
+- `.nybo/memory/domains/frontend.md`: bumped `verified` en el gotcha de
+  `fix-validacion-puntos-tarea-2026-09-14` a 2026-09-15, agregada una
+  línea confirmando la 3ª reutilización (`moneda`) del patrón "nunca
+  enviar el default del backend explícito en el body".
+- No se crearon dominios nuevos ni ADRs — cambio contenido en
+  `db`/`services`/`api`/`frontend`, ya cubiertos.

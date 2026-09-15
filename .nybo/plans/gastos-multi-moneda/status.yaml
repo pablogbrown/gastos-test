@@ -1,5 +1,5 @@
 feature: gastos-multi-moneda
-status: verified
+status: ready
 profile: code
 action_type: ADD
 created_at: '2026-09-15'
@@ -23,6 +23,8 @@ run_completed_at: '2026-09-15T19:50:48.000Z'
 run_duration: 616
 verified_at: '2026-09-15T19:58:51.000Z'
 verified_duration: 483
+curated_at: '2026-09-15T20:01:16.000Z'
+curated_duration: 145
 notes: |
   Foundation para tarjetas-credito e importar-resumen-tarjeta.
   Rationale: spec.md. Build narrative: evidence/build-results.md.
