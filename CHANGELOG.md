@@ -57,3 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - feat(auth): un Administrador puede agregar como miembro a alguien que todavía no tiene cuenta — queda como "Pendiente" y se vincula automáticamente en cuanto esa persona se registra con el mismo email.
 - feat(services): un gasto se puede registrar en cuotas — se generan N gastos, uno por mes, cada uno por el importe total dividido en partes iguales; el balance solo refleja cada cuota en el mes que le corresponde.
 - feat(services): un Administrador puede crear suscripciones mensuales (ej. Netflix, gimnasio) — se genera automáticamente el gasto de cada mes mientras estén activas, sin acción manual; nueva pantalla "Suscripciones" para verlas y cancelarlas.
+
+### Changed
+
+- feat(nav-agrupada): el menú superior (desktop) agrupa las 9 pantallas en 4 elementos de primer nivel — Inicio, Casa (Miembros/Ranking/Actividad), Gastos (Gastos/Balance/Tarjetas/Suscripciones) y Tareas — con menús desplegables para Casa/Gastos; la barra inferior en mobile no cambia.
