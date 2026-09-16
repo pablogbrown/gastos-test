@@ -1,5 +1,6 @@
 feature: prestamos-entre-miembros
-status: ready
+status: shipped
+shipped_at: '2026-09-16T13:35:00Z'
 run_started_at: '2026-09-16T00:00:00Z'
 run_at: '2026-09-16T16:15:00.000Z'
 run_completed_at: '2026-09-16T16:15:00.000Z'
