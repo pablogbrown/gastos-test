@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/prestamos-entre-miembros
+pr_url: https://github.com/pablogbrown/gastos-test/pull/31
+pr_number: 31
 kind: single_spec
 notes: |
   Independiente de gastos-sin-reparto (sin dependencia funcional ni
