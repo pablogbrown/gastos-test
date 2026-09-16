@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/prestamos-confirmacion-mutua
+pr_url: https://github.com/pablogbrown/gastos-test/pull/32
+pr_number: 32
 kind: single_spec
 notes: |
   Depende de prestamos-entre-miembros (ya shippeada y mergeada).
