@@ -70,3 +70,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - feat(prestamos-entre-miembros): nueva pantalla "Préstamos" para registrar deudas explícitas entre dos miembros (quién presta, a quién, importe, moneda, fecha), con estado pendiente/pagado cambiable con un clic — completamente separada de Gastos y Balance, sin afectar ningún cálculo de la casa.
+
+### Changed
+
+- feat(gastos-sin-reparto): un gasto ya no se reparte entre participantes ni genera ninguna deuda individual — pasa a ser simplemente una salida de fondos de la casa. Balance ahora muestra el total gastado de la casa por moneda más, a modo informativo, cuánto aportó cada miembro — sin ninguna cifra de "le correspondía" ni transferencias sugeridas (esa deuda entre personas ahora se registra explícitamente con Préstamos).
+
+### Removed
+
+- feat(gastos-sin-reparto): se elimina `GastoParticipante` y todo el reparto de gastos entre participantes, junto con su historial — el formulario "Nuevo gasto" ya no pide elegir con quién se comparte.
