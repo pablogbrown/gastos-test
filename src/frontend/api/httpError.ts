@@ -15,24 +15,26 @@ export interface ApiError {
   detail: string;
 }
 
+// Mensaje genérico para cualquier 422 de validación de Pydantic — nunca
+// se le muestra al usuario el texto crudo de esos errores (en inglés,
+// con jerga de implementación como "uuid"/"decimal"/"field required").
+const MENSAJE_VALIDACION_GENERICO = "Revisá que todos los campos estén completos y sean válidos.";
+
 /** Normaliza `detail` de una respuesta de error a un string legible.
  *
  * FastAPI devuelve `detail` como string para los errores de negocio
- * (`HTTPException(detail=str(exc))`, ver rutas de la API), pero un 422
- * de validación de Pydantic lo devuelve como un array de objetos
- * `{loc, msg, type}` — sin este chequeo, ese array se propaga tal cual
- * y cualquier pantalla que hace `<Alert>{error.detail}</Alert>` crashea
- * con "Objects are not valid as a React child" (sin error boundary). */
+ * (`HTTPException(detail=str(exc))`, ver rutas de la API) — esos
+ * mensajes ya están en español y pensados para el usuario, se muestran
+ * tal cual. Un 422 de validación de Pydantic, en cambio, lo devuelve
+ * como un array de objetos `{loc, msg, type}` con mensajes técnicos en
+ * inglés (ej. "value is not a valid uuid") — nunca deben llegar al
+ * usuario así: además del riesgo de crash ya conocido (`<Alert>
+ * {error.detail}</Alert>` con un objeto/array revienta con "Objects are
+ * not valid as a React child", sin error boundary), exponen detalles de
+ * implementación. Se reemplazan siempre por un mensaje genérico. */
 export function formatErrorDetail(raw: unknown): string | undefined {
   if (typeof raw === "string") return raw;
-  if (Array.isArray(raw)) {
-    const mensajes = raw
-      .map((item) =>
-        item && typeof item === "object" && "msg" in item ? String((item as { msg: unknown }).msg) : null
-      )
-      .filter((mensaje): mensaje is string => mensaje !== null);
-    if (mensajes.length > 0) return mensajes.join("; ");
-  }
+  if (Array.isArray(raw) && raw.length > 0) return MENSAJE_VALIDACION_GENERICO;
   return undefined;
 }
 
