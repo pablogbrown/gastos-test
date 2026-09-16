@@ -56,6 +56,13 @@ def crear_tarea(
         )
     if recurrente and not frecuencia:
         raise ValidationError("Una tarea recurrente debe indicar una frecuencia.")
+    if recurrente and fecha_prevista is None:
+        # Fix (reportado en vivo): sin una fecha de anclaje, no hay forma
+        # de impedir que una tarea recurrente se complete más seguido que
+        # su frecuencia — `completar_tarea` usa `fecha_prevista` como el
+        # gate. Obligatoria solo para tareas recurrentes: una tarea
+        # puntual sigue sin necesitarla.
+        raise ValidationError("Una tarea recurrente debe indicar una fecha prevista.")
 
     session = get_session()
     try:
@@ -142,6 +149,22 @@ def completar_tarea(tarea_id: UUID, miembro_id: UUID, actor: UUID) -> HistorialT
 
         if tarea.estado == EstadoTareaEnum.COMPLETADA:
             raise ConflictError(f"La tarea {tarea_id} ya fue completada.")
+
+        # Fix (reportado en vivo): una tarea recurrente no se puede
+        # completar más seguido que su frecuencia — cada instancia nueva
+        # que genera `procesar_recurrencia` recién se puede completar a
+        # partir de su propia `fecha_prevista` (hoy inclusive). Nunca
+        # aplica a una tarea no recurrente (completar antes de una fecha
+        # prevista informativa siempre estuvo permitido, y sigue estándolo).
+        if (
+            tarea.recurrente
+            and tarea.fecha_prevista is not None
+            and date.today() < tarea.fecha_prevista
+        ):
+            raise ConflictError(
+                f"Esta tarea recurrente todavía no se puede completar — está programada "
+                f"para {tarea.fecha_prevista.isoformat()}."
+            )
 
         historial = HistorialTarea(
             id=uuid.uuid4(),

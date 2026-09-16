@@ -4,6 +4,7 @@ Cubre TC-001, TC-002, TC-004, TC-005, TC-006 y TC-009.
 """
 import importlib
 import uuid
+from datetime import date, timedelta
 
 import pytest
 from sqlalchemy import create_engine
@@ -183,6 +184,7 @@ def test_tarea_recurrente_completada_genera_nueva_instancia_pendiente(db_session
         actor=admin_id,
         recurrente=True,
         frecuencia="diaria",
+        fecha_prevista=date.today(),
     )
 
     completar_tarea(tarea.id, ana.id, ana.id)
@@ -194,6 +196,55 @@ def test_tarea_recurrente_completada_genera_nueva_instancia_pendiente(db_session
     assert nueva.recurrente is True
     assert nueva.nombre == "Sacar la basura"
     assert nueva.puntos == 3
+    assert nueva.fecha_prevista == date.today() + timedelta(days=1)
+
+
+def test_crear_tarea_recurrente_sin_fecha_prevista_es_rechazada(db_session):
+    casa, admin_id, _ = _casa_con_admin_y_miembro(db_session)
+
+    with pytest.raises(ValidationError):
+        crear_tarea(
+            casa.id, "Sacar la basura", 3, actor=admin_id, recurrente=True, frecuencia="diaria"
+        )
+
+
+def test_completar_tarea_recurrente_antes_de_su_fecha_prevista_es_rechazada(db_session):
+    """Regresión (reportado en vivo): una tarea diaria no se puede
+    completar más de una vez por día — la nueva instancia que genera
+    `procesar_recurrencia` tiene `fecha_prevista` = mañana, y no debe
+    poder completarse hoy."""
+    casa, admin_id, ana = _casa_con_admin_y_miembro(db_session)
+    tarea = crear_tarea(
+        casa.id,
+        "Lavar los platos",
+        1,
+        actor=admin_id,
+        recurrente=True,
+        frecuencia="diaria",
+        fecha_prevista=date.today(),
+    )
+    completar_tarea(tarea.id, ana.id, ana.id)
+    nueva = procesar_recurrencia(tarea.id)
+
+    with pytest.raises(ConflictError):
+        completar_tarea(nueva.id, ana.id, ana.id)
+
+
+def test_completar_tarea_recurrente_en_su_fecha_prevista_se_permite(db_session):
+    casa, admin_id, ana = _casa_con_admin_y_miembro(db_session)
+    tarea = crear_tarea(
+        casa.id,
+        "Lavar los platos",
+        1,
+        actor=admin_id,
+        recurrente=True,
+        frecuencia="diaria",
+        fecha_prevista=date.today(),
+    )
+
+    historial = completar_tarea(tarea.id, ana.id, ana.id)
+
+    assert historial.tarea_id == tarea.id
 
 
 def test_procesar_recurrencia_no_genera_instancia_si_la_tarea_no_es_recurrente(db_session):

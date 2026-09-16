@@ -6,6 +6,7 @@ y la migración a JWT de `usuarios-auth` (reemplaza `X-Usuario-Id`).
 """
 import importlib
 import uuid
+from datetime import date
 
 import pytest
 from fastapi import FastAPI
@@ -194,7 +195,13 @@ def test_historial_conserva_registros_de_miembros_desactivados(client):
 def test_tarea_recurrente_completada_genera_nueva_instancia_via_api(client):
     casa, usuario_id, miembro = _casa_con_miembro(client._session_factory)
     tarea = _crear_tarea(
-        client, casa.id, usuario_id, puntos=3, recurrente=True, frecuencia="diaria"
+        client,
+        casa.id,
+        usuario_id,
+        puntos=3,
+        recurrente=True,
+        frecuencia="diaria",
+        fechaPrevista=date.today().isoformat(),
     )
 
     _completar(client, casa.id, tarea["id"], _usuario_id_de(miembro))
@@ -207,6 +214,32 @@ def test_tarea_recurrente_completada_genera_nueva_instancia_via_api(client):
     assert any(
         t["nombre"] == "Sacar la basura" and t["id"] != tarea["id"] for t in pendientes
     )
+
+
+def test_completar_tarea_recurrente_antes_de_su_fecha_prevista_devuelve_409(client):
+    """Regresión (reportado en vivo): completar una tarea diaria varias
+    veces el mismo día generaba una nueva instancia inmediatamente
+    completable, sin ningún límite real de frecuencia."""
+    casa, usuario_id, miembro = _casa_con_miembro(client._session_factory)
+    tarea = _crear_tarea(
+        client,
+        casa.id,
+        usuario_id,
+        nombre="Lavar los platos",
+        puntos=1,
+        recurrente=True,
+        frecuencia="diaria",
+        fechaPrevista=date.today().isoformat(),
+    )
+    _completar(client, casa.id, tarea["id"], _usuario_id_de(miembro))
+
+    resp = client.get(
+        f"/casas/{casa.id}/tareas?estado=pendiente", headers=_bearer(usuario_id)
+    )
+    nueva = next(t for t in resp.json() if t["id"] != tarea["id"])
+
+    resp = _completar(client, casa.id, nueva["id"], _usuario_id_de(miembro))
+    assert resp.status_code == 409
 
 
 def test_completar_tarea_inexistente_devuelve_404(client):
