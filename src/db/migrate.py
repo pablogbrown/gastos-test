@@ -27,6 +27,7 @@ _MIGRACIONES = (
     "0013_gasto_estado",
     "0014_prestamos",
     "0015_eliminar_gasto_participantes",
+    "0016_prestamo_confirmacion",
 )
 
 

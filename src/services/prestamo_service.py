@@ -94,6 +94,13 @@ def crear_prestamo(
             descripcion=descripcion.strip() if descripcion else None,
             fecha=fecha,
             estado="pendiente",
+            # Confirmación mutua (spec `prestamos-confirmacion-mutua`,
+            # REQ-001/REQ-002, TC-001/TC-002/TC-003): el rol de quien
+            # registra queda confirmado automáticamente; si `actor` no es
+            # ninguna de las dos partes (un tercero), ambos quedan `None`
+            # (pendientes).
+            confirmado_prestamista=True if actor == prestamista_id else None,
+            confirmado_deudor=True if actor == deudor_id else None,
         )
         session.add(prestamo)
         session.commit()
@@ -129,7 +136,12 @@ def actualizar_estado_prestamo(
     """Cambia el `estado` de un préstamo ya existente, en cualquier
     sentido (REQ-003, TC-004). Mismo nivel de permiso que
     `crear_prestamo` — cualquier miembro activo de la casa, sin chequeo
-    de rol admin."""
+    de rol admin.
+
+    Spec `prestamos-confirmacion-mutua` (REQ-006, TC-007): exige que
+    `estado_confirmacion == "confirmado"` antes de aceptar el cambio —
+    no se puede tocar el ciclo pagado/pendiente de un préstamo que
+    todavía no confirmaron ambas partes (o que fue rechazado)."""
     if estado not in ESTADOS_PRESTAMO_VALIDOS:
         raise ValidationError(f"Estado inválido: {estado!r}. Debe ser 'pendiente' o 'pagado'.")
 
@@ -149,7 +161,63 @@ def actualizar_estado_prestamo(
         if prestamo is None:
             raise NotFoundError(f"El préstamo {prestamo_id} no existe en la casa {casa_id}.")
 
+        if prestamo.estado_confirmacion != "confirmado":
+            raise ValidationError(
+                "El préstamo todavía no fue confirmado por ambas partes; no se puede "
+                "cambiar su estado de pago."
+            )
+
         prestamo.estado = estado
+        session.commit()
+        session.refresh(prestamo)
+        return prestamo
+    except (ValidationError, PermissionDeniedError, NotFoundError):
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def confirmar_prestamo(casa_id: UUID, prestamo_id: UUID, actor: UUID, confirma: bool) -> Prestamo:
+    """Confirma o rechaza el rol de `actor` en un préstamo pendiente de
+    confirmación (spec `prestamos-confirmacion-mutua`, REQ-004/REQ-005,
+    TC-004/TC-005/TC-006).
+
+    Única forma de pasar un rol de `None` (pendiente) a `True`/`False` —
+    exige que `actor` sea EXACTAMENTE el prestamista o el deudor de ESE
+    préstamo específico. No reutiliza `requiere_membresia_activa` como
+    único guard: ese guard responde "¿sos miembro activo de la casa?",
+    no "¿sos una de las dos partes de este préstamo?" — son preguntas
+    distintas (ver Design Rationale de T2)."""
+    session = get_session()
+    try:
+        if session.get(Casa, casa_id) is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+
+        prestamo = (
+            session.query(Prestamo)
+            .filter(Prestamo.casa_id == casa_id, Prestamo.id == prestamo_id)
+            .one_or_none()
+        )
+        if prestamo is None:
+            raise NotFoundError(f"El préstamo {prestamo_id} no existe en la casa {casa_id}.")
+
+        if prestamo.estado_confirmacion != "pendiente_confirmacion":
+            raise ValidationError(
+                "El préstamo ya fue resuelto (confirmado o rechazado); no se puede "
+                "volver a confirmar o rechazar."
+            )
+
+        if actor == prestamo.prestamista_id:
+            prestamo.confirmado_prestamista = confirma
+        elif actor == prestamo.deudor_id:
+            prestamo.confirmado_deudor = confirma
+        else:
+            raise PermissionDeniedError(
+                "Solo el prestamista o el deudor de este préstamo pueden confirmarlo o "
+                "rechazarlo."
+            )
+
         session.commit()
         session.refresh(prestamo)
         return prestamo

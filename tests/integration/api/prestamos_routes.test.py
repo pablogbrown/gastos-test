@@ -70,6 +70,21 @@ def _crear_usuario_de_prueba(session_factory, email):
         session.close()
 
 
+def _bearer_de_miembro(session_factory, miembro_id):
+    """Arma el header `Authorization` para actuar como `miembro_id`,
+    resolviendo su `usuario_id` global (spec `prestamos-confirmacion-
+    mutua`, TC-005/TC-006: el deudor/prestamista necesita su PROPIO JWT
+    para confirmar/rechazar, no el del actor que registró el préstamo)."""
+    session = session_factory()
+    try:
+        from src.db.models.miembro import Miembro
+
+        miembro = session.get(Miembro, miembro_id)
+        return _bearer(miembro.usuario_id)
+    finally:
+        session.close()
+
+
 def _crear_casa_con_dos_miembros(session_factory, nombre="Casa Brown"):
     usuario_id = uuid.uuid4()
     casa = crear_casa(nombre, usuario_id)
@@ -139,6 +154,16 @@ def test_tc004_patch_cambia_estado_en_ambos_sentidos(client):
         headers=_bearer(usuario_id),
     )
     prestamo_id = creado.json()["id"]
+
+    # Spec `prestamos-confirmacion-mutua` (REQ-006): el ciclo pagado/
+    # pendiente exige confirmación de ambas partes primero — admin ya
+    # quedó confirmado automáticamente al registrar, falta Maca (deudora).
+    confirmacion = client.patch(
+        f"/casas/{casa.id}/prestamos/{prestamo_id}/confirmacion",
+        json={"confirma": True},
+        headers=_bearer_de_miembro(client._session_factory, maca_id),
+    )
+    assert confirmacion.status_code == 200, confirmacion.text
 
     resp = client.patch(
         f"/casas/{casa.id}/prestamos/{prestamo_id}",

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Numeric, String
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Numeric, String
 
 from src.db.base import Base
 from src.db.types import GUID
@@ -39,6 +39,32 @@ class Prestamo(Base):
     fecha = Column(Date, nullable=False)
     estado = Column(String, nullable=False, default="pendiente")
     creado_en = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    # Confirmación mutua (spec `prestamos-confirmacion-mutua`, T1): tri-estado
+    # por rol, no un simple flag — `NULL`=pendiente, `True`=confirmado,
+    # `False`=rechazado. Nunca `nullable=False`/con default: la ausencia de
+    # confirmación explícita ES el estado "pendiente".
+    confirmado_prestamista = Column(Boolean, nullable=True)
+    confirmado_deudor = Column(Boolean, nullable=True)
+
+    @property
+    def estado_confirmacion(self) -> str:
+        """Resume `confirmado_prestamista`/`confirmado_deudor` en un solo
+        valor de presentación (spec `prestamos-confirmacion-mutua`, T1) —
+        property Python, nunca persistida: se deriva siempre de los dos
+        booleanos para que ninguna otra representación pueda desincronizarse
+        (ver Tradeoffs de `00-overview.md`).
+
+        `"rechazado"` si cualquiera de los dos es `False` (chequeado
+        primero, sin esperar al otro — TC-006); `"confirmado"` solo si
+        ambos son `True`; `"pendiente_confirmacion"` en cualquier otro
+        caso.
+        """
+        if self.confirmado_prestamista is False or self.confirmado_deudor is False:
+            return "rechazado"
+        if self.confirmado_prestamista is True and self.confirmado_deudor is True:
+            return "confirmado"
+        return "pendiente_confirmacion"
 
     def __repr__(self):  # pragma: no cover - solo para debugging
         return (

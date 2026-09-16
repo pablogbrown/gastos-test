@@ -21,6 +21,7 @@ from src.api.dependencies import resolver_actor_en_casa
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 from src.services.prestamo_service import (
     actualizar_estado_prestamo,
+    confirmar_prestamo,
     crear_prestamo,
     listar_prestamos,
 )
@@ -41,6 +42,10 @@ class PrestamoEstadoUpdate(BaseModel):
     estado: str
 
 
+class PrestamoConfirmacionUpdate(BaseModel):
+    confirma: bool
+
+
 class PrestamoOut(BaseModel):
     id: UUID
     casa_id: UUID
@@ -52,6 +57,13 @@ class PrestamoOut(BaseModel):
     fecha: date
     estado: str
     creado_en: datetime
+    # Spec `prestamos-confirmacion-mutua` (T3): campos aditivos.
+    # `estado_confirmacion` es una property Python del modelo (no una
+    # columna) — Pydantic la lee igual que cualquier otro atributo vía
+    # `orm_mode`.
+    confirmado_prestamista: Optional[bool] = None
+    confirmado_deudor: Optional[bool] = None
+    estado_confirmacion: str
 
     class Config:
         orm_mode = True
@@ -107,5 +119,30 @@ def actualizar_estado_prestamo_endpoint(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except PermissionDeniedError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@prestamos_router.patch(
+    "/{casa_id}/prestamos/{prestamo_id}/confirmacion", response_model=PrestamoOut
+)
+def confirmar_prestamo_endpoint(
+    casa_id: UUID,
+    prestamo_id: UUID,
+    payload: PrestamoConfirmacionUpdate,
+    actor: UUID = Depends(resolver_actor_en_casa),
+):
+    """Confirma o rechaza el rol de `actor` en este préstamo (spec
+    `prestamos-confirmacion-mutua`, T3). Ruta propia, separada del PATCH
+    de estado de arriba — modelos de permiso distintos (ver Design
+    Rationale de T3): cambiar pagado/pendiente es abierto a cualquier
+    miembro activo; confirmar/rechazar exige ser específicamente una de
+    las dos partes de ESTE préstamo."""
+    try:
+        return confirmar_prestamo(casa_id, prestamo_id, actor, payload.confirma)
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

@@ -50,6 +50,22 @@ frontend domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-16 | feature: prestamos-confirmacion-mutua | confidence: high | verified: 2026-09-16 -->
+- [FRONP-02] Deciding "does this action belong to ME, specifically?"
+  against TWO named roles (e.g. a préstamo's `prestamista`/`deudor`,
+  each with its own confirmation field) follows a two-step order, not a
+  single id comparison: [1] check the AGGREGATE state first (here,
+  `estado_confirmacion === "pendiente_confirmacion"`) — an already-
+  resolved record never shows the action regardless of who's looking;
+  [2] only then compare `miembroIdActual` against the specific role's id
+  AND confirm that role's own field is still `null` — comparing the id
+  alone (skipping the `null` check) would also show the action to the
+  party that already acted (confirmed or rejected), not just the one
+  still pending. Same specificity criterion `Tareas.tsx`'s
+  `puedeCompletar` already established for a single named role
+  (`responsableId`), extended here to two independently-tracked roles on
+  the same record.
+
 <!-- added: 2026-09-16 | feature: gastos-estado-pago | confidence: medium | verified: 2026-09-16 -->
 - [FRONP-01] When a screen has BOTH a `<Select native>` control and a
   clickable display element (e.g. a `Chip`) whose visible labels can
