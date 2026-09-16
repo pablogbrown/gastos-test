@@ -1,0 +1,19 @@
+feature: gastos-sin-reparto
+status: approved
+profile: code
+action_type: UPD
+created_at: '2026-09-16'
+approved_at: '2026-09-16'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/gastos-sin-reparto
+kind: single_spec
+notes: |
+  Independiente de prestamos-entre-miembros. Elimina GastoParticipante
+  y su historial por decisión explícita del usuario (sin conservar).
+  Rationale: spec.md. Build narrative: evidence/build-results.md.

@@ -1,0 +1,111 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos-sin-reparto",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gastos-sin-reparto/feat/01-plan-01-eliminar-gasto-participante.md",
+      "files_touched": [
+        "src/db/models/gasto.py",
+        "src/db/migrations/0014_eliminar_gasto_participantes.py",
+        "src/db/migrate.py",
+        "src/services/gasto_service.py"
+      ],
+      "deps": [],
+      "est_minutes": 60,
+      "test_cases": ["TC-001", "TC-002", "TC-008"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "GastoParticipante se elimina por completo (modelo, tabla, migracion) y registrar_gasto ya no reparte entre participantes, preservando el reparto de importe entre cuotas.",
+        "postcondition": "Registrar un gasto no crea ninguna fila de reparto; la tabla gasto_participantes no existe tras la migracion; un gasto en 3 cuotas sigue generando 3 filas con fechas consecutivas y montos correctos.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente para verificar la migracion — nunca DATABASE_URL directo. Actualizar TODO test existente que referencie GastoParticipante/.participantes, no solo los nuevos.",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gastos-sin-reparto/feat/01-plan-02-balance-total-casa.md",
+      "files_touched": [
+        "src/services/balance_service.py",
+        "tests/unit/services/balance_service.test.py",
+        "tests/unit/services/balance_moneda.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 40,
+      "test_cases": ["TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        { "name": "calcular_balance", "signature": "(casa_id, mes=None) -> BalanceCasa", "kind": "export" },
+        { "name": "BalanceCasa", "signature": "dataclass", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "calcular_balance devuelve el total gastado de la casa por moneda y el aporte de cada miembro, sin ningun campo de deuda ni transferencias sugeridas.",
+        "postcondition": "Con gastos en ARS y USD, BalanceCasa.totales trae una fila por moneda con el total gastado; BalanceCasa.aportes trae una fila por (miembro, moneda) con cuanto pago cada uno; ningun dataclass expone correspondia/balance/transferencias.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/services/balance_service.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gastos-sin-reparto/feat/01-plan-03-api-balance-sin-reparto.md",
+      "files_touched": [
+        "src/api/routes/gastos.py",
+        "src/services/dashboard_service.py",
+        "src/api/routes/dashboard.py",
+        "tests/integration/api/gastos_routes.test.py",
+        "tests/integration/api/dashboard_routes.test.py",
+        "tests/unit/services/dashboard_service.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 30,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "TotalCasaOut", "signature": "schema", "kind": "export" },
+        { "name": "AporteOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "BalanceCasa" }
+      ],
+      "contract": {
+        "statement": "GET .../balance y GET .../dashboard exponen el nuevo contrato {totales, aportes}; POST .../gastos ya no acepta ni genera reparto.",
+        "postcondition": "GET .../balance devuelve {totales: [...], aportes: [...]} sin transferencias; GET .../dashboard.balance usa el mismo contrato.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gastos-sin-reparto/feat/01-plan-04-frontend-sin-reparto.md",
+      "files_touched": [
+        "src/frontend/api/gastosClient.ts",
+        "src/frontend/pages/Gastos.tsx",
+        "src/frontend/pages/Balance.tsx",
+        "src/frontend/pages/InicioCasa.tsx",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/Gastos.test.tsx",
+        "tests/unit/frontend/Balance.test.tsx",
+        "tests/unit/frontend/InicioCasa.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 40,
+      "test_cases": ["TC-006", "TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "TotalCasaOut" },
+        { "from": "T3", "name": "AporteOut" }
+      ],
+      "contract": {
+        "statement": "El formulario Nuevo gasto ya no pide participantes; Balance e Inicio muestran el total de la casa y el aporte por miembro, sin ninguna cifra de deuda.",
+        "postcondition": "Gastos.tsx no renderiza ningun selector de participantes; Balance.tsx muestra el total por moneda y una lista de aportes; InicioCasa.tsx refleja el mismo contrato.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Balance.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
