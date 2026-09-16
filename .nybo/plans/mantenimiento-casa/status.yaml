@@ -1,0 +1,18 @@
+feature: mantenimiento-casa
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-16'
+approved_at: '2026-09-16'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/mantenimiento-casa
+kind: single_spec
+notes: |
+  Foundation para mantenimiento-autos (build en ese orden).
+  Rationale: spec.md. Build narrative: evidence/build-results.md.
