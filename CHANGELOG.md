@@ -61,3 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - feat(gastos-estado-pago): cada gasto registra si ya está saldado ("Pagado") o pendiente ("A pagar") — un gasto manual nace "Pagado", y una cuota/suscripción/consumo importado nace "A pagar"; se puede cambiar con un clic desde el listado. Puramente informativo, no afecta el Balance.
+
+### Changed
+
+- feat(nav-agrupada): el menú superior (desktop) agrupa las 9 pantallas en 4 elementos de primer nivel — Inicio, Casa (Miembros/Ranking/Actividad), Gastos (Gastos/Balance/Tarjetas/Suscripciones) y Tareas — con menús desplegables para Casa/Gastos; la barra inferior en mobile no cambia.
