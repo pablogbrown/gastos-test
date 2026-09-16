@@ -19,6 +19,7 @@ function dashboardVacio() {
     tareasCompletadasRecientes: [],
     ranking: [],
     tarjetasConAlerta: [],
+    mantenimientoConAlerta: [],
   };
 }
 
@@ -61,6 +62,7 @@ function dashboardConDatos() {
     ],
     ranking: [{ miembroId: ANA_ID, puntos: 8 }],
     tarjetasConAlerta: [],
+    mantenimientoConAlerta: [],
   };
 }
 
@@ -169,6 +171,52 @@ describe("InicioCasa", () => {
     render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
 
     const texto = await screen.findByText(/Mastercard Black/);
+    const alerta = texto.closest('[role="alert"]');
+    expect(alerta).not.toBeNull();
+    expect(alerta?.className).toMatch(/colorError|standardError/);
+  });
+
+  it("renderiza el banner de alerta de mantenimiento para un ítem próximo a vencer (TC-010)", async () => {
+    const dashboard = {
+      ...dashboardVacio(),
+      mantenimientoConAlerta: [
+        {
+          id: "im1",
+          nombre: "Poner membrana al techo",
+          fecha_estimada: "2026-09-20",
+          dias_para_vencimiento: 4,
+          vencido: false,
+        },
+      ],
+    };
+    vi.stubGlobal("fetch", mockFetch(dashboard));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    const alerta = await screen.findByText(/Poner membrana al techo/);
+    expect(alerta).toHaveTextContent("2026-09-20");
+    expect(alerta).toHaveTextContent("4");
+    expect(alerta.closest('[role="alert"]')).not.toBeNull();
+  });
+
+  it("marca con severidad error el banner de un ítem de mantenimiento ya vencido", async () => {
+    const dashboard = {
+      ...dashboardVacio(),
+      mantenimientoConAlerta: [
+        {
+          id: "im2",
+          nombre: "Arreglar el reflector de la entrada",
+          fecha_estimada: "2026-09-01",
+          dias_para_vencimiento: -5,
+          vencido: true,
+        },
+      ],
+    };
+    vi.stubGlobal("fetch", mockFetch(dashboard));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    const texto = await screen.findByText(/Arreglar el reflector de la entrada/);
     const alerta = texto.closest('[role="alert"]');
     expect(alerta).not.toBeNull();
     expect(alerta?.className).toMatch(/colorError|standardError/);

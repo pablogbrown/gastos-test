@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Miembro } from "../api/casasClient";
 import {
   DashboardCasa,
+  ItemMantenimientoAlerta,
   TarjetaAlerta,
   esApiError,
   obtenerDashboard,
@@ -83,6 +84,17 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
     return `${base} — quedan ${tarjeta.dias_para_vencimiento} días`;
   }
 
+  /** Spec `mantenimiento-casa`, REQ-005: mismo criterio de texto que
+   * `textoAlerta` arriba, aplicado a un ítem de mantenimiento en vez de
+   * una tarjeta. */
+  function textoAlertaMantenimiento(item: ItemMantenimientoAlerta): string {
+    const base = `${item.nombre} — fecha estimada ${item.fecha_estimada}`;
+    if (item.vencido) {
+      return `${base} — ya venció hace ${Math.abs(item.dias_para_vencimiento)} días`;
+    }
+    return `${base} — quedan ${item.dias_para_vencimiento} días`;
+  }
+
   return (
     <Box
       component="section"
@@ -98,6 +110,20 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
           {dashboard.tarjetasConAlerta.map((tarjeta) => (
             <Alert key={tarjeta.id} severity={tarjeta.vencida ? "error" : "warning"}>
               {textoAlerta(tarjeta)}
+            </Alert>
+          ))}
+        </Box>
+      )}
+
+      {(dashboard.mantenimientoConAlerta ?? []).length > 0 && (
+        <Box
+          component="section"
+          aria-label="Alertas de mantenimiento"
+          sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+        >
+          {dashboard.mantenimientoConAlerta.map((item) => (
+            <Alert key={item.id} severity={item.vencido ? "error" : "warning"}>
+              {textoAlertaMantenimiento(item)}
             </Alert>
           ))}
         </Box>

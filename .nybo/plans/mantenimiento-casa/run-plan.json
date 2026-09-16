@@ -1,0 +1,117 @@
+{
+  "$schema_version": "2",
+  "feature_id": "mantenimiento-casa",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/mantenimiento-casa/feat/01-plan-01-modelo-mantenimiento.md",
+      "files_touched": [
+        "src/db/models/mantenimiento.py",
+        "src/db/migrations/0017_mantenimiento.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "ItemMantenimiento", "signature": "model", "kind": "export" },
+        { "name": "MaterialMantenimiento", "signature": "model", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "ItemMantenimiento y MaterialMantenimiento existen como tablas propias con FKs reales, y la migracion corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepcion; ambas tablas existen con todas sus columnas y defaults correctos.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/mantenimiento-casa/feat/01-plan-02-mantenimiento-service.md",
+      "files_touched": [
+        "src/services/mantenimiento_service.py",
+        "tests/integration/services/mantenimiento_service.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 60,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-007", "TC-008"],
+      "interfaces_produced": [
+        { "name": "crear_item", "signature": "(casa_id, nombre, descripcion, fecha_estimada, recurrente, periodicidad, actor, materiales=None) -> ItemMantenimiento", "kind": "export" },
+        { "name": "completar_item", "signature": "(casa_id, item_id, actor) -> ItemMantenimiento", "kind": "export" },
+        { "name": "obtener_items_con_alerta", "signature": "(casa_id) -> List[ItemMantenimientoAlerta]", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "ItemMantenimiento" },
+        { "from": "T1", "name": "MaterialMantenimiento" }
+      ],
+      "contract": {
+        "statement": "mantenimiento_service ofrece alta con materiales, completar con generacion de recurrencia y gate de fecha, y calculo de alerta, igual que los patrones ya probados en tarea_service/tarjeta_service.",
+        "postcondition": "Un item recurrente sin periodicidad o fecha es rechazado; completar un item recurrente genera la siguiente instancia con fecha correcta y bloquea completarla antes de tiempo (409); obtener_items_con_alerta incluye items a <=7 dias o vencidos, excluye los demas.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/mantenimiento_service.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/mantenimiento-casa/feat/01-plan-03-api-mantenimiento.md",
+      "files_touched": [
+        "src/api/routes/mantenimiento.py",
+        "src/api/main.py",
+        "src/services/dashboard_service.py",
+        "src/api/routes/dashboard.py",
+        "tests/integration/api/mantenimiento_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 30,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "ItemMantenimientoOut", "signature": "schema", "kind": "export" },
+        { "name": "MaterialOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "crear_item" },
+        { "from": "T2", "name": "obtener_items_con_alerta" }
+      ],
+      "contract": {
+        "statement": "Los endpoints CRUD de mantenimiento e materiales funcionan sobre HTTP y el dashboard expone mantenimientoConAlerta.",
+        "postcondition": "POST/GET/PATCH .../mantenimiento y sus materiales responden correctamente; GET .../dashboard incluye mantenimientoConAlerta con alias camelCase [API-01].",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/mantenimiento_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/mantenimiento-casa/feat/01-plan-04-frontend-mantenimiento.md",
+      "files_touched": [
+        "src/frontend/api/mantenimientoClient.ts",
+        "src/frontend/pages/Mantenimiento.tsx",
+        "src/frontend/api/dashboardClient.ts",
+        "src/frontend/pages/InicioCasa.tsx",
+        "src/frontend/AppNav.tsx",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/Mantenimiento.test.tsx",
+        "tests/unit/frontend/InicioCasa.test.tsx",
+        "tests/unit/frontend/AppShell.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 45,
+      "test_cases": ["TC-009", "TC-010"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "ItemMantenimientoOut" },
+        { "from": "T3", "name": "mantenimientoConAlerta" }
+      ],
+      "contract": {
+        "statement": "La pantalla Mantenimiento permite alta con materiales y completar items; Inicio muestra la alerta; Tareas pasa a ser un grupo desktop junto con Mantenimiento.",
+        "postcondition": "Crear un item con materiales lo muestra en el listado con su checklist; con mantenimientoConAlerta no vacio, InicioCasa renderiza un Alert por cada uno; el grupo desktop 'Tareas' incluye Mantenimiento.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Mantenimiento.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

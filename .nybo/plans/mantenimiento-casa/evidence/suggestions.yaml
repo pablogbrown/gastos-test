@@ -1,0 +1,38 @@
+questions_for_the_human:
+  - id: S001
+    status: open
+    text: >-
+      D001 in evidence/decisions.yaml: coverage tooling still isn't
+      installed in this repo, so testing.coverage_threshold (80) could
+      not be measured for this spec either (same pre-existing gap prior
+      builds already flagged — see S003). Compensated with 33
+      new/updated tests covering every branch the task files describe.
+      No action needed before /nybo-ship unless you want the metric.
+
+quick_wins: []
+
+future_enhancements:
+  - id: S002
+    status: open
+    text: >-
+      `_DIAS_POR_PERIODICIDAD` uses fixed-day intervals (e.g. "mensual"
+      = 30 days), deliberately simpler than `tarea_service`'s calendar-
+      month arithmetic (see 00-overview.md's Design Rationale). This
+      means a recurring "mensual" item's date will drift slightly against
+      real calendar months over many cycles (e.g. 12 "mensual" completions
+      land on day 360, not exactly a year later). Acceptable per the
+      spec's own explicit tradeoff — flagging in case a future spec (e.g.
+      `mantenimiento-autos`, which this spec is the stated foundation for)
+      wants exact calendar-month semantics instead.
+
+technical_debt:
+  - id: S003
+    status: open
+    text: >-
+      This project still has no coverage tool configured
+      (.nybo/foundation/stack.yaml -> quality_tools.coverage.tool: null),
+      so this build's verify step could not numerically check
+      nybo.config.yaml's testing.coverage_threshold (80) — a pre-existing
+      gap already flagged by prior builds (gastos-multi-moneda,
+      tarjetas-credito, importar-resumen-tarjeta), not introduced by this
+      spec. Run /nybo-brownfield-bootstrap --quality to close it.

@@ -36,6 +36,10 @@ _MIGRACIONES = (
     # `armar_dashboard` llama a `obtener_tarjetas_con_alerta`, que
     # requiere la tabla `tarjetas_credito`.
     "0011_tarjetas_credito",
+    # `armar_dashboard` también llama a `obtener_items_con_alerta`, que
+    # requiere las tablas `items_mantenimiento`/`materiales_mantenimiento`
+    # (spec `mantenimiento-casa`).
+    "0017_mantenimiento",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -48,6 +52,7 @@ _SERVICIOS_CON_SESSION = (
     "actividad_service",
     "suscripcion_service",
     "tarjeta_service",
+    "mantenimiento_service",
 )
 
 

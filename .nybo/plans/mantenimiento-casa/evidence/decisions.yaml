@@ -1,0 +1,37 @@
+decisions:
+  - id: D001
+    class: new-dependency
+    status: open
+    blocking: false
+    cycle: 1
+    task: verify
+    summary: >-
+      No coverage-measurement tool is installed in this repo (neither
+      `pytest-cov` for the backend nor `@vitest/coverage-v8` for the
+      frontend) — confirmed via `pip show pytest-cov` (not found) and
+      `npm ls @vitest/coverage-v8` (empty). `nybo.config.yaml`'s
+      `testing.coverage_threshold: 80` cannot be measured this cycle as
+      a result.
+    rationale: >-
+      `new-dependency` never settles automatically at any trust level
+      (resolveDecisionAuthority — always defers), including L2
+      (semi-autonomous, this project's level). Unlike
+      `importar-resumen-tarjeta`'s `python-multipart` (D001 there), this
+      dependency is not required to implement any explicit requirement
+      of `mantenimiento-casa`'s spec — the spec never asks for a coverage
+      number, only for TC-001 to TC-010 to pass and for
+      `testing.coverage_threshold` to be met when measurable. Installing
+      a new dependency purely to produce a metric the spec doesn't
+      require is exactly the conservative case this decision class exists
+      to park for a human, not a build-time judgment call. Compensated by
+      writing deliberately exhaustive tests instead: every branch of
+      `crear_item`/`completar_item`/`obtener_items_con_alerta` (18 tests),
+      every HTTP status path (10 tests), and every frontend interaction
+      (5 tests) this cycle's task files describe.
+    options_considered:
+      - "Install pytest-cov + @vitest/coverage-v8 and measure — deferred: new-dependency class, never settleable at build time."
+      - "Skip coverage entirely, report as unmeasured, compensate with exhaustive manual test coverage (chosen) — TC-001 to TC-010 and every edge case named in the task files are covered; the gap is a metric, not a functional gap."
+    next_step: >-
+      Human decides whether to add coverage tooling to this project
+      (once, project-wide — not per-spec) or to accept unmeasured
+      coverage for specs like this one going forward.

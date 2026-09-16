@@ -82,3 +82,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - feat(prestamos-confirmacion-mutua): un préstamo recién registrado ya no queda activo al instante — la parte que lo registra queda confirmada automáticamente y la otra debe confirmarlo o rechazarlo; solo confirmado por ambas partes habilita marcarlo pagado/pendiente. Evita cargas de préstamos que no correspondan.
+
+### Added
+
+- feat(mantenimiento-casa): nueva pantalla "Mantenimiento" (agrupada con "Tareas") para cargar cuestiones de mantenimiento de la casa — fecha estimada, periodicidad (semanal a anual), lista de materiales necesarios con cantidad y estado conseguido/pendiente, y una alerta visual en Inicio cuando se acerca la fecha; un ítem recurrente no se puede completar antes de su fecha estimada.

@@ -57,6 +57,10 @@ def db_session(monkeypatch):
     # `obtener_tarjetas_con_alerta`, que requiere la tabla
     # `tarjetas_credito`.
     migration_tarjetas = importlib.import_module("src.db.migrations.0011_tarjetas_credito")
+    # 0017 (spec `mantenimiento-casa`): `armar_dashboard` también llama a
+    # `obtener_items_con_alerta`, que requiere las tablas
+    # `items_mantenimiento`/`materiales_mantenimiento`.
+    migration_mantenimiento = importlib.import_module("src.db.migrations.0017_mantenimiento")
     migration_casas.upgrade(engine)
     migration_gastos.upgrade(engine)
     migration_tareas.upgrade(engine)
@@ -64,6 +68,7 @@ def db_session(monkeypatch):
     migration_usuarios.upgrade(engine)
     migration_suscripciones.upgrade(engine)
     migration_tarjetas.upgrade(engine)
+    migration_mantenimiento.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
@@ -76,6 +81,7 @@ def db_session(monkeypatch):
     monkeypatch.setattr("src.services.ranking_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.suscripcion_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.tarjeta_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.mantenimiento_service.get_session", lambda: TestSession())
     yield TestSession
 
 

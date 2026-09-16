@@ -43,6 +43,10 @@ _MIGRACIONES = (
     # 0011 (spec `tarjetas-credito`): `GET /inicio` ahora expone
     # `tarjetasConAlerta`, calculado sobre la tabla `tarjetas_credito`.
     "0011_tarjetas_credito",
+    # 0017 (spec `mantenimiento-casa`): `GET /inicio` ahora expone
+    # `mantenimientoConAlerta`, calculado sobre las tablas
+    # `items_mantenimiento`/`materiales_mantenimiento`.
+    "0017_mantenimiento",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -55,6 +59,7 @@ _SERVICIOS_CON_SESSION = (
     "actividad_service",
     "suscripcion_service",
     "tarjeta_service",
+    "mantenimiento_service",
 )
 
 

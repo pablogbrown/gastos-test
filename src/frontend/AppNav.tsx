@@ -7,6 +7,7 @@ import GastosIcon from "@mui/icons-material/Receipt";
 import HandshakeIcon from "@mui/icons-material/Handshake";
 import HomeIcon from "@mui/icons-material/Home";
 import LogoutIcon from "@mui/icons-material/Logout";
+import BuildIcon from "@mui/icons-material/Build";
 import PeopleIcon from "@mui/icons-material/People";
 import RankingIcon from "@mui/icons-material/EmojiEvents";
 import SuscripcionesIcon from "@mui/icons-material/Subscriptions";
@@ -33,23 +34,26 @@ export type Pantalla =
   | "gastos"
   | "balance"
   | "tareas"
+  | "mantenimiento"
   | "ranking"
   | "actividad"
   | "suscripciones"
   | "tarjetas"
   | "prestamos";
 
-/** Las 10 secciones de navegación (spec `ui-modernization`, REQ-002;
+/** Las 11 secciones de navegación (spec `ui-modernization`, REQ-002;
  * `gastos-suscripcion-mensual` agrega "Suscripciones"; `tarjetas-credito`
- * agrega "Tarjetas"; `prestamos-entre-miembros` agrega "Préstamos"),
- * compartidas entre `BottomNavigation` (mobile) y `AppBar`/`Tabs`
- * (desktop) — mismo orden, mismos íconos, mismo estado `pantalla`. */
+ * agrega "Tarjetas"; `prestamos-entre-miembros` agrega "Préstamos";
+ * `mantenimiento-casa` agrega "Mantenimiento"), compartidas entre
+ * `BottomNavigation` (mobile) y `AppBar`/`Tabs` (desktop) — mismo orden,
+ * mismos íconos, mismo estado `pantalla`. */
 export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] = [
   { value: "inicio", label: "Inicio", icon: <HomeIcon /> },
   { value: "miembros", label: "Miembros", icon: <PeopleIcon /> },
   { value: "gastos", label: "Gastos", icon: <GastosIcon /> },
   { value: "balance", label: "Balance", icon: <BalanceIcon /> },
   { value: "tareas", label: "Tareas", icon: <TareasIcon /> },
+  { value: "mantenimiento", label: "Mantenimiento", icon: <BuildIcon /> },
   { value: "ranking", label: "Ranking", icon: <RankingIcon /> },
   { value: "actividad", label: "Actividad", icon: <ActivityIcon /> },
   { value: "suscripciones", label: "Suscripciones", icon: <SuscripcionesIcon /> },
@@ -66,10 +70,11 @@ export type GrupoDesktop =
   | { tipo: "suelta"; pantalla: Pantalla }
   | { tipo: "grupo"; label: string; pantallas: Pantalla[] };
 
-/** Agrupación fija de las 9 pantallas para el menú superior desktop
- * (spec `nav-agrupada`, REQ-001/REQ-002): "Inicio" y "Tareas" sueltas,
- * "Casa" agrupa Miembros/Ranking/Actividad, "Gastos" agrupa
- * Gastos/Balance/Tarjetas/Suscripciones. */
+/** Agrupación fija de las 10 pantallas para el menú superior desktop
+ * (spec `nav-agrupada`, REQ-001/REQ-002; `mantenimiento-casa` convierte
+ * "Tareas" de suelta a grupo): "Inicio" suelta, "Casa" agrupa Miembros/
+ * Ranking/Actividad, "Gastos" agrupa Gastos/Balance/Tarjetas/
+ * Suscripciones/Préstamos, "Tareas" agrupa Tareas/Mantenimiento. */
 export const GRUPOS_DESKTOP: GrupoDesktop[] = [
   { tipo: "suelta", pantalla: "inicio" },
   { tipo: "grupo", label: "Casa", pantallas: ["miembros", "ranking", "actividad"] },
@@ -78,7 +83,7 @@ export const GRUPOS_DESKTOP: GrupoDesktop[] = [
     label: "Gastos",
     pantallas: ["gastos", "balance", "tarjetas", "suscripciones", "prestamos"],
   },
-  { tipo: "suelta", pantalla: "tareas" },
+  { tipo: "grupo", label: "Tareas", pantallas: ["tareas", "mantenimiento"] },
 ];
 
 function seccionPorValue(value: Pantalla) {
