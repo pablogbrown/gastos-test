@@ -1,5 +1,5 @@
 feature: mantenimiento-casa
-status: approved
+status: ready
 profile: code
 action_type: ADD
 created_at: '2026-09-16'
@@ -15,6 +15,31 @@ branch: feat/mantenimiento-casa
 pr_url: https://github.com/pablogbrown/gastos-test/pull/35
 pr_number: 35
 kind: single_spec
+latest_cycle: 1
+latest_evidence_path: evidence/1/build-results.md
+run_started_at: '2026-09-16T20:30:00.000Z'
+run_at: '2026-09-16T21:20:00.000Z'
+run_completed_at: '2026-09-16T21:20:00.000Z'
+run_duration: 3000
+verified_at: '2026-09-16T21:22:00.000Z'
+verified_duration: 120
+curated_at: '2026-09-16T21:24:00.000Z'
+curated_duration: 90
+cycles:
+  - cycle: 1
+    exit: ready
+    verdict: verified
+    summary: T1-T4 implementados, TC-001 a TC-010 en verde, smoke en vivo OK
 notes: |
   Foundation para mantenimiento-autos (build en ese orden).
-  Rationale: spec.md. Build narrative: evidence/build-results.md.
+  Rationale: spec.md. Build narrative: evidence/1/build-results.md.
+  4 tareas implementadas en un solo ciclo: modelo+migración 0017
+  (idempotente contra Postgres real), mantenimiento_service (alta,
+  materiales, completar con gate de recurrencia, alerta), rutas HTTP +
+  mantenimientoConAlerta en dashboard, pantalla Mantenimiento + banner en
+  Inicio + nav agrupada. Suite completa: 328 pytest (1 skip esperado) +
+  120 vitest, build/lint sin errores. Smoke manual en vivo contra
+  docker-compose (Postgres real) confirmó alta con materiales, banner de
+  alerta, gate de completar antes de tiempo (409) y generación de la
+  siguiente instancia recurrente. D001 abierto (no-blocking): sin
+  coverage tooling instalado (new-dependency, difiere a humano).

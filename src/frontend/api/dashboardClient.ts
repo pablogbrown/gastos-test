@@ -47,6 +47,20 @@ export interface TarjetaAlerta {
   vencida: boolean;
 }
 
+/** Spec `mantenimiento-casa`, REQ-005: ítem de mantenimiento pendiente
+ * cuya fecha estimada está a `UMBRAL_ALERTA_DIAS` días o menos, o ya
+ * venció. Mismo shape que `ItemMantenimientoAlertaOut` (backend) —
+ * snake_case, sin alias, mismo criterio que `TarjetaAlerta` arriba: solo
+ * el campo contenedor `mantenimientoConAlerta` se camelCasea, no los
+ * objetos que contiene. */
+export interface ItemMantenimientoAlerta {
+  id: string;
+  nombre: string;
+  fecha_estimada: string;
+  dias_para_vencimiento: number;
+  vencido: boolean;
+}
+
 /** Spec `gastos-sin-reparto`: mismo contrato que `BalanceResponse`
  * (`gastosClient.ts`) — total de la casa por moneda más el aporte
  * informativo de cada miembro, sin ningún campo de deuda. */
@@ -63,6 +77,7 @@ export interface DashboardCasa {
   tareasCompletadasRecientes: HistorialTarea[];
   ranking: RankingEntry[];
   tarjetasConAlerta: TarjetaAlerta[];
+  mantenimientoConAlerta: ItemMantenimientoAlerta[];
 }
 
 const API_BASE = "/casas";

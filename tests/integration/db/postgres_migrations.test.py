@@ -317,6 +317,36 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert columnas_prestamo["confirmado_prestamista"]["nullable"] is True
         assert columnas_prestamo["confirmado_deudor"]["nullable"] is True
 
+        # T1 (spec `mantenimiento-casa`): `items_mantenimiento`/
+        # `materiales_mantenimiento` existen con sus columnas tras la
+        # migración 0017, con FKs reales (`casas` y, encadenada,
+        # `items_mantenimiento`).
+        assert {"items_mantenimiento", "materiales_mantenimiento"} <= tablas
+        columnas_item = {c["name"]: c for c in inspector.get_columns("items_mantenimiento")}
+        assert "casa_id" in columnas_item
+        assert columnas_item["nombre"]["nullable"] is False
+        assert columnas_item["descripcion"]["nullable"] is True
+        assert columnas_item["fecha_estimada"]["nullable"] is True
+        assert columnas_item["recurrente"]["nullable"] is False
+        assert columnas_item["periodicidad"]["nullable"] is True
+        assert columnas_item["estado"]["nullable"] is False
+        nombres_fk_item = {
+            fk["referred_table"] for fk in inspector.get_foreign_keys("items_mantenimiento")
+        }
+        assert "casas" in nombres_fk_item
+
+        columnas_material = {
+            c["name"]: c for c in inspector.get_columns("materiales_mantenimiento")
+        }
+        assert columnas_material["nombre"]["nullable"] is False
+        assert columnas_material["cantidad"]["nullable"] is False
+        assert columnas_material["conseguido"]["nullable"] is False
+        nombres_fk_material = {
+            fk["referred_table"]
+            for fk in inspector.get_foreign_keys("materiales_mantenimiento")
+        }
+        assert "items_mantenimiento" in nombres_fk_material
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada

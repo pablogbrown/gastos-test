@@ -16,6 +16,10 @@ from src.db.models.miembro import Miembro
 from src.db.models.tarea import EstadoTareaEnum, Tarea
 from src.services.balance_service import BalanceCasa, calcular_balance
 from src.services.gasto_service import listar_gastos
+from src.services.mantenimiento_service import (
+    ItemMantenimientoAlerta,
+    obtener_items_con_alerta,
+)
 from src.services.miembro_service import listar_miembros
 from src.services.ranking_service import calcular_ranking
 from src.services.tarea_service import listar_historial, listar_tareas
@@ -37,6 +41,10 @@ class DashboardCasa:
     # Spec `tarjetas-credito`, REQ-004: tarjetas activas de la casa cuyo
     # vencimiento está a `UMBRAL_ALERTA_DIAS` días o menos (o ya venció).
     tarjetas_con_alerta: List[TarjetaAlerta] = field(default_factory=list)
+    # Spec `mantenimiento-casa`, REQ-005: ítems de mantenimiento pendientes
+    # cuya fecha estimada está a `UMBRAL_ALERTA_DIAS` días o menos (o ya
+    # vencidos) — mismo criterio que `tarjetas_con_alerta`.
+    mantenimiento_con_alerta: List[ItemMantenimientoAlerta] = field(default_factory=list)
 
 
 def armar_dashboard(casa_id: UUID) -> DashboardCasa:
@@ -56,6 +64,7 @@ def armar_dashboard(casa_id: UUID) -> DashboardCasa:
     tareas_completadas_recientes = listar_historial(casa_id)[:_LIMITE_RECIENTES]
     ranking = calcular_ranking(casa_id)
     tarjetas_con_alerta = obtener_tarjetas_con_alerta(casa_id)
+    mantenimiento_con_alerta = obtener_items_con_alerta(casa_id)
 
     return DashboardCasa(
         miembros=miembros,
@@ -65,4 +74,5 @@ def armar_dashboard(casa_id: UUID) -> DashboardCasa:
         tareas_completadas_recientes=tareas_completadas_recientes,
         ranking=ranking,
         tarjetas_con_alerta=tarjetas_con_alerta,
+        mantenimiento_con_alerta=mantenimiento_con_alerta,
     )
