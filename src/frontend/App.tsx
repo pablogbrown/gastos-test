@@ -132,7 +132,11 @@ export function App() {
         )}
         {pantalla === "tarjetas" && <Tarjetas casaId={casaActual.id} />}
         {pantalla === "prestamos" && (
-          <Prestamos casaId={casaActual.id} miembros={miembros} />
+          <Prestamos
+            casaId={casaActual.id}
+            miembros={miembros}
+            miembroIdActual={miMiembro?.id ?? ""}
+          />
         )}
       </Box>
     </Box>

@@ -35,6 +35,22 @@ services domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-16 | feature: prestamos-confirmacion-mutua | confidence: high | verified: 2026-09-16 -->
+- [SERVP-07] Adding a new GUARD to an EXISTING service action (e.g.
+  `actualizar_estado_prestamo` now requiring `estado_confirmacion ==
+  "confirmado"` before accepting a state change) requires reviewing the
+  PRE-EXISTING tests of that action, not just writing the new spec's own
+  tests — the old tests may exercise exactly the path the new guard now
+  blocks. Confirmed here: 4 tests across 2 files (`prestamo_service.
+  test.py`, `prestamos_routes.test.py`) called the guarded action
+  without satisfying the new precondition first and had to be updated
+  to perform the missing step (confirm both parties) before exercising
+  it — never by relaxing the guard or excluding the tests. Same spirit
+  as [SERVP-06] (grep every consumer before considering a SHAPE change
+  complete), but for a GUARD change instead of a type change: a new
+  precondition on an existing action is exactly as much a breaking
+  change to that action's callers as a signature change is.
+
 <!-- added: 2026-09-16 | feature: gastos-sin-reparto | confidence: high | verified: 2026-09-16 -->
 - [SERVP-06] When a service's return type changes SHAPE (not
   additively — e.g. `calcular_balance` going from `List[BalancePorMiembro]`

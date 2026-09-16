@@ -22,6 +22,7 @@ from src.services.miembro_service import agregar_miembro
 from src.services.prestamo_service import (
     ESTADOS_PRESTAMO_VALIDOS,
     actualizar_estado_prestamo,
+    confirmar_prestamo,
     crear_prestamo,
     listar_prestamos,
 )
@@ -140,6 +141,9 @@ def test_tc004_cambio_de_estado_en_ambos_sentidos(db_session):
         casa.id, admin_id, maca_id, Decimal("1000.00"), "ARS", date(2026, 9, 1), admin_id
     )
     assert prestamo.estado == "pendiente"
+    # Spec `prestamos-confirmacion-mutua` (REQ-006): el ciclo pagado/
+    # pendiente exige confirmación de ambas partes primero.
+    confirmar_prestamo(casa.id, prestamo.id, maca_id, True)
 
     actualizado = actualizar_estado_prestamo(casa.id, prestamo.id, "pagado", admin_id)
     assert actualizado.estado == "pagado"
@@ -153,6 +157,7 @@ def test_estado_invalido_es_rechazado(db_session):
     prestamo = crear_prestamo(
         casa.id, admin_id, maca_id, Decimal("1000.00"), "ARS", date(2026, 9, 1), admin_id
     )
+    confirmar_prestamo(casa.id, prestamo.id, maca_id, True)
     assert "pendiente" in ESTADOS_PRESTAMO_VALIDOS and "pagado" in ESTADOS_PRESTAMO_VALIDOS
 
     with pytest.raises(ValidationError):
@@ -200,6 +205,7 @@ def test_tc006_control_crear_y_actualizar_prestamo_no_cambia_el_balance(db_sessi
     balance_despues_de_crear = calcular_balance(casa.id, mes_actual)
     assert balance_despues_de_crear == balance_antes
 
+    confirmar_prestamo(casa.id, prestamo.id, maca_id, True)
     actualizar_estado_prestamo(casa.id, prestamo.id, "pagado", admin_id)
 
     balance_despues_de_actualizar = calcular_balance(casa.id, mes_actual)

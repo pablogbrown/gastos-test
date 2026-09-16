@@ -42,6 +42,13 @@ function prestamo(overrides: Partial<Record<string, unknown>> = {}) {
     fecha: "2026-09-01",
     estado: "pendiente",
     creado_en: "2026-09-16T00:00:00Z",
+    // Spec `prestamos-confirmacion-mutua`: por default, en estos tests
+    // pre-existentes (que ejercitan el ciclo pagado/pendiente ya
+    // confirmado), ambas partes ya confirmaron — así el chip clickeable
+    // de estado sigue apareciendo sin cambios.
+    confirmado_prestamista: true,
+    confirmado_deudor: true,
+    estado_confirmacion: "confirmado",
     ...overrides,
   };
 }
@@ -76,7 +83,7 @@ describe("Prestamos", () => {
       })
     );
 
-    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={ADMIN_ID} />);
 
     await waitFor(() => expect(screen.queryByText("Alquiler del auto")).not.toBeInTheDocument());
 
@@ -119,7 +126,7 @@ describe("Prestamos", () => {
       })
     );
 
-    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={ADMIN_ID} />);
 
     const chip = await screen.findByRole("button", { name: "Pendiente" });
     await user.click(chip);
@@ -149,7 +156,7 @@ describe("Prestamos", () => {
     );
 
     const user = userEvent.setup();
-    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={ADMIN_ID} />);
 
     await user.selectOptions(screen.getByLabelText("Prestamista"), ADMIN_ID);
     await user.selectOptions(screen.getByLabelText("Deudor"), ADMIN_ID);
@@ -160,5 +167,155 @@ describe("Prestamos", () => {
     expect(
       await screen.findByText("El prestamista y el deudor no pueden ser el mismo miembro.")
     ).toBeInTheDocument();
+  });
+
+  it("TC-008: un préstamo pendiente de confirmación se ve marcado como tal para un miembro al que no le toca confirmar", async () => {
+    const BRUNO_ID = "55555555-5555-5555-5555-555555555555";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          prestamo({
+            confirmado_prestamista: true,
+            confirmado_deudor: null,
+            estado_confirmacion: "pendiente_confirmacion",
+          }),
+        ],
+      }))
+    );
+
+    // Bruno no es ni el prestamista ni el deudor de este préstamo — ve
+    // el chip informativo, nunca los botones de acción.
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={BRUNO_ID} />);
+
+    expect(await screen.findByText("Pendiente de confirmación")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Rechazar" })).not.toBeInTheDocument();
+  });
+
+  it("TC-009: solo la parte a la que le toca confirmar ve los botones Confirmar/Rechazar", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          prestamo({
+            confirmado_prestamista: true,
+            confirmado_deudor: null,
+            estado_confirmacion: "pendiente_confirmacion",
+          }),
+        ],
+      }))
+    );
+
+    // Maca es la deudora y su campo de confirmación todavía está en
+    // null: le toca confirmar/rechazar.
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={MACA_ID} />);
+
+    expect(await screen.findByRole("button", { name: "Confirmar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rechazar" })).toBeInTheDocument();
+    expect(screen.queryByText("Pendiente de confirmación")).not.toBeInTheDocument();
+  });
+
+  it("TC-009: el prestamista que ya confirmó no ve los botones en su propia fila", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          prestamo({
+            confirmado_prestamista: true,
+            confirmado_deudor: null,
+            estado_confirmacion: "pendiente_confirmacion",
+          }),
+        ],
+      }))
+    );
+
+    // Admin (prestamista) ya confirmó automáticamente al registrar —
+    // ve el chip informativo, no los botones, aunque sea parte del
+    // préstamo.
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={ADMIN_ID} />);
+
+    expect(await screen.findByText("Pendiente de confirmación")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
+  });
+
+  it("confirmar un préstamo llama al endpoint de confirmación y refresca el listado", async () => {
+    const user = userEvent.setup();
+    let confirmado = false;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const metodo = init?.method ?? "GET";
+        if (url.endsWith("/confirmacion") && metodo === "PATCH") {
+          const body = JSON.parse(String(init?.body));
+          expect(body.confirma).toBe(true);
+          confirmado = true;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => prestamo({ confirmado_deudor: true, estado_confirmacion: "confirmado" }),
+          };
+        }
+        if (url.endsWith("/prestamos") && metodo === "GET") {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => [
+              prestamo(
+                confirmado
+                  ? { confirmado_deudor: true, estado_confirmacion: "confirmado" }
+                  : {
+                      confirmado_prestamista: true,
+                      confirmado_deudor: null,
+                      estado_confirmacion: "pendiente_confirmacion",
+                    }
+              ),
+            ],
+          };
+        }
+        return { ok: true, status: 200, json: async () => [] };
+      })
+    );
+
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={MACA_ID} />);
+
+    await user.click(await screen.findByRole("button", { name: "Confirmar" }));
+
+    // El préstamo mockeado nace con `estado: "pendiente"` (sin cambios) —
+    // una vez confirmado por ambas partes, vuelve a mostrar el chip
+    // clickeable de pagado/pendiente en vez de los botones de acción.
+    expect(await screen.findByRole("button", { name: "Pendiente" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
+  });
+
+  it("un préstamo rechazado se ve con el chip 'Rechazado', sin acciones", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          prestamo({
+            confirmado_prestamista: true,
+            confirmado_deudor: false,
+            estado_confirmacion: "rechazado",
+          }),
+        ],
+      }))
+    );
+
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={MACA_ID} />);
+
+    expect(await screen.findByText("Rechazado")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Rechazar" })).not.toBeInTheDocument();
   });
 });

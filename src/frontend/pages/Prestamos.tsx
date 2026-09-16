@@ -20,6 +20,7 @@ import { Miembro } from "../api/casasClient";
 import {
   Prestamo,
   actualizarEstadoPrestamo,
+  confirmarPrestamo,
   crearPrestamo,
   esApiError,
   listarPrestamos,
@@ -28,6 +29,28 @@ import {
 export interface PrestamosProps {
   casaId: string;
   miembros: Miembro[];
+  /** Spec `prestamos-confirmacion-mutua` (T4): el `Miembro.id` propio del
+   * usuario autenticado EN ESTA CASA — mismo patrón que `Tareas.tsx`
+   * recibe para "¿me toca a mí?" — usado acá para decidir si esta fila le
+   * muestra a este usuario los botones Confirmar/Rechazar (solo a la
+   * parte pendiente) o el chip informativo (a cualquier otro miembro). */
+  miembroIdActual: string;
+}
+
+/** ¿Le toca a `miembroIdActual` confirmar o rechazar este préstamo? (TC-009)
+ * Solo si el préstamo sigue pendiente de confirmación Y `miembroIdActual`
+ * es exactamente el rol (prestamista o deudor) cuyo campo de confirmación
+ * todavía está en `null` — la parte que ya confirmó/rechazó, o un tercero,
+ * nunca ve los botones. */
+function leTocaConfirmar(prestamo: Prestamo, miembroIdActual: string): boolean {
+  if (prestamo.estado_confirmacion !== "pendiente_confirmacion") return false;
+  if (miembroIdActual === prestamo.prestamista_id && prestamo.confirmado_prestamista === null) {
+    return true;
+  }
+  if (miembroIdActual === prestamo.deudor_id && prestamo.confirmado_deudor === null) {
+    return true;
+  }
+  return false;
 }
 
 type Moneda = "ARS" | "USD";
@@ -38,7 +61,7 @@ type Moneda = "ARS" | "USD";
  * clickeable — mismo patrón visual que el chip de estado de `Gastos.tsx`
  * (spec `gastos-estado-pago`): verde "Pagado" / naranja "Pendiente".
  * Completamente separada de Gastos y Balance — nunca los toca. */
-export function Prestamos({ casaId, miembros }: PrestamosProps) {
+export function Prestamos({ casaId, miembros, miembroIdActual }: PrestamosProps) {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
   const [prestamistaId, setPrestamistaId] = useState("");
   const [deudorId, setDeudorId] = useState("");
@@ -98,6 +121,18 @@ export function Prestamos({ casaId, miembros }: PrestamosProps) {
       await cargar();
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo actualizar el estado del préstamo.");
+    }
+  }
+
+  /** Confirma o rechaza el propio rol en `prestamo` (spec `prestamos-
+   * confirmacion-mutua`, T4, TC-009) y refresca el listado. */
+  async function handleConfirmarPrestamo(prestamo: Prestamo, confirma: boolean) {
+    setError(null);
+    try {
+      await confirmarPrestamo(casaId, prestamo.id, confirma);
+      await cargar();
+    } catch (err) {
+      setError(esApiError(err) ? err.detail : "No se pudo confirmar el préstamo.");
     }
   }
 
@@ -242,12 +277,39 @@ export function Prestamos({ casaId, miembros }: PrestamosProps) {
                 <TableCell>{importeConPrefijo(prestamo)}</TableCell>
                 <TableCell>{prestamo.descripcion ?? ""}</TableCell>
                 <TableCell>
-                  <Chip
-                    label={prestamo.estado === "pagado" ? "Pagado" : "Pendiente"}
-                    color={prestamo.estado === "pagado" ? "success" : "warning"}
-                    size="small"
-                    onClick={() => void handleToggleEstado(prestamo)}
-                  />
+                  {prestamo.estado_confirmacion === "rechazado" ? (
+                    <Chip label="Rechazado" color="error" size="small" />
+                  ) : prestamo.estado_confirmacion === "pendiente_confirmacion" ? (
+                    leTocaConfirmar(prestamo, miembroIdActual) ? (
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="success"
+                          onClick={() => void handleConfirmarPrestamo(prestamo, true)}
+                        >
+                          Confirmar
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="error"
+                          onClick={() => void handleConfirmarPrestamo(prestamo, false)}
+                        >
+                          Rechazar
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Chip label="Pendiente de confirmación" color="default" size="small" />
+                    )
+                  ) : (
+                    <Chip
+                      label={prestamo.estado === "pagado" ? "Pagado" : "Pendiente"}
+                      color={prestamo.estado === "pagado" ? "success" : "warning"}
+                      size="small"
+                      onClick={() => void handleToggleEstado(prestamo)}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ))}

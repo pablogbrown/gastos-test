@@ -18,6 +18,10 @@ export interface Prestamo {
   fecha: string;
   estado: string;
   creado_en: string;
+  // Spec `prestamos-confirmacion-mutua` (T4): campos aditivos.
+  confirmado_prestamista: boolean | null;
+  confirmado_deudor: boolean | null;
+  estado_confirmacion: string;
 }
 
 export interface NuevoPrestamo {
@@ -77,6 +81,23 @@ export async function actualizarEstadoPrestamo(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ estado }),
+  });
+  return (await parseJsonOrThrow<Prestamo>(resp))!;
+}
+
+/** Confirma o rechaza el propio rol en un préstamo pendiente de
+ * confirmación (spec `prestamos-confirmacion-mutua`, T4). Ruta propia,
+ * separada de `actualizarEstadoPrestamo` — mismo criterio que T3
+ * documenta: modelos de permiso distintos. */
+export async function confirmarPrestamo(
+  casaId: string,
+  prestamoId: string,
+  confirma: boolean
+): Promise<Prestamo> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/prestamos/${prestamoId}/confirmacion`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirma }),
   });
   return (await parseJsonOrThrow<Prestamo>(resp))!;
 }

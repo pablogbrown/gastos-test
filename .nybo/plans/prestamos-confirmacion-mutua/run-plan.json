@@ -1,0 +1,104 @@
+{
+  "$schema_version": "2",
+  "feature_id": "prestamos-confirmacion-mutua",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/prestamos-confirmacion-mutua/feat/01-plan-01-columnas-confirmacion.md",
+      "files_touched": [
+        "src/db/models/prestamo.py",
+        "src/db/migrations/0016_prestamo_confirmacion.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Prestamo.confirmado_prestamista", "signature": "Optional[bool]", "kind": "export" },
+        { "name": "Prestamo.confirmado_deudor", "signature": "Optional[bool]", "kind": "export" },
+        { "name": "Prestamo.estado_confirmacion", "signature": "property -> str", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Prestamo tiene columnas nullable confirmado_prestamista/confirmado_deudor y una property estado_confirmacion derivada correctamente, y la migracion corre limpia e idempotente contra Postgres real.",
+        "postcondition": "Un Prestamo recien creado sin las columnas explicitas tiene estado_confirmacion == 'pendiente_confirmacion'; run_migrations corrido dos veces no lanza excepcion.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/prestamos-confirmacion-mutua/feat/01-plan-02-confirmar-prestamo.md",
+      "files_touched": [
+        "src/services/prestamo_service.py",
+        "tests/integration/services/prestamo_confirmacion.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-007"],
+      "interfaces_produced": [
+        { "name": "confirmar_prestamo", "signature": "(casa_id, prestamo_id, actor, confirma: bool) -> Prestamo", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Prestamo.estado_confirmacion" }
+      ],
+      "contract": {
+        "statement": "crear_prestamo auto-confirma el rol de quien registra; confirmar_prestamo permite solo a la parte correspondiente confirmar o rechazar; actualizar_estado_prestamo exige confirmacion previa.",
+        "postcondition": "Segun quien sea el actor al crear, los booleanos de confirmacion quedan correctos; un tercero que intenta confirmar recibe PermissionDeniedError; confirmar ambas partes deja estado_confirmacion='confirmado'; rechazar deja 'rechazado' permanente; actualizar_estado_prestamo antes de confirmar lanza ValidationError.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/prestamo_confirmacion.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/prestamos-confirmacion-mutua/feat/01-plan-03-api-confirmacion.md",
+      "files_touched": [
+        "src/api/routes/prestamos.py",
+        "tests/integration/api/prestamos_confirmacion_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": ["TC-004", "TC-005", "TC-006", "TC-007"],
+      "interfaces_produced": [
+        { "name": "PrestamoConfirmacionUpdate", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "confirmar_prestamo" }
+      ],
+      "contract": {
+        "statement": "PATCH .../prestamos/{id}/confirmacion permite confirmar/rechazar con los codigos de error correctos.",
+        "postcondition": "Un tercero recibe 403; un prestamo ya resuelto recibe 400 al reintentar confirmar; el PATCH de estado pagado/pendiente recibe 400 si aun no esta confirmado.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/prestamos_confirmacion_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/prestamos-confirmacion-mutua/feat/01-plan-04-frontend-confirmacion.md",
+      "files_touched": [
+        "src/frontend/api/prestamosClient.ts",
+        "src/frontend/pages/Prestamos.tsx",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/Prestamos.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 35,
+      "test_cases": ["TC-008", "TC-009"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "PrestamoOut.estado_confirmacion" }
+      ],
+      "contract": {
+        "statement": "Prestamos.tsx muestra el estado de confirmacion correctamente y solo ofrece confirmar/rechazar a la parte pendiente.",
+        "postcondition": "Un prestamo pendiente de confirmacion se ve marcado como tal para cualquier miembro; solo la fila vista por la parte a la que le toca confirmar muestra los botones Confirmar/Rechazar.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Prestamos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

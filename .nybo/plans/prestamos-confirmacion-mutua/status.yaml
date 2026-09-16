@@ -1,0 +1,28 @@
+feature: prestamos-confirmacion-mutua
+status: shipped
+shipped_at: '2026-09-16T14:45:00Z'
+profile: code
+action_type: UPD
+created_at: '2026-09-16'
+approved_at: '2026-09-16'
+task_count: 4
+run_at: '2026-09-16T17:31:08.000Z'
+run_completed_at: '2026-09-16T17:31:08.000Z'
+run_duration: 5400
+verified_at: '2026-09-16T17:31:08.000Z'
+verified_duration: 900
+curated_at: '2026-09-16T17:31:08.000Z'
+curated_duration: 180
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/prestamos-confirmacion-mutua
+pr_url: https://github.com/pablogbrown/gastos-test/pull/32
+pr_number: 32
+kind: single_spec
+notes: |
+  Depende de prestamos-entre-miembros (ya shippeada y mergeada).
+  Rationale: spec.md. Build narrative: evidence/build-results.md.

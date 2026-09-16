@@ -311,6 +311,12 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         }
         assert {"casas", "miembros"} <= nombres_fk_prestamo
 
+        # T1 (spec `prestamos-confirmacion-mutua`): `confirmado_prestamista`/
+        # `confirmado_deudor` existen tras la migración 0016, ambas
+        # nullable y SIN default (NULL implícito = pendiente de confirmar).
+        assert columnas_prestamo["confirmado_prestamista"]["nullable"] is True
+        assert columnas_prestamo["confirmado_deudor"]["nullable"] is True
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada
@@ -410,6 +416,13 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
             assert gasto.estado == "pagado"
             assert prestamo.moneda == "ARS"
             assert prestamo.estado == "pendiente"
+            # T1 (spec `prestamos-confirmacion-mutua`): un Prestamo recién
+            # creado sin las columnas de confirmación explícitas (NULL a
+            # nivel de fila real de Postgres) resuelve
+            # estado_confirmacion == "pendiente_confirmacion".
+            assert prestamo.confirmado_prestamista is None
+            assert prestamo.confirmado_deudor is None
+            assert prestamo.estado_confirmacion == "pendiente_confirmacion"
         finally:
             session.close()
     finally:
