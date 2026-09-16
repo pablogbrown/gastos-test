@@ -1,5 +1,6 @@
 feature: gastos-sin-reparto
-status: ready
+status: shipped
+shipped_at: '2026-09-16T14:00:00Z'
 profile: code
 action_type: UPD
 created_at: '2026-09-16'
