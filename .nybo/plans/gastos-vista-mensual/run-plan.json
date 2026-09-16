@@ -1,0 +1,73 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos-vista-mensual",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gastos-vista-mensual/feat/01-plan-01-listar-gastos-por-mes.md",
+      "files_touched": [
+        "src/services/gasto_service.py",
+        "tests/integration/services/gasto_listar_mes.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": ["TC-001", "TC-002", "TC-006"],
+      "interfaces_produced": [
+        { "name": "listar_gastos", "signature": "(casa_id, mes: Optional[str] = None) -> List[Gasto]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "listar_gastos filtra por mes cuando se indica, y preserva el comportamiento actual (todos los gastos) cuando no.",
+        "postcondition": "Con mes='2026-09', solo se devuelven gastos de ese mes; sin mes, se devuelven todos los gastos de la casa igual que hoy; armar_dashboard (que llama sin mes) sigue viendo el historial completo.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/gasto_listar_mes.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gastos-vista-mensual/feat/01-plan-02-api-mes.md",
+      "files_touched": [
+        "src/api/routes/gastos.py",
+        "tests/integration/api/gastos_mes_routes.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 10,
+      "test_cases": ["TC-003"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "listar_gastos" }
+      ],
+      "contract": {
+        "statement": "GET /casas/{id}/gastos acepta mes como query param opcional y filtra la respuesta.",
+        "postcondition": "GET .../gastos?mes=2026-09 devuelve solo los gastos de ese mes.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_mes_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gastos-vista-mensual/feat/01-plan-03-frontend-mes.md",
+      "files_touched": [
+        "src/frontend/api/gastosClient.ts",
+        "src/frontend/pages/Gastos.tsx",
+        "tests/unit/frontend/Gastos.test.tsx"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": ["TC-004", "TC-005"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "GET /casas/{id}/gastos?mes=" }
+      ],
+      "contract": {
+        "statement": "Gastos.tsx ofrece un selector de mes con el mes actual preseleccionado, que filtra el listado.",
+        "postcondition": "Al cargar, el selector muestra el mes calendario actual y listarGastos se llama con ese valor; cambiar el selector vuelve a pedir el listado con el nuevo mes.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Gastos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
