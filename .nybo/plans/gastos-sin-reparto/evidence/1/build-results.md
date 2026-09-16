@@ -2,20 +2,20 @@
 feature: gastos-sin-reparto
 schema: build-results/2
 cycle: 1
-updated: '2026-09-16T16:34:23.980Z'
+updated: '2026-09-16T16:40:44.388Z'
 exit: ready
 verdict: verified
 observations:
   entries: 2
 judgment:
-  entries: 2
+  entries: 3
 tests:
   pytest:
-    passed: 267
+    passed: 281
     failed: 0
     skipped: 1
   vitest:
-    passed: 105
+    passed: 108
     failed: 0
 build: pass
 lint: pass
@@ -29,6 +29,7 @@ Implementar el pivote conceptual: un Gasto deja de repartirse entre participante
 
 - **J001** Deleted `tests/integration/services/gasto_service.test.py` in its entirety (T1's grep-driven test-update scope) rather than editing it: its single test (`test_nuevo_miembro_no_altera_gastos_ya_registrados`, TC-009 from a prior spec) exercised nothing but participant-list stability across a membership change — a concept that no longer exists once `Gasto` has no participants at all. Kept, not deleted: every test file where the grep hit covered a real behavior in addition to participants (e.g. `gasto_cuotas.test.py`'s cuota-shape assertions) — only the `participantes=` kwarg was stripped from those. Task-file criterion ('no eliminado sin reemplazo si cubria otra cosa ademas del reparto') applied literally: this file covered nothing else.
 - **J002** Updated `src/frontend/api/dashboardClient.ts` (its `DashboardCasa.balance` field and its import of `BalancePorMiembro` from `gastosClient.ts`) even though it appears in no task file's Scope — T3/T4 changed `balance_service.calcular_balance`'s return type and `gastosClient.ts`'s exported types, and `dashboardClient.ts` is a direct, unavoidable consumer of both; leaving it unchanged would not compile (`tsc --noEmit` in `npm run build`). Classified as an in-authority `spec-deviation` (L2 semi-autonomous settles this class) rather than parked in `decisions.yaml`: it's a mechanical consequence of T3's own contract change, not a new design decision.
+- **J003** After the initial commit/push, `gh pr view` reported `mergeable: CONFLICTING` against `main`: the sibling spec `prestamos-entre-miembros` (built in parallel, merged first) had also claimed migration number `0014` for its own migration — exactly the collision its own Judgment log (J001) predicted as an expected risk. Rebased onto `origin/main`, resolved `src/db/migrate.py`'s `_MIGRACIONES` conflict by keeping `0014_prestamos` and renumbering this spec's migration to `0015_eliminar_gasto_participantes` (file renamed, docstring/test/domain-note references updated), force-pushed. Re-ran the full suite post-rebase: 281 pytest + 108 vitest green (up from 267/105 pre-rebase, reflecting prestamos-entre-miembros' own tests now on this branch), migration 0015 re-verified against real Postgres. PR is now `mergeable: MERGEABLE`.
 
 ### Observations
 

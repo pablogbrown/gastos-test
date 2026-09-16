@@ -28,7 +28,7 @@ cycles:
   - cycle: 1
     exit: ready
     verdict: verified
-    summary: T1-T4 implemented via TDD; 267 pytest + 105 vitest green; live smoke confirmed on docker Postgres
+    summary: T1-T4 via TDD; rebased on main (migration renumbered 0014->0015); 281 pytest + 108 vitest green; live smoke on docker Postgres
 notes: |
   Independiente de prestamos-entre-miembros. Elimina GastoParticipante
   y su historial por decisión explícita del usuario (sin conservar).
