@@ -17,6 +17,7 @@ import { HistorialActividad } from "./pages/HistorialActividad";
 import { InicioCasa } from "./pages/InicioCasa";
 import { Login } from "./pages/Login";
 import { Miembros } from "./pages/Miembros";
+import { Prestamos } from "./pages/Prestamos";
 import { Ranking } from "./pages/Ranking";
 import { Registro } from "./pages/Registro";
 import { SelectorCasas } from "./pages/SelectorCasas";
@@ -130,6 +131,9 @@ export function App() {
           <Suscripciones casaId={casaActual.id} rolUsuarioActual={rolUsuarioActual} />
         )}
         {pantalla === "tarjetas" && <Tarjetas casaId={casaActual.id} />}
+        {pantalla === "prestamos" && (
+          <Prestamos casaId={casaActual.id} miembros={miembros} />
+        )}
       </Box>
     </Box>
   );

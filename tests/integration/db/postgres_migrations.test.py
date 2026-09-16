@@ -232,6 +232,7 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
             "historial_actividad",
             "suscripciones",
             "tarjetas_credito",
+            "prestamos",
         } <= tablas
 
         # El enum de rol se creó como tipo nativo de Postgres, no como texto libre.
@@ -288,6 +289,23 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert "estado" in columnas_gasto
         assert columnas_gasto["estado"]["nullable"] is False
 
+        # T1 (spec `prestamos-entre-miembros`): `prestamos` existe con sus
+        # columnas tras la migración 0014, con FKs reales a
+        # `casas`/`miembros` (dos veces: prestamista y deudor).
+        columnas_prestamo = {c["name"]: c for c in inspector.get_columns("prestamos")}
+        assert "casa_id" in columnas_prestamo
+        assert "prestamista_id" in columnas_prestamo
+        assert "deudor_id" in columnas_prestamo
+        assert columnas_prestamo["importe"]["nullable"] is False
+        assert columnas_prestamo["moneda"]["nullable"] is False
+        assert columnas_prestamo["descripcion"]["nullable"] is True
+        assert columnas_prestamo["fecha"]["nullable"] is False
+        assert columnas_prestamo["estado"]["nullable"] is False
+        nombres_fk_prestamo = {
+            fk["referred_table"] for fk in inspector.get_foreign_keys("prestamos")
+        }
+        assert {"casas", "miembros"} <= nombres_fk_prestamo
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada
@@ -297,7 +315,7 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         # Una tercera pasada (spec `gastos-multi-moneda`, T1 "Done When":
         # verificar idempotencia explícitamente para la migración nueva)
         # tampoco debe lanzar. Vale también para 0011 (spec
-        # `tarjetas-credito`).
+        # `tarjetas-credito`) y 0014 (spec `prestamos-entre-miembros`).
         run_migrations(engine)
 
         # Comportamiento de default 'ARS' contra Postgres real: insertar un
@@ -350,15 +368,43 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
                 pagado_por=miembro_id,
             )
             session.add(suscripcion)
+
+            # T1 (spec `prestamos-entre-miembros`): un segundo miembro
+            # (deudor) para poder insertar un Prestamo sin moneda/estado
+            # explícitos y confirmar los defaults 'ARS'/'pendiente' contra
+            # Postgres real — mismo criterio que `moneda`/`estado` arriba.
+            from src.db.models.prestamo import Prestamo
+
+            deudor = Miembro(
+                id=uuid.uuid4(),
+                casa_id=casa.id,
+                nombre="Maca",
+                identificacion="P-2",
+                rol=RolEnum.MEMBER,
+            )
+            session.add(deudor)
+            session.flush()
+            prestamo = Prestamo(
+                id=uuid.uuid4(),
+                casa_id=casa_id,
+                prestamista_id=miembro_id,
+                deudor_id=deudor.id,
+                importe=50000,
+                fecha=sqlalchemy.func.current_date(),
+            )
+            session.add(prestamo)
             session.commit()
 
             session.refresh(gasto)
             session.refresh(suscripcion)
+            session.refresh(prestamo)
             assert gasto.moneda == "ARS"
             assert suscripcion.moneda == "ARS"
             # T1 (spec `gastos-estado-pago`): default 'pagado' contra
             # Postgres real, mismo criterio que `moneda` arriba.
             assert gasto.estado == "pagado"
+            assert prestamo.moneda == "ARS"
+            assert prestamo.estado == "pendiente"
         finally:
             session.close()
     finally:

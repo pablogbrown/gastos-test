@@ -12,6 +12,7 @@ from src.api.routes.auth import auth_router
 from src.api.routes.casas import casas_router
 from src.api.routes.dashboard import dashboard_router
 from src.api.routes.gastos import gastos_router
+from src.api.routes.prestamos import prestamos_router
 from src.api.routes.suscripciones import suscripciones_router
 from src.api.routes.tareas import tareas_router
 from src.api.routes.tarjetas import tarjetas_router
@@ -26,6 +27,7 @@ app.include_router(suscripciones_router)
 app.include_router(tareas_router)
 app.include_router(dashboard_router)
 app.include_router(tarjetas_router)
+app.include_router(prestamos_router)
 
 
 @app.on_event("startup")

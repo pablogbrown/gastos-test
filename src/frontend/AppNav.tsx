@@ -4,6 +4,7 @@ import ActivityIcon from "@mui/icons-material/History";
 import BalanceIcon from "@mui/icons-material/AccountBalanceWallet";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import GastosIcon from "@mui/icons-material/Receipt";
+import HandshakeIcon from "@mui/icons-material/Handshake";
 import HomeIcon from "@mui/icons-material/Home";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PeopleIcon from "@mui/icons-material/People";
@@ -35,13 +36,14 @@ export type Pantalla =
   | "ranking"
   | "actividad"
   | "suscripciones"
-  | "tarjetas";
+  | "tarjetas"
+  | "prestamos";
 
-/** Las 9 secciones de navegación (spec `ui-modernization`, REQ-002;
+/** Las 10 secciones de navegación (spec `ui-modernization`, REQ-002;
  * `gastos-suscripcion-mensual` agrega "Suscripciones"; `tarjetas-credito`
- * agrega "Tarjetas"), compartidas entre `BottomNavigation` (mobile) y
- * `AppBar`/`Tabs` (desktop) — mismo orden, mismos íconos, mismo estado
- * `pantalla`. */
+ * agrega "Tarjetas"; `prestamos-entre-miembros` agrega "Préstamos"),
+ * compartidas entre `BottomNavigation` (mobile) y `AppBar`/`Tabs`
+ * (desktop) — mismo orden, mismos íconos, mismo estado `pantalla`. */
 export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] = [
   { value: "inicio", label: "Inicio", icon: <HomeIcon /> },
   { value: "miembros", label: "Miembros", icon: <PeopleIcon /> },
@@ -52,6 +54,7 @@ export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] 
   { value: "actividad", label: "Actividad", icon: <ActivityIcon /> },
   { value: "suscripciones", label: "Suscripciones", icon: <SuscripcionesIcon /> },
   { value: "tarjetas", label: "Tarjetas", icon: <CreditCardIcon /> },
+  { value: "prestamos", label: "Préstamos", icon: <HandshakeIcon /> },
 ];
 
 /** Agrupación del menú superior desktop (spec `nav-agrupada`, REQ-001/002):
@@ -73,7 +76,7 @@ export const GRUPOS_DESKTOP: GrupoDesktop[] = [
   {
     tipo: "grupo",
     label: "Gastos",
-    pantallas: ["gastos", "balance", "tarjetas", "suscripciones"],
+    pantallas: ["gastos", "balance", "tarjetas", "suscripciones", "prestamos"],
   },
   { tipo: "suelta", pantalla: "tareas" },
 ];

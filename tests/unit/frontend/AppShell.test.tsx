@@ -134,13 +134,13 @@ describe("AppNav — menú agrupado desktop (spec nav-agrupada)", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it('TC-003: clic en "Gastos" despliega Gastos/Balance/Tarjetas/Suscripciones', () => {
+  it('TC-003: clic en "Gastos" despliega Gastos/Balance/Tarjetas/Suscripciones/Préstamos', () => {
     mockMatchMedia(true);
     renderCon("inicio");
 
     fireEvent.click(screen.getByRole("button", { name: "Gastos" }));
 
-    ["Gastos", "Balance", "Tarjetas", "Suscripciones"].forEach((label) => {
+    ["Gastos", "Balance", "Tarjetas", "Suscripciones", "Préstamos"].forEach((label) => {
       expect(screen.getByRole("menuitem", { name: new RegExp(label) })).toBeInTheDocument();
     });
   });
