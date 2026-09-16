@@ -1,0 +1,42 @@
+questions_for_the_human: []
+
+quick_wins:
+  - id: S001
+    status: open
+    text: >-
+      `Dockerfile.frontend` still pins `FROM node:20-slim`, which cannot
+      run `vite.config.ts`'s vitest `--no-experimental-webstorage`
+      execArgv (added for `usuarios-auth`, requires Node >=22) — so
+      `docker compose exec frontend npm run test` fails on ANY branch,
+      unrelated to any code change (confirmed reproducing on unmodified
+      `main` during this spec's baseline check; see [TEST-03],
+      .nybo/memory/domains/testing.md). Every frontend test run in this
+      BUILD used the host's own Node instead. Bumping the image to
+      `node:22-slim` (or newer) would let `docker compose exec frontend`
+      work again for tests, matching how `backend` tests already run
+      fine in Docker.
+
+future_enhancements:
+  - id: S002
+    status: open
+    text: >-
+      `MantenimientoAutos.tsx`'s per-auto item form/checklist
+      (`AutoConItems`) is a deliberate near-duplicate of
+      `Mantenimiento.tsx`'s own form/checklist (same fields, same
+      materials UI) — not extracted to a shared component in this spec,
+      per `01-plan-04-frontend-autos.md`'s Design Rationale. Worth
+      extracting into a shared `ItemMantenimientoForm`/`MaterialesChecklist`
+      component if a third consumer of this exact UI shape ever appears.
+
+technical_debt:
+  - id: S003
+    status: open
+    text: >-
+      This project still has no coverage tool configured
+      (.nybo/foundation/stack.yaml -> quality_tools.coverage.tool: null),
+      so this build's verify step could not numerically check
+      nybo.config.yaml's testing.coverage_threshold (80) — a pre-existing
+      gap already flagged by prior builds (gastos-multi-moneda,
+      tarjetas-credito, importar-resumen-tarjeta, mantenimiento-casa),
+      not introduced by this spec. Run /nybo-brownfield-bootstrap
+      --quality to close it.

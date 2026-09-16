@@ -21,6 +21,18 @@ class ItemMantenimiento(Base):
     que su periodicidad). Al completar una instancia recurrente,
     `mantenimiento_service.completar_item` genera una nueva instancia
     pendiente con la fecha siguiente.
+
+    `auto_id` (spec `mantenimiento-autos`, REQ-002/REQ-003): `NULL` es
+    mantenimiento de la casa (comportamiento sin cambios); poblado
+    vincula el ítem a un `Auto` puntual. Declarado como `Column` plano,
+    SIN `ForeignKey()` a nivel de modelo — mismo criterio ya documentado
+    en `[DBG-02]`/`[DBG-03]` (`.nybo/memory/domains/db.md`): la migración
+    que CREA esta tabla (`0017_mantenimiento.py`) corre ANTES que
+    `0018_mantenimiento_autos.py` (que crea `autos`), así que un
+    `ForeignKey("autos.id")` acá rompería `0017.upgrade()` con
+    `relation "autos" does not exist` en cualquier base creada desde
+    cero. El FK real se agrega vía SQL crudo en `0018`, después de crear
+    `autos` en esa misma migración.
     """
 
     __tablename__ = "items_mantenimiento"
@@ -34,6 +46,7 @@ class ItemMantenimiento(Base):
     periodicidad = Column(String, nullable=True)
     estado = Column(String, nullable=False, default="pendiente")
     creado_en = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    auto_id = Column(GUID(), nullable=True)
 
     materiales = relationship(
         "MaterialMantenimiento", back_populates="item", cascade="all, delete-orphan"

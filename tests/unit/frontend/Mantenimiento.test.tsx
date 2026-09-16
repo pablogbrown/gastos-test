@@ -129,4 +129,20 @@ describe("Mantenimiento", () => {
     const [, patchRequest] = fetchMock.mock.calls[1];
     expect(JSON.parse(patchRequest.body as string)).toEqual({ conseguido: true });
   });
+
+  it("TC-007 (spec `mantenimiento-autos`, control de regresión): sigue listando sin ?autoId, mostrando solo ítems de la casa", async () => {
+    const fetchMock = vi.fn();
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [itemPendiente()] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Mantenimiento casaId={CASA_ID} />);
+
+    await screen.findByText("Poner membrana al techo");
+
+    // Cero cambios de código en `Mantenimiento.tsx`: sigue llamando a
+    // `listarItems(casaId)` sin `autoId` — la URL nunca lleva `?autoId=`.
+    const [listadoRequest] = fetchMock.mock.calls[0];
+    expect(String(listadoRequest)).toBe(`/casas/${CASA_ID}/mantenimiento`);
+    expect(String(listadoRequest)).not.toContain("autoId");
+  });
 });

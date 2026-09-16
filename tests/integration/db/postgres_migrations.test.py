@@ -347,6 +347,32 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         }
         assert "items_mantenimiento" in nombres_fk_material
 
+        # T1 (spec `mantenimiento-autos`): `autos` existe con sus columnas
+        # tras la migración 0018, con FK real a `casas`; `items_mantenimiento
+        # .auto_id` existe como columna nullable. Sin asserción de FK acá
+        # para `auto_id` (mismo criterio ya documentado que `tarjeta_id`/
+        # `suscripcion_id`, ver [DBG-04]): `0017_mantenimiento.py` crea
+        # `items_mantenimiento` (con `auto_id` ya incluido, por ser parte
+        # del modelo vigente) ANTES de que `0018` cree `autos` — en una
+        # base creada desde cero por este mismo `run_migrations`, el
+        # `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` de `0018` es un no-op
+        # y su `REFERENCES` nunca llega a ejecutarse. La REFERENCES sigue
+        # siendo correcta para el path real de producción: una base
+        # existente donde `items_mantenimiento` ya existía SIN `auto_id`
+        # antes de este deploy.
+        assert "autos" in tablas
+        columnas_auto = {c["name"]: c for c in inspector.get_columns("autos")}
+        assert "casa_id" in columnas_auto
+        assert columnas_auto["marca"]["nullable"] is False
+        assert columnas_auto["modelo"]["nullable"] is False
+        assert columnas_auto["patente"]["nullable"] is True
+        assert columnas_auto["anio"]["nullable"] is True
+        nombres_fk_auto = {fk["referred_table"] for fk in inspector.get_foreign_keys("autos")}
+        assert "casas" in nombres_fk_auto
+
+        assert "auto_id" in columnas_item
+        assert columnas_item["auto_id"]["nullable"] is True
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada

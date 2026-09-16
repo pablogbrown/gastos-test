@@ -14,7 +14,7 @@ from datetime import date, datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from src.api.dependencies import resolver_actor_en_casa
@@ -42,6 +42,9 @@ class ItemMantenimientoCreate(BaseModel):
     recurrente: bool = False
     periodicidad: Optional[str] = None
     materiales: Optional[List[MaterialCreate]] = None
+    # Spec `mantenimiento-autos`, REQ-002: opcional — asocia el ítem a un
+    # auto puntual en vez de a la casa.
+    auto_id: Optional[UUID] = None
 
 
 class ItemMantenimientoEstadoUpdate(BaseModel):
@@ -74,6 +77,8 @@ class ItemMantenimientoOut(BaseModel):
     estado: str
     creado_en: datetime
     materiales: List[MaterialOut] = []
+    # Spec `mantenimiento-autos`, REQ-002/REQ-003 (aditivo).
+    auto_id: Optional[UUID] = None
 
     class Config:
         orm_mode = True
@@ -85,6 +90,11 @@ class ItemMantenimientoAlertaOut(BaseModel):
     fecha_estimada: date
     dias_para_vencimiento: int
     vencido: bool
+    # Spec `mantenimiento-autos`, REQ-004 (aditivo): `None` para un ítem
+    # de la casa; poblados cuando el ítem pertenece a un auto, para que
+    # el frontend arme el texto de la alerta mencionándolo.
+    auto_id: Optional[UUID] = None
+    auto_nombre: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -110,6 +120,7 @@ def crear_item_endpoint(
             payload.periodicidad,
             actor,
             materiales=[m.dict() for m in payload.materiales] if payload.materiales else None,
+            auto_id=payload.auto_id,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -120,9 +131,13 @@ def crear_item_endpoint(
 
 
 @mantenimiento_router.get("/{casa_id}/mantenimiento", response_model=List[ItemMantenimientoOut])
-def listar_items_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
+def listar_items_endpoint(
+    casa_id: UUID,
+    actor: UUID = Depends(resolver_actor_en_casa),
+    auto_id: Optional[UUID] = Query(default=None, alias="autoId"),
+):
     try:
-        return listar_items(casa_id)
+        return listar_items(casa_id, auto_id=auto_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
