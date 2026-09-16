@@ -1,0 +1,109 @@
+{
+  "$schema_version": "2",
+  "feature_id": "prestamos-entre-miembros",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/prestamos-entre-miembros/feat/01-plan-01-modelo-prestamo.md",
+      "files_touched": [
+        "src/db/models/prestamo.py",
+        "src/db/migrations/0015_prestamos.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Prestamo", "signature": "model", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Prestamo existe como tabla propia con FKs reales a casas/miembros, y la migracion corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepcion; la tabla prestamos existe con todas sus columnas y default estado='pendiente'.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/prestamos-entre-miembros/feat/01-plan-02-prestamo-service.md",
+      "files_touched": [
+        "src/services/prestamo_service.py",
+        "tests/integration/services/prestamo_service.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006"],
+      "interfaces_produced": [
+        { "name": "crear_prestamo", "signature": "(casa_id, prestamista_id, deudor_id, importe, moneda, fecha, actor, descripcion=None) -> Prestamo", "kind": "export" },
+        { "name": "listar_prestamos", "signature": "(casa_id) -> List[Prestamo]", "kind": "export" },
+        { "name": "actualizar_estado_prestamo", "signature": "(casa_id, prestamo_id, estado, actor) -> Prestamo", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Prestamo" }
+      ],
+      "contract": {
+        "statement": "prestamo_service ofrece alta/listado/cambio de estado, validando prestamista != deudor y moneda valida, sin afectar calcular_balance.",
+        "postcondition": "Un prestamo valido persiste en 'pendiente'; prestamista_id==deudor_id o moneda invalida lanzan ValidationError; actualizar_estado_prestamo cambia el valor en ambos sentidos; calcular_balance no cambia tras crear o actualizar un prestamo.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/prestamo_service.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/prestamos-entre-miembros/feat/01-plan-03-api-prestamos.md",
+      "files_touched": [
+        "src/api/routes/prestamos.py",
+        "src/api/main.py",
+        "tests/integration/api/prestamos_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "PrestamoOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "crear_prestamo" },
+        { "from": "T2", "name": "listar_prestamos" },
+        { "from": "T2", "name": "actualizar_estado_prestamo" }
+      ],
+      "contract": {
+        "statement": "Los endpoints CRUD de prestamos funcionan sobre HTTP.",
+        "postcondition": "POST/GET/PATCH .../prestamos responden correctamente segun spec.md TC-001 a TC-005.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/prestamos_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/prestamos-entre-miembros/feat/01-plan-04-frontend-prestamos.md",
+      "files_touched": [
+        "src/frontend/api/prestamosClient.ts",
+        "src/frontend/pages/Prestamos.tsx",
+        "src/frontend/AppNav.tsx",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/Prestamos.test.tsx",
+        "tests/unit/frontend/AppShell.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 35,
+      "test_cases": ["TC-007", "TC-008"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "PrestamoOut" }
+      ],
+      "contract": {
+        "statement": "La pantalla Prestamos permite alta/listado/cambio de estado, y aparece en la navegacion.",
+        "postcondition": "El formulario crea un prestamo visible en el listado; un clic en su chip cambia el estado; la pantalla es accesible desde la navegacion (mobile plana, grupo 'Gastos' en desktop).",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Prestamos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
