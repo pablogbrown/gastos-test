@@ -1,0 +1,23 @@
+feature: gastos-vista-mensual
+status: shipped
+shipped_at: '2026-09-16T13:00:00Z'
+profile: code
+action_type: ADD
+created_at: '2026-09-16'
+approved_at: '2026-09-16'
+task_count: 3
+run_completed_at: '2026-09-16T15:33:43.867Z'
+verified_at: '2026-09-16T15:33:43.867Z'
+curated_at: '2026-09-16T15:33:43.867Z'
+domain: services
+domains_referenced:
+  - services.md
+  - api.md
+  - frontend.md
+branch: feat/gastos-vista-mensual
+pr_url: https://github.com/pablogbrown/gastos-test/pull/28
+pr_number: 28
+kind: single_spec
+notes: |
+  Independiente de gastos-estado-pago y nav-agrupada.
+  Rationale: spec.md. Build narrative: evidence/build-results.md.

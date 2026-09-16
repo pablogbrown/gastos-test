@@ -130,8 +130,9 @@ export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise
   return parseJsonOrThrow<Gasto>(resp);
 }
 
-export async function listarGastos(casaId: string): Promise<Gasto[]> {
-  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/gastos`);
+export async function listarGastos(casaId: string, mes?: string): Promise<Gasto[]> {
+  const query = mes ? `?mes=${mes}` : "";
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/gastos${query}`);
   return parseJsonOrThrow<Gasto[]>(resp);
 }
 

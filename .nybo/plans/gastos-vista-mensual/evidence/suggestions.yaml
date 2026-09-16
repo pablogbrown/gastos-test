@@ -1,0 +1,16 @@
+feature: gastos-vista-mensual
+suggestions:
+  - id: SUG-001
+    kind: domain-health
+    title: "services.md exceeds its line budget (pre-existing, not caused by this spec)"
+    detail: >
+      `nybo doctor` reports `.nybo/memory/domains/services.md` at 131+
+      lines vs. a 60-line budget, plus several convention bullets
+      (SERV-01/02/03) missing the expected metadata format. Both
+      conditions already existed before this build (baseline post-merge
+      was 131 lines; this spec only added ~7 net lines to update
+      [SERVP-02]). Flagging for a future `/nybo-curate domains` pass to
+      consider splitting `services.md` (e.g. by sub-area) rather than
+      letting it keep growing — out of scope for this build.
+    severity: low
+    blocking: false

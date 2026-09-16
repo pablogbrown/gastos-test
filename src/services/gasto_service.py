@@ -25,7 +25,7 @@ import calendar
 import uuid
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 from uuid import UUID
 
 from src.db.base import get_session
@@ -502,10 +502,40 @@ def _dividir_importe(importe: Decimal, cantidad: int) -> List[Decimal]:
     return partes
 
 
-def listar_gastos(casa_id: UUID):
+def _rango_mes(mes: str) -> Tuple[date, date]:
+    """Resuelve `mes` (`YYYY-MM`) al primer y último día de ese mes —
+    misma lógica que `balance_service._rango_mes`, deliberadamente
+    duplicada acá (spec `gastos-vista-mensual`, ver Design Rationale en
+    `00-overview.md`) para no acoplar `gasto_service` y
+    `balance_service` por una función de 5 líneas.
+
+    A diferencia de `balance_service._rango_mes`, acá `mes` es
+    obligatorio: `listar_gastos` solo la llama cuando `mes` no es
+    `None` — sin `mes` significa "todos los gastos", nunca "el mes
+    actual" (ver Design Rationale de `listar_gastos`)."""
+    try:
+        anio, numero_mes = (int(parte) for parte in mes.split("-"))
+        if not (1 <= numero_mes <= 12):
+            raise ValueError
+    except ValueError as exc:
+        raise ValidationError(f"Formato de mes inválido: {mes!r}. Se espera 'YYYY-MM'.") from exc
+    ultimo_dia = calendar.monthrange(anio, numero_mes)[1]
+    return date(anio, numero_mes, 1), date(anio, numero_mes, ultimo_dia)
+
+
+def listar_gastos(casa_id: UUID, mes: Optional[str] = None) -> List[Gasto]:
     """Historial de gastos de una casa, ordenado por fecha descendente
     (REQ-008/TC-010). Incluye gastos pagados por miembros ya
     desactivados: no se filtra por `Miembro.activo`.
+
+    `mes` (spec `gastos-vista-mensual`, REQ-001): `None` (default)
+    preserva el comportamiento 100% actual — todos los gastos de la
+    casa, sin filtrar — porque `dashboard_service.armar_dashboard` sigue
+    llamando a esta función sin `mes` esperando el historial completo
+    para sus "últimos 10 gastos" (REQ-004/TC-006, control de regresión).
+    Con `mes` (`YYYY-MM`), filtra además por `Gasto.fecha.between(desde,
+    hasta)` (TC-001); un formato inválido propaga `ValidationError` (vía
+    `_rango_mes`).
 
     Spec `gastos-suscripcion-mensual` (REQ-002): antes de la query
     existente, dispara la generación perezosa del gasto del mes actual
@@ -523,12 +553,11 @@ def listar_gastos(casa_id: UUID):
     try:
         if session.get(Casa, casa_id) is None:
             raise NotFoundError(f"La casa {casa_id} no existe.")
-        gastos = (
-            session.query(Gasto)
-            .filter(Gasto.casa_id == casa_id)
-            .order_by(Gasto.fecha.desc())
-            .all()
-        )
+        query = session.query(Gasto).filter(Gasto.casa_id == casa_id)
+        if mes is not None:
+            desde, hasta = _rango_mes(mes)
+            query = query.filter(Gasto.fecha.between(desde, hasta))
+        gastos = query.order_by(Gasto.fecha.desc()).all()
         for gasto in gastos:
             _ = gasto.participantes
         return gastos
