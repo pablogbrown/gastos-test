@@ -11,6 +11,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/gastos-vista-mensual
+pr_url: https://github.com/pablogbrown/gastos-test/pull/28
+pr_number: 28
 kind: single_spec
 notes: |
   Independiente de gastos-estado-pago y nav-agrupada.
