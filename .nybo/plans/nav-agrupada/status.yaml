@@ -9,6 +9,8 @@ domain: frontend
 domains_referenced:
   - frontend.md
 branch: feat/nav-agrupada
+pr_url: https://github.com/pablogbrown/gastos-test/pull/29
+pr_number: 29
 kind: single_spec
 notes: |
   Independiente de gastos-estado-pago y gastos-vista-mensual.
