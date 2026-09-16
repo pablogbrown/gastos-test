@@ -1,0 +1,39 @@
+feature: nav-agrupada
+suggestions:
+  - id: S001
+    category: quick-win
+    title: Give the active desktop nav button a stronger visual highlight
+    detail: >-
+      The active/selected state (standalone entry on its own screen, or a
+      group button when the current pantalla belongs to it) is currently
+      signalled only via opacity + font-weight (matching the minimal cue
+      MUI's `Tabs` gave via its selected-tab color before this change).
+      A background chip/underline (similar to the old `indicatorColor`)
+      would make the active group more visually obvious at a glance,
+      especially since a group button now represents up to 4 possible
+      screens instead of exactly one.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: tech-debt
+    title: No coverage tool configured for the frontend
+    detail: >-
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool` is
+      `null`, so `nybo.config.yaml`'s `testing.coverage_threshold: 80`
+      could not be mechanically checked for this cycle (or any prior
+      frontend cycle). Pre-existing gap, not introduced by this spec.
+      Remedy: `/nybo-brownfield-bootstrap --quality`.
+    scope: out-of-spec
+    status: open
+  - id: S003
+    category: question
+    title: Should the docker-compose live smoke check run for future frontend-only specs?
+    detail: >-
+      This cycle's human instructions explicitly waived the
+      backend/docker/Postgres live smoke check for a frontend-only
+      change (10-verify.md's manual step). Worth deciding once whether
+      "frontend-only, no backend/data surface touched" should be a
+      standing exemption from that step in `nybo-verify`'s guardrail, or
+      whether it should keep being an explicit per-cycle call.
+    scope: out-of-spec
+    status: open

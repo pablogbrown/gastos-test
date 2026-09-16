@@ -6,17 +6,26 @@ frontend domain
 <!-- Each convention has metadata as an HTML comment -->
 <!-- added: YYYY-MM-DD | feature: feature-name | confidence: high|medium|low | verified: YYYY-MM-DD -->
 
-<!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-11 -->
+<!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-16 -->
 - UI is built with Material UI (`@mui/material`, `@mui/icons-material`,
   `@emotion/react`, `@emotion/styled`). One shared theme lives at
   `src/frontend/theme.ts` (exported `theme`, via `createTheme`) — screens
   never define their own ad-hoc palette/typography, they consume this
   theme through `ThemeProvider` (wired once in `main.tsx`).
 - The responsive navigation shell (bottom tab bar on mobile < `sm`
-  breakpoint / top `AppBar` + `Tabs` on desktop) is its own component,
+  breakpoint / top `AppBar` on desktop) is its own component,
   `src/frontend/AppNav.tsx` — kept separate from `App.tsx` specifically
   so it can be unit-tested (`tests/unit/frontend/AppShell.test.tsx`)
-  without needing to drive the full "create a casa" flow first.
+  without needing to drive the full "create a casa" flow first. Mobile
+  (`BottomNavigation`) always renders the flat `SECCIONES` array, one
+  entry per screen. Desktop (spec `nav-agrupada`, 2026-09-16) no longer
+  renders `Tabs` — it renders `GRUPOS_DESKTOP` instead: a standalone
+  `Button` per loose screen, and a `Button` + `Menu`/`MenuItem` per
+  group, still sourcing every icon/label from `SECCIONES` by `value`
+  (never hand-duplicated). A group's button gets `aria-current="true"`
+  when the current `pantalla` is any screen in that group, not just its
+  first. `SECCIONES` itself is the single source of truth for both
+  branches — only `GRUPOS_DESKTOP` decides how desktop presents it.
 
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-11 -->
 - Frontend tests query the DOM via accessible roles/labels
@@ -63,6 +72,17 @@ frontend domain
   `Stack` everywhere. Worth a closer look (dependency dedupe, or
   confirming this is really this MUI major's API) before relying on
   `Stack` again.
+
+<!-- added: 2026-09-16 | feature: nav-agrupada | confidence: high | verified: 2026-09-16 -->
+- Same MUI v9.4.0 deprecated-prop pattern as the `Stack` gotcha above,
+  seen again on `Menu`: the legacy `MenuListProps` prop is deprecated in
+  this major and silently leaks onto the rendered DOM node as an
+  unrecognized attribute (a console warning, not a type error or a
+  runtime crash) instead of configuring the menu list. Use the slots API
+  instead — `slotProps={{ list: { "aria-labelledby": ... } }}`. Likely a
+  repo-wide pattern with this MUI major: prefer `slotProps` over any
+  legacy `XxxProps` prop on components that expose slots, and watch test
+  output for this exact warning shape as the tell.
 
 <!-- added: 2026-09-14 | feature: usuarios-auth (auth-frontend) | confidence: high | verified: 2026-09-14 -->
 - Node >= 22 exposes its own built-in `localStorage`/`sessionStorage`
