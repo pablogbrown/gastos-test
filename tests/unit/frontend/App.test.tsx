@@ -63,10 +63,14 @@ function mockFetchConMiembros(miembros: unknown[]) {
   });
 }
 
+/** Spec `nav-agrupada`: "Miembros" pasó a vivir dentro del grupo desktop
+ * "Casa" del menú superior — hay que abrir ese menú antes de poder
+ * elegir la pantalla, en vez de clickear un `tab` plano directo. */
 async function irAPantallaMiembros() {
   const user = userEvent.setup();
   await user.click(await screen.findByText("Casa del centro"));
-  await user.click(await screen.findByRole("tab", { name: "Miembros" }));
+  await user.click(await screen.findByRole("button", { name: "Casa" }));
+  await user.click(await screen.findByRole("menuitem", { name: /Miembros/ }));
 }
 
 function mockMatchMedia(matches: boolean) {
@@ -147,8 +151,10 @@ describe("App — gate de sesión", () => {
     const user = userEvent.setup();
     await user.click(await screen.findByText("Casa del centro"));
 
-    // Ya en el shell: se ve la navegación existente.
-    expect(await screen.findByRole("tablist", { name: "Navegación" })).toBeInTheDocument();
+    // Ya en el shell: se ve la navegación existente. Spec `nav-agrupada`:
+    // el menú superior desktop dejó de ser un `tablist` — se verifica el
+    // landmark `nav` en su lugar.
+    expect(await screen.findByRole("navigation", { name: "Navegación" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 

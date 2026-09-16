@@ -283,6 +283,11 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert "tarjeta_id" in columnas_gasto
         assert columnas_gasto["tarjeta_id"]["nullable"] is True
 
+        # T1 (spec `gastos-estado-pago`): `gastos.estado` existe tras la
+        # migracion 0013, NOT NULL con default 'pagado'.
+        assert "estado" in columnas_gasto
+        assert columnas_gasto["estado"]["nullable"] is False
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada
@@ -351,6 +356,9 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
             session.refresh(suscripcion)
             assert gasto.moneda == "ARS"
             assert suscripcion.moneda == "ARS"
+            # T1 (spec `gastos-estado-pago`): default 'pagado' contra
+            # Postgres real, mismo criterio que `moneda` arriba.
+            assert gasto.estado == "pagado"
         finally:
             session.close()
     finally:

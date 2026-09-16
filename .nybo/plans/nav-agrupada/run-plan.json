@@ -1,0 +1,28 @@
+{
+  "$schema_version": "2",
+  "feature_id": "nav-agrupada",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/nav-agrupada/feat/01-plan-01-menu-agrupado.md",
+      "files_touched": [
+        "src/frontend/AppNav.tsx",
+        "tests/unit/frontend/AppShell.test.tsx"
+      ],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        { "name": "GRUPOS_DESKTOP", "signature": "export", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El menu superior desktop agrupa las 9 pantallas en 4 elementos de primer nivel (Inicio, Casa, Gastos, Tareas) con menus desplegables para Casa/Gastos, resaltando el grupo activo; la barra inferior mobile no cambia.",
+        "postcondition": "En desktop se ven exactamente 4 botones de primer nivel; clic en Casa/Gastos despliega sus pantallas y navega al elegir una; con pantalla='tarjetas' el boton Gastos se marca activo; en mobile la BottomNavigation sigue mostrando las 9 pantallas sin agrupar.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/AppShell.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

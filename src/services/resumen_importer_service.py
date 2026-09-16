@@ -107,6 +107,9 @@ def importar_resumen(
                     actor,
                     moneda=moneda,
                     tarjeta_id=tarjeta_id,
+                    # Spec `gastos-estado-pago`, REQ-004: un resumen recien
+                    # importado nunca se asume pagado.
+                    estado="a_pagar",
                 )
                 gastos_creados += 1
             else:
@@ -125,6 +128,9 @@ def importar_resumen(
                 actor,
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,
+                # Spec `gastos-estado-pago`, REQ-004: idem el resto de las
+                # rutas de creacion de gasto de esta importacion.
+                estado="a_pagar",
             )
             gastos_creados += len(nuevos)
             cuotas_creadas += len(nuevos)
@@ -139,6 +145,9 @@ def importar_resumen(
                 actor,
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,
+                # Spec `gastos-estado-pago`, REQ-004: idem el resto de las
+                # rutas de creacion de gasto de esta importacion.
+                estado="a_pagar",
             )
             gastos_creados += 1
 

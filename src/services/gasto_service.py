@@ -45,6 +45,11 @@ from src.services.miembro_service import requiere_membresia_activa
 # gasto`); `suscripcion_service.py` reutiliza esta misma constante.
 MONEDAS_VALIDAS = {"ARS", "USD"}
 
+# Spec `gastos-estado-pago`, REQ-007: unicos valores validos de `estado`
+# para un Gasto -- mismo criterio que `MONEDAS_VALIDAS` (constante en
+# este modulo, sin enum nativo de Postgres, ver Design Rationale de T1).
+ESTADOS_VALIDOS = {"pagado", "a_pagar"}
+
 
 def registrar_gasto(
     casa_id: UUID,
@@ -59,6 +64,7 @@ def registrar_gasto(
     suscripcion_id: Optional[UUID] = None,
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
+    estado: str = "pagado",
 ) -> Gasto:
     """Registra un Gasto y sus GastoParticipante asociados.
 
@@ -90,6 +96,11 @@ def registrar_gasto(
     etiquetado, sin validación adicional — `None` (default) es un gasto
     no originado en una importación de resumen; identifica de qué
     `TarjetaCredito` vino el consumo cuando sí lo es.
+
+    `estado` (spec `gastos-estado-pago`, REQ-001/REQ-007): `"pagado"`
+    (default) o `"a_pagar"` — cualquier otro valor es rechazado. Todas
+    las cuotas de una misma compra comparten el `estado` del gasto
+    original (REQ-002/TC-003), mismo criterio que `moneda`.
     """
     if cuotas is not None and cuotas <= 0:
         raise ValidationError("La cantidad de cuotas debe ser 2 o mayor.")
@@ -103,6 +114,8 @@ def registrar_gasto(
         raise ValidationError("El gasto debe tener una categoría asignada.")
     if moneda not in MONEDAS_VALIDAS:
         raise ValidationError(f"Moneda inválida: {moneda!r}. Debe ser 'ARS' o 'USD'.")
+    if estado not in ESTADOS_VALIDOS:
+        raise ValidationError(f"Estado inválido: {estado!r}. Debe ser 'pagado' o 'a_pagar'.")
 
     if not requiere_membresia_activa(casa_id, actor):
         raise PermissionDeniedError("El actor no es un miembro activo de esta casa.")
@@ -149,6 +162,7 @@ def registrar_gasto(
                 cuotas,
                 moneda,
                 tarjeta_id,
+                estado,
             )
         else:
             gasto = Gasto(
@@ -162,6 +176,7 @@ def registrar_gasto(
                 suscripcion_id=suscripcion_id,
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,
+                estado=estado,
             )
             session.add(gasto)
             session.flush()
@@ -215,6 +230,7 @@ def _crear_gastos_en_cuotas(
     cuotas: int,
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
+    estado: str = "pagado",
 ) -> List[Gasto]:
     """Crea `cuotas` filas `Gasto`, una por mes consecutivo a partir de
     `fecha`, compartiendo un `cuota_grupo_id` (spec `gastos-en-cuotas`,
@@ -228,6 +244,9 @@ def _crear_gastos_en_cuotas(
     puede tener una moneda distinta de las demás.
 
     `tarjeta_id` (spec `importar-resumen-tarjeta`): se propaga sin
+    cambios a las N cuotas generadas, igual que `moneda`.
+
+    `estado` (spec `gastos-estado-pago`, REQ-002/TC-003): se propaga sin
     cambios a las N cuotas generadas, igual que `moneda`.
     """
     partes_cuotas = _dividir_importe(importe_decimal, cuotas)
@@ -248,6 +267,7 @@ def _crear_gastos_en_cuotas(
             cuota_total=cuotas,
             moneda=moneda,
             tarjeta_id=tarjeta_id,
+            estado=estado,
         )
         session.add(gasto)
         session.flush()
@@ -278,6 +298,7 @@ def registrar_gasto_cuotas_restantes(
     actor: UUID,
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
+    estado: str = "pagado",
 ) -> List[Gasto]:
     """Registra solo las cuotas RESTANTES de una compra en curso —
     `cuota_actual` (inclusive) hasta `cuota_total`, una por mes
@@ -309,6 +330,8 @@ def registrar_gasto_cuotas_restantes(
         raise ValidationError("El gasto debe tener una categoría asignada.")
     if moneda not in MONEDAS_VALIDAS:
         raise ValidationError(f"Moneda inválida: {moneda!r}. Debe ser 'ARS' o 'USD'.")
+    if estado not in ESTADOS_VALIDOS:
+        raise ValidationError(f"Estado inválido: {estado!r}. Debe ser 'pagado' o 'a_pagar'.")
 
     if not requiere_membresia_activa(casa_id, actor):
         raise PermissionDeniedError("El actor no es un miembro activo de esta casa.")
@@ -359,6 +382,7 @@ def registrar_gasto_cuotas_restantes(
                 cuota_total=cuota_total,
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,
+                estado=estado,
             )
             session.add(gasto)
             session.flush()
@@ -389,6 +413,45 @@ def registrar_gasto_cuotas_restantes(
             )
 
         return gastos_creados
+    except (ValidationError, PermissionDeniedError, NotFoundError):
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def actualizar_estado_gasto(casa_id: UUID, gasto_id: UUID, estado: str, actor: UUID) -> Gasto:
+    """Cambia el `estado` de un Gasto ya existente (spec `gastos-estado-
+    pago`, REQ-005/TC-006). Cualquier miembro activo de la casa puede
+    llamarla -- mismo nivel de permiso que `registrar_gasto` (sin
+    `_validar_actor_admin`, ver [SERV-03]). Puramente informativo: no
+    toca ningun otro campo del Gasto ni tiene efecto sobre
+    `balance_service.calcular_balance` (REQ-006/TC-008).
+    """
+    if estado not in ESTADOS_VALIDOS:
+        raise ValidationError(f"Estado inválido: {estado!r}. Debe ser 'pagado' o 'a_pagar'.")
+
+    if not requiere_membresia_activa(casa_id, actor):
+        raise PermissionDeniedError("El actor no es un miembro activo de esta casa.")
+
+    session = get_session()
+    try:
+        if session.get(Casa, casa_id) is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+
+        gasto = (
+            session.query(Gasto)
+            .filter(Gasto.casa_id == casa_id, Gasto.id == gasto_id)
+            .one_or_none()
+        )
+        if gasto is None:
+            raise NotFoundError(f"El gasto {gasto_id} no existe en la casa {casa_id}.")
+
+        gasto.estado = estado
+        session.commit()
+        session.refresh(gasto)
+        _ = gasto.participantes  # fuerza la carga antes de cerrar la sesión
+        return gasto
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
         raise

@@ -379,6 +379,182 @@ describe("Gastos", () => {
     expect(selector.value).toBe("ARS");
   });
 
+  it("el selector Estado viene preseleccionado en Pagado", async () => {
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    const selector = (await screen.findByLabelText("Estado")) as HTMLSelectElement;
+    expect(selector.value).toBe("pagado");
+  });
+
+  it("TC-009: con Estado en 'A pagar', el body enviado incluye estado: 'a_pagar'", async () => {
+    const fetchMock = mockFetch();
+    let ultimoBodyPost: unknown = null;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        ultimoBodyPost = JSON.parse(String(init.body));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: "12121212-1212-1212-1212-121212121212",
+            casa_id: CASA_ID,
+            descripcion: "Cuota futura",
+            importe: "20.00",
+            fecha: "2026-01-01",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+            moneda: "ARS",
+            estado: "a_pagar",
+          }),
+        };
+      }
+      if (url.endsWith("/categorias")) {
+        return {
+          ok: true,
+          json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
+        };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Cuota futura");
+    await user.type(screen.getByLabelText("Importe"), "20");
+    await user.selectOptions(screen.getByLabelText("Estado"), "a_pagar");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
+    expect((ultimoBodyPost as { estado: string }).estado).toBe("a_pagar");
+  });
+
+  it("no fuerza estado: 'pagado' explícito en el body cuando Estado queda en el default", async () => {
+    const fetchMock = mockFetch();
+    let ultimoBodyPost: unknown = null;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/gastos") && init?.method === "POST") {
+        ultimoBodyPost = JSON.parse(String(init.body));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: "13131313-1313-1313-1313-131313131313",
+            casa_id: CASA_ID,
+            descripcion: "Compra",
+            importe: "100.00",
+            fecha: "2026-01-01",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+            moneda: "ARS",
+            estado: "pagado",
+          }),
+        };
+      }
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByLabelText("Nuevo gasto");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Descripción"), "Compra");
+    await user.type(screen.getByLabelText("Importe"), "100");
+    await user.click(screen.getByRole("button", { name: "Registrar gasto" }));
+
+    await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
+    expect(ultimoBodyPost).not.toHaveProperty("estado");
+  });
+
+  it("TC-010: un clic en el chip de estado llama a la API de actualización y el chip pasa a Pagado", async () => {
+    // Mock con estado mutable: el PATCH actualiza `estadoActual`, y el
+    // siguiente GET (disparado por `cargar()` tras el PATCH) devuelve
+    // ese valor ya actualizado -- imprescindible para probar el
+    // refresco real de TC-010, no solo la llamada al PATCH.
+    let estadoActual: "pagado" | "a_pagar" = "a_pagar";
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (/\/gastos\/[^/]+$/.test(url) && init?.method === "PATCH") {
+        estadoActual = JSON.parse(String(init.body)).estado;
+        return {
+          ok: true,
+          json: async () => ({
+            id: "44444444-4444-4444-4444-444444444444",
+            casa_id: CASA_ID,
+            descripcion: "Compra semanal",
+            importe: "100.00",
+            fecha: "2026-01-01",
+            pagado_por: ADMIN_ID,
+            categoria_id: CATEGORIA_ID,
+            participantes: [],
+            moneda: "ARS",
+            estado: estadoActual,
+          }),
+        };
+      }
+      if (url.endsWith("/gastos")) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: "44444444-4444-4444-4444-444444444444",
+              casa_id: CASA_ID,
+              descripcion: "Compra semanal",
+              importe: "100.00",
+              fecha: "2026-01-01",
+              pagado_por: ADMIN_ID,
+              categoria_id: CATEGORIA_ID,
+              participantes: [],
+              moneda: "ARS",
+              estado: estadoActual,
+            },
+          ],
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    await screen.findByText("Compra semanal");
+    // El selector "Estado" del formulario tambien renderiza un <option>
+    // con el mismo texto "A pagar" -- se apunta explicitamente al chip
+    // clickeable (role="button") de la fila del listado para no
+    // ambiguar con esa opcion.
+    const chip = screen.getByRole("button", { name: "A pagar" });
+    const user = userEvent.setup();
+    await user.click(chip);
+
+    expect(await screen.findByRole("button", { name: "Pagado" })).toBeInTheDocument();
+    const patchCall = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PATCH"
+    );
+    expect(patchCall).toBeDefined();
+    expect(JSON.parse(String((patchCall![1] as RequestInit).body))).toEqual({
+      estado: "pagado",
+    });
+  });
+
   it("muestra el importe con prefijo US$ para un gasto en dólares, $ para uno en pesos", async () => {
     const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
