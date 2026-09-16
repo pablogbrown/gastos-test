@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/mantenimiento-autos
+pr_url: https://github.com/pablogbrown/gastos-test/pull/36
+pr_number: 36
 kind: single_spec
 notes: |
   Depende de mantenimiento-casa (necesita ItemMantenimiento ya
