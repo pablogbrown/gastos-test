@@ -9,17 +9,6 @@ const CASA_ID = "11111111-1111-1111-1111-111111111111";
 const ADMIN_ID = "22222222-2222-2222-2222-222222222222";
 const CATEGORIA_ID = "33333333-3333-3333-3333-333333333333";
 
-const MIEMBROS = [
-  {
-    id: ADMIN_ID,
-    casa_id: CASA_ID,
-    nombre: "Administrador",
-    identificacion: ADMIN_ID,
-    rol: "admin" as const,
-    activo: true,
-  },
-];
-
 function mockFetch() {
   return vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -41,7 +30,6 @@ function mockFetch() {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
           },
         ],
       };
@@ -60,14 +48,14 @@ describe("Gastos", () => {
   });
 
   it("muestra el historial de gastos y el catálogo de categorías", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
 
     expect(await screen.findByText("Compra semanal")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Supermercado" })).toBeInTheDocument();
   });
 
   it("TC-005: el selector de mes viene preseleccionado en el mes actual", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
 
     const mesActual = new Date().toISOString().slice(0, 7);
     const selector = (await screen.findByLabelText("Mes")) as HTMLInputElement;
@@ -78,7 +66,7 @@ describe("Gastos", () => {
     const fetchMock = mockFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByText("Compra semanal");
 
     const mesActual = new Date().toISOString().slice(0, 7);
@@ -92,7 +80,7 @@ describe("Gastos", () => {
     const fetchMock = mockFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     const selector = await screen.findByLabelText("Mes");
     await screen.findByText("Compra semanal");
 
@@ -109,11 +97,11 @@ describe("Gastos", () => {
     });
   });
 
-  it("preselecciona 'todos los miembros' y oculta la lista de participantes", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+  it("TC-006: el formulario 'Nuevo gasto' no muestra ningún selector de participantes ni 'Todos los miembros'", async () => {
+    render(<Gastos casaId={CASA_ID} />);
 
     await screen.findByLabelText("Nuevo gasto");
-    expect(screen.getByLabelText("Todos los miembros")).toBeChecked();
+    expect(screen.queryByLabelText("Todos los miembros")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Participantes")).not.toBeInTheDocument();
   });
 
@@ -139,7 +127,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -168,7 +156,6 @@ describe("Gastos", () => {
             fecha: "2026-09-15",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
             cuota_grupo_id: "66666666-6666-6666-6666-666666666666",
             cuota_numero: 1,
             cuota_total: 3,
@@ -188,7 +175,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -219,7 +206,6 @@ describe("Gastos", () => {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
           }),
         };
       }
@@ -233,7 +219,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -243,17 +229,6 @@ describe("Gastos", () => {
 
     await waitFor(() => expect(ultimoBodyPost).not.toBeNull());
     expect(ultimoBodyPost).not.toHaveProperty("cuotas");
-  });
-
-  it("permite seleccionar participantes explícitos cuando se desmarca 'todos'", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
-
-    await screen.findByLabelText("Nuevo gasto");
-    const user = userEvent.setup();
-    await user.click(screen.getByLabelText("Todos los miembros"));
-
-    await waitFor(() => expect(screen.getByLabelText("Participantes")).toBeInTheDocument());
-    expect(screen.getByText("Administrador")).toBeInTheDocument();
   });
 
   it("TC-007 (spec gastos-suscripcion-mensual): con 'Suscripción mensual' elegido, llama a crearSuscripcion, no a registrarGasto", async () => {
@@ -291,7 +266,7 @@ describe("Gastos", () => {
         creado_en: "2026-09-15T00:00:00Z",
       });
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -310,15 +285,14 @@ describe("Gastos", () => {
     crearSuscripcionSpy.mockRestore();
   });
 
-  it("oculta el campo Cuotas y la selección de participantes cuando el tipo es Suscripción mensual", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+  it("oculta el campo Cuotas cuando el tipo es Suscripción mensual", async () => {
+    render(<Gastos casaId={CASA_ID} />);
 
     await screen.findByLabelText("Nuevo gasto");
     const user = userEvent.setup();
     await user.selectOptions(screen.getByLabelText("Tipo de gasto"), "suscripcion");
 
     expect(screen.queryByLabelText("Cuotas (opcional)")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Todos los miembros")).not.toBeInTheDocument();
   });
 
   it("TC-009: con Moneda en USD, el body enviado a registrarGasto incluye moneda: 'USD'", async () => {
@@ -339,7 +313,6 @@ describe("Gastos", () => {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
             moneda: "USD",
           }),
         };
@@ -357,7 +330,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -388,7 +361,6 @@ describe("Gastos", () => {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
             moneda: "ARS",
           }),
         };
@@ -403,7 +375,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -416,14 +388,14 @@ describe("Gastos", () => {
   });
 
   it("el selector Moneda viene preseleccionado en ARS", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
 
     const selector = (await screen.findByLabelText("Moneda")) as HTMLSelectElement;
     expect(selector.value).toBe("ARS");
   });
 
   it("el selector Estado viene preseleccionado en Pagado", async () => {
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
 
     const selector = (await screen.findByLabelText("Estado")) as HTMLSelectElement;
     expect(selector.value).toBe("pagado");
@@ -447,7 +419,6 @@ describe("Gastos", () => {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
             moneda: "ARS",
             estado: "a_pagar",
           }),
@@ -466,7 +437,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -497,7 +468,6 @@ describe("Gastos", () => {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
             moneda: "ARS",
             estado: "pagado",
           }),
@@ -513,7 +483,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
     await screen.findByLabelText("Nuevo gasto");
 
     const user = userEvent.setup();
@@ -548,7 +518,6 @@ describe("Gastos", () => {
             fecha: "2026-01-01",
             pagado_por: ADMIN_ID,
             categoria_id: CATEGORIA_ID,
-            participantes: [],
             moneda: "ARS",
             estado: estadoActual,
           }),
@@ -566,7 +535,6 @@ describe("Gastos", () => {
               fecha: "2026-01-01",
               pagado_por: ADMIN_ID,
               categoria_id: CATEGORIA_ID,
-              participantes: [],
               moneda: "ARS",
               estado: estadoActual,
             },
@@ -577,7 +545,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
 
     await screen.findByText("Compra semanal");
     // El selector "Estado" del formulario tambien renderiza un <option>
@@ -616,7 +584,6 @@ describe("Gastos", () => {
               fecha: "2026-01-01",
               pagado_por: ADMIN_ID,
               categoria_id: CATEGORIA_ID,
-              participantes: [],
               moneda: "ARS",
             },
             {
@@ -627,7 +594,6 @@ describe("Gastos", () => {
               fecha: "2026-01-02",
               pagado_por: ADMIN_ID,
               categoria_id: CATEGORIA_ID,
-              participantes: [],
               moneda: "USD",
             },
           ],
@@ -637,7 +603,7 @@ describe("Gastos", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    render(<Gastos casaId={CASA_ID} />);
 
     expect(await screen.findByText("$100.00")).toBeInTheDocument();
     expect(await screen.findByText("US$20.00")).toBeInTheDocument();

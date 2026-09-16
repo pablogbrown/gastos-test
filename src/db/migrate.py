@@ -26,6 +26,7 @@ _MIGRACIONES = (
     "0012_gasto_tarjeta_id",
     "0013_gasto_estado",
     "0014_prestamos",
+    "0015_eliminar_gasto_participantes",
 )
 
 

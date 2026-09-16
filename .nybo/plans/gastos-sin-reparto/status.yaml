@@ -1,9 +1,16 @@
 feature: gastos-sin-reparto
-status: approved
+status: ready
 profile: code
 action_type: UPD
 created_at: '2026-09-16'
 approved_at: '2026-09-16'
+run_at: '2026-09-16T16:00:00.000Z'
+run_completed_at: '2026-09-16T16:00:00.000Z'
+run_duration: 3600
+verified_at: '2026-09-16T16:31:26.297Z'
+verified_duration: 1886
+curated_at: '2026-09-16T16:35:00.000Z'
+curated_duration: 214
 task_count: 4
 domain: services
 domains_referenced:
@@ -15,6 +22,13 @@ branch: feat/gastos-sin-reparto
 pr_url: https://github.com/pablogbrown/gastos-test/pull/30
 pr_number: 30
 kind: single_spec
+latest_cycle: 1
+latest_evidence_path: .nybo/plans/gastos-sin-reparto/evidence/1/build-results.md
+cycles:
+  - cycle: 1
+    exit: ready
+    verdict: verified
+    summary: T1-T4 implemented via TDD; 267 pytest + 105 vitest green; live smoke confirmed on docker Postgres
 notes: |
   Independiente de prestamos-entre-miembros. Elimina GastoParticipante
   y su historial por decisión explícita del usuario (sin conservar).

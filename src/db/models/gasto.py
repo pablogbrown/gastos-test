@@ -1,7 +1,6 @@
 import uuid
 
 from sqlalchemy import Column, Date, ForeignKey, Integer, Numeric, String
-from sqlalchemy.orm import relationship
 
 from src.db.base import Base
 from src.db.types import GUID
@@ -80,32 +79,5 @@ class Gasto(Base):
     tarjeta_id = Column(GUID(), nullable=True)
     estado = Column(String, nullable=False, default="pagado")
 
-    participantes = relationship(
-        "GastoParticipante", back_populates="gasto", cascade="all, delete-orphan"
-    )
-
     def __repr__(self):  # pragma: no cover - solo para debugging
         return f"<Gasto id={self.id} descripcion={self.descripcion!r} importe={self.importe}>"
-
-
-class GastoParticipante(Base):
-    """La porción de un Gasto que le corresponde a un Miembro (REQ-004).
-
-    Clave compuesta (gasto_id, miembro_id): un miembro participa a lo
-    sumo una vez en cada gasto. Se fija en el momento del registro del
-    gasto y nunca se recalcula retroactivamente (REQ-007).
-    """
-
-    __tablename__ = "gasto_participantes"
-
-    gasto_id = Column(GUID(), ForeignKey("gastos.id"), primary_key=True)
-    miembro_id = Column(GUID(), ForeignKey("miembros.id"), primary_key=True)
-    monto_correspondiente = Column(Numeric(12, 2), nullable=False)
-
-    gasto = relationship("Gasto", back_populates="participantes")
-
-    def __repr__(self):  # pragma: no cover - solo para debugging
-        return (
-            f"<GastoParticipante gasto_id={self.gasto_id} miembro_id={self.miembro_id} "
-            f"monto_correspondiente={self.monto_correspondiente}>"
-        )

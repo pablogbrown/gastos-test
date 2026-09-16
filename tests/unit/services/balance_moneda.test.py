@@ -1,5 +1,6 @@
-"""T2 (spec `gastos-multi-moneda`) — `calcular_balance` agrupa por
-(miembro, moneda); `sugerir_transferencias` nunca cruza monedas.
+"""T2 (spec `gastos-multi-moneda`/`gastos-sin-reparto`) —
+`calcular_balance` separa `totales`/`aportes` por moneda, nunca sumados
+ni convertidos entre sí.
 
 Cubre TC-003, TC-004 y TC-005.
 """
@@ -14,7 +15,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.db.models.usuario import Usuario
-from src.services.balance_service import calcular_balance, sugerir_transferencias
+from src.services.balance_service import calcular_balance
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.gasto_service import registrar_gasto
@@ -69,7 +70,7 @@ def _armar_casa_con_dos_miembros(db_session):
     return casa, pablo_id, ana.id, categoria
 
 
-def test_tc003_balance_separado_por_moneda_con_actividad_en_ambas(db_session):
+def test_tc003_totales_separados_por_moneda_con_actividad_en_ambas(db_session):
     casa, pablo_id, ana_id, categoria = _armar_casa_con_dos_miembros(db_session)
 
     registrar_gasto(
@@ -80,7 +81,6 @@ def test_tc003_balance_separado_por_moneda_con_actividad_en_ambas(db_session):
         categoria.id,
         pablo_id,
         pablo_id,
-        participantes=[pablo_id, ana_id],
     )
     registrar_gasto(
         casa.id,
@@ -90,28 +90,53 @@ def test_tc003_balance_separado_por_moneda_con_actividad_en_ambas(db_session):
         categoria.id,
         pablo_id,
         pablo_id,
-        participantes=[pablo_id, ana_id],
         moneda="USD",
     )
 
     balance = calcular_balance(casa.id, mes="2026-01")
-    filas_ars = [b for b in balance if b.moneda == "ARS"]
-    filas_usd = [b for b in balance if b.moneda == "USD"]
+    totales_por_moneda = {t.moneda: t.total_gastos for t in balance.totales}
 
-    # ARS: comportamiento actual sin cambios — una fila por cada miembro.
-    assert {b.miembro_id for b in filas_ars} == {pablo_id, ana_id}
-    pablo_ars = next(b for b in filas_ars if b.miembro_id == pablo_id)
-    assert pablo_ars.pago == Decimal("50000.00")
-    assert pablo_ars.correspondia == Decimal("25000.00")
+    assert totales_por_moneda["ARS"] == Decimal("50000.00")
+    assert totales_por_moneda["USD"] == Decimal("20.00")
+    # Ninguna fila de una moneda contamina el total de la otra.
+    assert totales_por_moneda["ARS"] != totales_por_moneda["USD"]
+
+
+def test_tc004_aportes_separados_por_moneda_con_actividad_en_ambas(db_session):
+    casa, pablo_id, ana_id, categoria = _armar_casa_con_dos_miembros(db_session)
+
+    registrar_gasto(
+        casa.id,
+        "Super en pesos",
+        Decimal("50000.00"),
+        date(2026, 1, 1),
+        categoria.id,
+        pablo_id,
+        pablo_id,
+    )
+    registrar_gasto(
+        casa.id,
+        "Compra en dólares",
+        Decimal("20.00"),
+        date(2026, 1, 2),
+        categoria.id,
+        ana_id,
+        ana_id,
+        moneda="USD",
+    )
+
+    balance = calcular_balance(casa.id, mes="2026-01")
+    aportes_ars = {a.miembro_id: a for a in balance.aportes if a.moneda == "ARS"}
+    aportes_usd = {a.miembro_id: a for a in balance.aportes if a.moneda == "USD"}
+
+    # ARS: comportamiento actual sin cambios — una fila por cada miembro,
+    # incluso en 0.
+    assert aportes_ars[pablo_id].total == Decimal("50000.00")
+    assert aportes_ars[ana_id].total == Decimal("0")
 
     # USD: solo actividad real, nunca mezclada con las filas ARS.
-    assert {b.miembro_id for b in filas_usd} == {pablo_id, ana_id}
-    pablo_usd = next(b for b in filas_usd if b.miembro_id == pablo_id)
-    assert pablo_usd.pago == Decimal("20.00")
-    assert pablo_usd.correspondia == Decimal("10.00")
-
-    # Ninguna fila de una moneda contamina el total de la otra.
-    assert pablo_ars.pago != pablo_usd.pago
+    assert set(aportes_usd) == {ana_id}
+    assert aportes_usd[ana_id].total == Decimal("20.00")
 
 
 def test_tc004_sin_actividad_en_usd_no_hay_ninguna_fila_usd(db_session):
@@ -125,65 +150,23 @@ def test_tc004_sin_actividad_en_usd_no_hay_ninguna_fila_usd(db_session):
         categoria.id,
         pablo_id,
         pablo_id,
-        participantes=[pablo_id, ana_id],
     )
 
     balance = calcular_balance(casa.id, mes="2026-01")
 
-    assert all(b.moneda == "ARS" for b in balance)
+    assert all(t.moneda == "ARS" for t in balance.totales)
+    assert all(a.moneda == "ARS" for a in balance.aportes)
     # ARS sigue mostrando a todos los miembros, incluso en 0 (control,
     # comportamiento preexistente sin cambios).
-    assert {b.miembro_id for b in balance} == {pablo_id, ana_id}
+    assert {a.miembro_id for a in balance.aportes} == {pablo_id, ana_id}
 
 
-def test_tc005_transferencias_sugeridas_nunca_cruzan_moneda(db_session):
-    casa, pablo_id, ana_id, categoria = _armar_casa_con_dos_miembros(db_session)
-
-    # Pablo paga todo en ARS (Ana le debe en ARS); Ana paga todo en USD
-    # (Pablo le debe en USD) — si el algoritmo cruzara monedas, emparejaría
-    # a Pablo (acreedor ARS) con... nada compatible, o peor, generaría una
-    # transferencia mezclando ambas.
-    registrar_gasto(
-        casa.id,
-        "Super en pesos",
-        Decimal("40000.00"),
-        date(2026, 1, 1),
-        categoria.id,
-        pablo_id,
-        pablo_id,
-        participantes=[pablo_id, ana_id],
-    )
-    registrar_gasto(
-        casa.id,
-        "Compra en dólares",
-        Decimal("40.00"),
-        date(2026, 1, 2),
-        categoria.id,
-        ana_id,
-        ana_id,
-        participantes=[pablo_id, ana_id],
-        moneda="USD",
-    )
-
-    balance = calcular_balance(casa.id, mes="2026-01")
-    transferencias = sugerir_transferencias(balance)
-
-    assert len(transferencias) == 2
-    monedas = {t.moneda for t in transferencias}
-    assert monedas == {"ARS", "USD"}
-
-    transferencia_ars = next(t for t in transferencias if t.moneda == "ARS")
-    assert transferencia_ars.deudor_id == ana_id
-    assert transferencia_ars.acreedor_id == pablo_id
-    assert transferencia_ars.monto == Decimal("20000.00")
-
-    transferencia_usd = next(t for t in transferencias if t.moneda == "USD")
-    assert transferencia_usd.deudor_id == pablo_id
-    assert transferencia_usd.acreedor_id == ana_id
-    assert transferencia_usd.monto == Decimal("20.00")
-
-
-def test_sugerir_transferencias_sin_actividad_no_genera_movimientos(db_session):
+def test_tc005_balance_sin_actividad_no_expone_ninguna_transferencia(db_session):
+    """Control (spec `gastos-sin-reparto`): sin reparto no hay ninguna
+    deuda que sugerir saldar — `BalanceCasa` no expone ningún campo de
+    transferencia, con o sin actividad."""
     casa, _pablo_id, _ana_id, _categoria = _armar_casa_con_dos_miembros(db_session)
     balance = calcular_balance(casa.id, mes="2026-01")
-    assert sugerir_transferencias(balance) == []
+
+    assert not hasattr(balance, "transferencias")
+    assert set(balance.__dataclass_fields__.keys()) == {"totales", "aportes"}

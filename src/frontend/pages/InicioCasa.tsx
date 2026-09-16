@@ -63,12 +63,14 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
     return miembros.find((m) => m.id === miembroId)?.nombre ?? miembroId;
   }
 
-  // Spec `gastos-multi-moneda`: el mini-balance del dashboard filtra a
-  // solo filas en pesos — vista rápida, no reemplaza a la pantalla
-  // Balance completa (que sí muestra las secciones separadas por
-  // moneda). Una fila sin `moneda` explícita se trata como "ARS" —
-  // mismo default que el backend.
-  const balanceArs = dashboard.balance.filter((entrada) => (entrada.moneda ?? "ARS") === "ARS");
+  // Spec `gastos-sin-reparto`: el mini-balance del dashboard muestra el
+  // total gastado de la casa en ARS — mismo criterio de "solo ARS en el
+  // mini-resumen" ya usado (`gastos-multi-moneda`), ahora aplicado al
+  // nuevo contrato `{totales, aportes}` en vez de a la lista de balance
+  // por miembro con su cifra de deuda. Vista rápida, no reemplaza a la
+  // pantalla Balance completa (que sí muestra las secciones separadas
+  // por moneda).
+  const totalArs = dashboard.balance.totales.find((fila) => fila.moneda === "ARS");
 
   /** Spec `tarjetas-credito`, REQ-004: texto del banner de alerta — "vence
    * el {fecha} — quedan {dias} días" para una tarjeta próxima a vencer,
@@ -151,16 +153,10 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
           <Typography variant="h6" component="h3" gutterBottom>
             Balance
           </Typography>
-          {balanceArs.length === 0 ? (
+          {!totalArs || Number(totalArs.total_gastos) === 0 ? (
             <Typography color="text.secondary">Todavía no hay balance para mostrar.</Typography>
           ) : (
-            <List dense>
-              {balanceArs.map((entrada) => (
-                <ListItem key={entrada.miembro_id} disableGutters>
-                  <ListItemText primary={`${entrada.nombre}: ${entrada.balance}`} />
-                </ListItem>
-              ))}
-            </List>
+            <Typography>Total gastado: ${totalArs.total_gastos}</Typography>
           )}
         </CardContent>
       </Card>

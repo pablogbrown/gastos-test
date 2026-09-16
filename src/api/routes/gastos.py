@@ -12,12 +12,16 @@ de `src/api/schemas.py`) porque el scope de esta spec, fijado por
 
 Nota de diseño (pagado_por): el contrato HTTP documentado en
 `00-overview.md` no incluye un campo `pagadoPor` explícito en el body de
-`POST .../gastos` — solo `descripcion, importe, fecha, categoriaId,
-participantes?`. Se interpreta que, por defecto, quien registra el gasto
-(`actor`, resuelto del JWT — spec `usuarios-auth`) es también quien lo
-pagó; `pagado_por` queda como campo opcional para permitir que un
-Administrador registre un gasto en nombre de otro miembro sin romper el
-contrato documentado.
+`POST .../gastos` — solo `descripcion, importe, fecha, categoriaId`. Se
+interpreta que, por defecto, quien registra el gasto (`actor`, resuelto
+del JWT — spec `usuarios-auth`) es también quien lo pagó; `pagado_por`
+queda como campo opcional para permitir que un Administrador registre un
+gasto en nombre de otro miembro sin romper el contrato documentado.
+
+Spec `gastos-sin-reparto`: un gasto ya no se reparte entre
+participantes — `GastoCreate` ya no acepta `participantes` en absoluto
+(un payload que lo incluya simplemente lo ignora, vía Pydantic's
+`extra="ignore"` por default, nunca genera ningún reparto).
 
 Nota de diseño (spec `usuarios-auth`): el `actor` ya no llega vía el
 header placeholder `X-Usuario-Id` — se resuelve desde un JWT real vía
@@ -31,10 +35,10 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from src.api.dependencies import resolver_actor_en_casa
-from src.services.balance_service import calcular_balance, sugerir_transferencias
+from src.services.balance_service import calcular_balance
 from src.services.categoria_service import crear_categoria, listar_categorias
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 from src.services.gasto_service import actualizar_estado_gasto, listar_gastos, registrar_gasto
@@ -65,7 +69,6 @@ class GastoCreate(BaseModel):
     # validación de Pydantic.
     categoria_id: Optional[UUID] = None
     pagado_por: Optional[UUID] = None
-    participantes: Optional[List[UUID]] = None
     # Spec `gastos-en-cuotas`: idem — Optional a nivel de esquema para
     # que un valor inválido (0/negativo) llegue al servicio y sea
     # rechazado con 400 vía `ValidationError` (TC-005), no un 422.
@@ -82,14 +85,6 @@ class GastoCreate(BaseModel):
     estado: Optional[str] = None
 
 
-class ParticipanteOut(BaseModel):
-    miembro_id: UUID
-    monto_correspondiente: Decimal
-
-    class Config:
-        orm_mode = True
-
-
 class GastoOut(BaseModel):
     id: UUID
     casa_id: UUID
@@ -98,7 +93,6 @@ class GastoOut(BaseModel):
     fecha: date
     pagado_por: UUID
     categoria_id: UUID
-    participantes: List[ParticipanteOut] = Field(default_factory=list)
     # Spec `gastos-en-cuotas`: `None` para un gasto sin cuotas — aditivo.
     cuota_grupo_id: Optional[UUID] = None
     cuota_numero: Optional[int] = None
@@ -119,26 +113,25 @@ class GastoOut(BaseModel):
         orm_mode = True
 
 
-class BalancePorMiembroOut(BaseModel):
-    miembro_id: UUID
-    nombre: str
-    pago: Decimal
-    correspondia: Decimal
-    balance: Decimal
-    # Spec `gastos-multi-moneda`, REQ-002: la moneda de esta fila —
-    # `calcular_balance` ahora agrupa por (miembro, moneda).
+class TotalCasaOut(BaseModel):
+    """Total gastado por la casa en una moneda, en el mes consultado
+    (spec `gastos-sin-reparto`, REQ-003)."""
+
     moneda: str
+    total_gastos: Decimal
 
     class Config:
         orm_mode = True
 
 
-class TransferenciaOut(BaseModel):
-    deudor_id: UUID
-    acreedor_id: UUID
-    monto: Decimal
-    # Spec `gastos-multi-moneda`, REQ-003: la moneda del grupo dentro del
-    # que se sugirió esta transferencia — nunca mezclada entre monedas.
+class AporteOut(BaseModel):
+    """Cuánto pagó un miembro en una moneda, en el mes consultado —
+    puramente informativo, nunca una deuda (spec `gastos-sin-reparto`,
+    REQ-004)."""
+
+    miembro_id: UUID
+    nombre: str
+    total: Decimal
     moneda: str
 
     class Config:
@@ -146,8 +139,12 @@ class TransferenciaOut(BaseModel):
 
 
 class BalanceResponse(BaseModel):
-    balances: List[BalancePorMiembroOut]
-    transferencias: List[TransferenciaOut]
+    """Spec `gastos-sin-reparto`: reemplaza la forma anterior
+    (`balances`/`transferencias`) — sin ningún campo de deuda ni
+    transferencia sugerida."""
+
+    totales: List[TotalCasaOut]
+    aportes: List[AporteOut]
 
 
 class GastoEstadoUpdate(BaseModel):
@@ -191,7 +188,6 @@ def registrar_gasto_endpoint(
             payload.categoria_id,
             payload.pagado_por or actor,
             actor,
-            participantes=payload.participantes,
             cuotas=payload.cuotas,
             moneda=payload.moneda or "ARS",
             estado=payload.estado or "pagado",
@@ -238,10 +234,9 @@ def obtener_balance_endpoint(
     casa_id: UUID, mes: Optional[str] = None, actor: UUID = Depends(resolver_actor_en_casa)
 ):
     try:
-        balances = calcular_balance(casa_id, mes)
+        balance = calcular_balance(casa_id, mes)
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    transferencias = sugerir_transferencias(balances)
-    return BalanceResponse(balances=balances, transferencias=transferencias)
+    return BalanceResponse(totales=balance.totales, aportes=balance.aportes)

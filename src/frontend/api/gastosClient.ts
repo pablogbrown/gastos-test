@@ -16,11 +16,6 @@ export interface Categoria {
   nombre: string;
 }
 
-export interface ParticipanteGasto {
-  miembro_id: string;
-  monto_correspondiente: string;
-}
-
 export interface Gasto {
   id: string;
   casa_id: string;
@@ -29,7 +24,6 @@ export interface Gasto {
   fecha: string;
   pagado_por: string;
   categoria_id: string;
-  participantes: ParticipanteGasto[];
   cuota_grupo_id?: string | null;
   cuota_numero?: number | null;
   cuota_total?: number | null;
@@ -39,28 +33,26 @@ export interface Gasto {
   estado: string;
 }
 
-export interface BalancePorMiembro {
-  miembro_id: string;
-  nombre: string;
-  pago: string;
-  correspondia: string;
-  balance: string;
-  // Spec `gastos-multi-moneda`, REQ-002: la moneda de esta fila.
+/** Spec `gastos-sin-reparto`, REQ-003: total gastado por la casa en una
+ * moneda, en el mes consultado. */
+export interface TotalCasa {
   moneda: string;
+  total_gastos: string;
 }
 
-export interface Transferencia {
-  deudor_id: string;
-  acreedor_id: string;
-  monto: string;
-  // Spec `gastos-multi-moneda`, REQ-003: la moneda del grupo dentro del
-  // que se sugirió esta transferencia.
+/** Spec `gastos-sin-reparto`, REQ-004: cuánto pagó un miembro en una
+ * moneda, en el mes consultado — puramente informativo, nunca una
+ * deuda. Reemplaza a `BalancePorMiembro`. */
+export interface AporteMiembro {
+  miembro_id: string;
+  nombre: string;
+  total: string;
   moneda: string;
 }
 
 export interface BalanceResponse {
-  balances: BalancePorMiembro[];
-  transferencias: Transferencia[];
+  totales: TotalCasa[];
+  aportes: AporteMiembro[];
 }
 
 export interface NuevoGasto {
@@ -69,7 +61,6 @@ export interface NuevoGasto {
   fecha: string;
   categoriaId: string;
   pagadoPor?: string;
-  participantes?: string[];
   cuotas?: number;
   // Spec `gastos-multi-moneda`: ausente -> "ARS" (default) en el
   // backend — nunca se fuerza "ARS" explícito en el body.
@@ -121,7 +112,6 @@ export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise
       fecha: gasto.fecha,
       categoria_id: gasto.categoriaId,
       pagado_por: gasto.pagadoPor,
-      participantes: gasto.participantes,
       cuotas: gasto.cuotas,
       moneda: gasto.moneda,
       estado: gasto.estado,

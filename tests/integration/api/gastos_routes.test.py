@@ -177,12 +177,42 @@ def test_registrar_gasto_y_consultar_balance_end_to_end(client):
     assert resp.status_code == 201, resp.text
     gasto = resp.json()
     assert gasto["pagado_por"] == admin_id
-    assert len(gasto["participantes"]) == 1
+    assert "participantes" not in gasto
 
     balance_resp = client.get(f"/casas/{casa['id']}/balance", headers=_bearer(usuario_id))
     assert balance_resp.status_code == 200
     balance = balance_resp.json()
-    assert balance["balances"][0]["miembro_id"] == admin_id
+    assert balance["aportes"][0]["miembro_id"] == admin_id
+    assert "balances" not in balance
+    assert "transferencias" not in balance
+
+
+def test_registrar_gasto_con_participantes_en_el_body_los_ignora(client):
+    """TC-001 (spec `gastos-sin-reparto`): un payload que todavía manda
+    `participantes` (un cliente viejo, o un test desactualizado) nunca
+    genera ningún reparto — el campo simplemente se ignora."""
+    casa, usuario_id, admin_id = _crear_casa(client)
+    categoria = _crear_categoria(client, casa["id"], usuario_id)
+
+    resp = client.post(
+        f"/casas/{casa['id']}/gastos",
+        json={
+            "descripcion": "Compra semanal",
+            "importe": "100.00",
+            "fecha": "2026-01-01",
+            "categoria_id": categoria["id"],
+            "participantes": [admin_id],
+        },
+        headers=_bearer(usuario_id),
+    )
+    assert resp.status_code == 201, resp.text
+    gasto = resp.json()
+    assert "participantes" not in gasto
+
+    balance_resp = client.get(f"/casas/{casa['id']}/balance", headers=_bearer(usuario_id))
+    assert balance_resp.status_code == 200
+    body = balance_resp.json()
+    assert set(body.keys()) == {"totales", "aportes"}
 
 
 def test_historial_incluye_gastos_de_miembros_desactivados(client):
@@ -254,14 +284,14 @@ def test_balance_con_mes_explicito_filtra_los_gastos(client):
     balance_agosto = client.get(
         f"/casas/{casa['id']}/balance?mes=2026-08", headers=_bearer(usuario_id)
     ).json()
-    por_id_agosto = {b["miembro_id"]: b for b in balance_agosto["balances"]}
-    assert por_id_agosto[admin_id]["pago"] == 100.0
+    por_id_agosto = {a["miembro_id"]: a for a in balance_agosto["aportes"]}
+    assert por_id_agosto[admin_id]["total"] == 100.0
 
     balance_septiembre = client.get(
         f"/casas/{casa['id']}/balance?mes=2026-09", headers=_bearer(usuario_id)
     ).json()
-    por_id_septiembre = {b["miembro_id"]: b for b in balance_septiembre["balances"]}
-    assert por_id_septiembre[admin_id]["pago"] == 0
+    por_id_septiembre = {a["miembro_id"]: a for a in balance_septiembre["aportes"]}
+    assert por_id_septiembre[admin_id]["total"] == 0
 
 
 def test_registrar_gasto_con_cuotas_en_el_body_crea_las_n_filas(client):

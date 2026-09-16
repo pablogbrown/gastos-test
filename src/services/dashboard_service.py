@@ -14,7 +14,7 @@ from src.db.models.gasto import Gasto
 from src.db.models.historial_tarea import HistorialTarea
 from src.db.models.miembro import Miembro
 from src.db.models.tarea import EstadoTareaEnum, Tarea
-from src.services.balance_service import BalancePorMiembro, calcular_balance
+from src.services.balance_service import BalanceCasa, calcular_balance
 from src.services.gasto_service import listar_gastos
 from src.services.miembro_service import listar_miembros
 from src.services.ranking_service import calcular_ranking
@@ -30,7 +30,7 @@ class DashboardCasa:
 
     miembros: List[Miembro] = field(default_factory=list)
     gastos_recientes: List[Gasto] = field(default_factory=list)
-    balance: List[BalancePorMiembro] = field(default_factory=list)
+    balance: BalanceCasa = field(default_factory=lambda: BalanceCasa(totales=[], aportes=[]))
     tareas_pendientes: List[Tarea] = field(default_factory=list)
     tareas_completadas_recientes: List[HistorialTarea] = field(default_factory=list)
     ranking: List[dict] = field(default_factory=list)

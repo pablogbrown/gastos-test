@@ -14,7 +14,7 @@ function dashboardVacio() {
   return {
     miembros: [],
     gastosRecientes: [],
-    balance: [],
+    balance: { totales: [{ moneda: "ARS", total_gastos: "0" }], aportes: [] },
     tareasPendientes: [],
     tareasCompletadasRecientes: [],
     ranking: [],
@@ -36,12 +36,12 @@ function dashboardConDatos() {
         fecha: "2026-01-01",
         pagado_por: ANA_ID,
         categoria_id: "c1",
-        participantes: [],
       },
     ],
-    balance: [
-      { miembro_id: ANA_ID, nombre: "Ana", pago: "10000.00", correspondia: "10000.00", balance: "0.00" },
-    ],
+    balance: {
+      totales: [{ moneda: "ARS", total_gastos: "10000.00" }],
+      aportes: [{ miembro_id: ANA_ID, nombre: "Ana", total: "10000.00", moneda: "ARS" }],
+    },
     tareasPendientes: [
       {
         id: "t1",
@@ -95,6 +95,15 @@ describe("InicioCasa", () => {
     expect(screen.getByText(/Compra semanal/)).toBeInTheDocument();
     expect(screen.getByText(/Sacar la basura/)).toBeInTheDocument();
     expect(screen.getAllByText(/8 pts/).length).toBeGreaterThan(0);
+  });
+
+  it("TC-007: la sección Balance muestra el nuevo total de la casa en ARS, sin ninguna cifra de deuda por miembro", async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardConDatos()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    expect(await screen.findByText("Total gastado: $10000.00")).toBeInTheDocument();
+    expect(screen.queryByText("Ana: 0.00")).not.toBeInTheDocument();
   });
 
   it('"Tareas completadas recientes" muestra el nombre del miembro, no su UUID (TC-003)', async () => {

@@ -92,7 +92,6 @@ def test_tc001_tres_cuotas_con_fechas_consecutivas_mes_a_mes(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=3,
     )
 
@@ -114,7 +113,6 @@ def test_tc002_redondeo_ajustado_en_la_ultima_cuota(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=3,
     )
 
@@ -137,7 +135,6 @@ def test_tc003_las_cuotas_comparten_grupo_y_tienen_numero_total_correctos(db_ses
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=3,
     )
 
@@ -166,7 +163,6 @@ def test_tc004_sin_cuotas_se_comporta_exactamente_igual_que_hoy(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
     )
 
     gastos = listar_gastos(casa.id)
@@ -191,7 +187,6 @@ def test_cuotas_1_se_comporta_igual_que_ausente(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=1,
     )
 
@@ -215,7 +210,6 @@ def test_tc005_cuotas_cero_es_rechazado(db_session):
             categoria.id,
             admin_id,
             admin_id,
-            participantes=[admin_id],
             cuotas=0,
         )
 
@@ -234,7 +228,6 @@ def test_cuotas_negativo_es_rechazado(db_session):
             categoria.id,
             admin_id,
             admin_id,
-            participantes=[admin_id],
             cuotas=-1,
         )
 
@@ -251,7 +244,6 @@ def test_tc006_una_cuota_futura_no_infla_el_balance_del_mes_actual(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=3,
     )
 
@@ -260,12 +252,12 @@ def test_tc006_una_cuota_futura_no_infla_el_balance_del_mes_actual(db_session):
     mes_futuro = f"{fecha_dentro_de_2_meses.year:04d}-{fecha_dentro_de_2_meses.month:02d}"
 
     balance_actual = calcular_balance(casa.id, mes=mes_actual)
-    por_id_actual = {b.miembro_id: b for b in balance_actual}
-    assert por_id_actual[admin_id].pago == Decimal("40000.00")
+    aportes_actual = {a.miembro_id: a for a in balance_actual.aportes}
+    assert aportes_actual[admin_id].total == Decimal("40000.00")
 
     balance_futuro = calcular_balance(casa.id, mes=mes_futuro)
-    por_id_futuro = {b.miembro_id: b for b in balance_futuro}
-    assert por_id_futuro[admin_id].pago == Decimal("40000.00")
+    aportes_futuro = {a.miembro_id: a for a in balance_futuro.aportes}
+    assert aportes_futuro[admin_id].total == Decimal("40000.00")
 
 
 def test_sumar_meses_cruza_el_fin_de_anio():

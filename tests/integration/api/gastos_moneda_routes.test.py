@@ -185,7 +185,9 @@ def test_crear_suscripcion_con_moneda_usd_persiste_y_expone_moneda(client):
     assert listado.json()[0]["moneda"] == "USD"
 
 
-def test_balance_expone_moneda_en_cada_fila_y_en_transferencias(client):
+def test_balance_expone_moneda_en_totales_y_aportes(client):
+    """Spec `gastos-sin-reparto`: `GET .../balance` expone
+    `{totales, aportes}` — nunca `balances`/`transferencias`."""
     casa, usuario_id, admin_id = _crear_casa(client)
     categoria = _crear_categoria(client, casa["id"], usuario_id)
 
@@ -203,7 +205,6 @@ def test_balance_expone_moneda_en_cada_fila_y_en_transferencias(client):
             "importe": "40000.00",
             "fecha": "2026-01-01",
             "categoria_id": categoria["id"],
-            "participantes": [admin_id, ana["id"]],
         },
         headers=_bearer(usuario_id),
     )
@@ -214,7 +215,6 @@ def test_balance_expone_moneda_en_cada_fila_y_en_transferencias(client):
             "importe": "40.00",
             "fecha": "2026-01-02",
             "categoria_id": categoria["id"],
-            "participantes": [admin_id, ana["id"]],
             "moneda": "USD",
             "pagado_por": ana["id"],
         },
@@ -225,8 +225,15 @@ def test_balance_expone_moneda_en_cada_fila_y_en_transferencias(client):
     assert resp.status_code == 200
     body = resp.json()
 
-    monedas_balances = {fila["moneda"] for fila in body["balances"]}
-    assert monedas_balances == {"ARS", "USD"}
+    assert "balances" not in body
+    assert "transferencias" not in body
 
-    monedas_transferencias = {t["moneda"] for t in body["transferencias"]}
-    assert monedas_transferencias == {"ARS", "USD"}
+    monedas_totales = {fila["moneda"] for fila in body["totales"]}
+    assert monedas_totales == {"ARS", "USD"}
+
+    monedas_aportes = {fila["moneda"] for fila in body["aportes"]}
+    assert monedas_aportes == {"ARS", "USD"}
+
+    aporte_usd = next(fila for fila in body["aportes"] if fila["moneda"] == "USD")
+    assert aporte_usd["miembro_id"] == ana["id"]
+    assert aporte_usd["total"] == 40.0

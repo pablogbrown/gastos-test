@@ -35,6 +35,20 @@ services domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-16 | feature: gastos-sin-reparto | confidence: high | verified: 2026-09-16 -->
+- [SERVP-06] When a service's return type changes SHAPE (not
+  additively — e.g. `calcular_balance` going from `List[BalancePorMiembro]`
+  to a `BalanceCasa` dataclass), grep for every consumer of the OLD
+  type name across the whole repo before considering the change
+  complete, not just the files named in the task's own Scope. This
+  spec's own task file for the API/dashboard layer didn't list
+  `src/frontend/api/dashboardClient.ts` — it imported `BalancePorMiembro`
+  from `gastosClient.ts` for its own `DashboardCasa.balance` field, and
+  without updating it the frontend build (`tsc --noEmit`) would have
+  failed. A scope list is a starting point, not the full consumer graph;
+  a shape-changing (not additive) contract change earns a repo-wide grep
+  for the old type/field names before calling the task done.
+
 <!-- added: 2026-09-16 | feature: gastos-estado-pago | confidence: high | verified: 2026-09-16 -->
 - [SERVP-05] A new purely-informational attribute on `Gasto` (e.g.
   `moneda`, `tarjeta_id`, now `estado`) is validated against a

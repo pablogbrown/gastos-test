@@ -9,10 +9,8 @@ const ADMIN_ID = "22222222-2222-2222-2222-222222222222";
 
 function balanceResponse() {
   return {
-    balances: [
-      { miembro_id: ADMIN_ID, nombre: "Administrador", pago: "0", correspondia: "0", balance: "0" },
-    ],
-    transferencias: [],
+    totales: [{ moneda: "ARS", total_gastos: "0" }],
+    aportes: [{ miembro_id: ADMIN_ID, nombre: "Administrador", total: "0", moneda: "ARS" }],
   };
 }
 
@@ -49,7 +47,7 @@ describe("Balance", () => {
     render(<Balance casaId={CASA_ID} />);
 
     const mesActual = new Date().toISOString().slice(0, 7);
-    await screen.findByText("Administrador");
+    await screen.findByText("Administrador — Aportó $0");
 
     const [primeraLlamada] = fetchMock.mock.calls;
     expect(String(primeraLlamada[0])).toContain(`mes=${mesActual}`);
@@ -61,21 +59,21 @@ describe("Balance", () => {
 
     render(<Balance casaId={CASA_ID} />);
     const selector = await screen.findByLabelText("Mes");
-    await screen.findByText("Administrador");
+    await screen.findByText("Administrador — Aportó $0");
 
     const user = userEvent.setup();
     fetchMock.mockClear();
     await user.clear(selector);
     await user.type(selector, "2026-08");
 
-    await screen.findByText("Administrador");
+    await screen.findByText("Administrador — Aportó $0");
     const llamadaConMesElegido = fetchMock.mock.calls.some((call) =>
       String(call[0]).includes("mes=2026-08"),
     );
     expect(llamadaConMesElegido).toBe(true);
   });
 
-  it("TC-010: con actividad en ambas monedas, renderiza dos secciones separadas sin ningún total combinado", async () => {
+  it("muestra el total gastado de la casa y el aporte de cada miembro, sin ninguna cifra de deuda ni transferencia sugerida", async () => {
     const ANA_ID = "33333333-3333-3333-3333-333333333333";
     const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -83,43 +81,15 @@ describe("Balance", () => {
         return {
           ok: true,
           json: async () => ({
-            balances: [
-              {
-                miembro_id: ADMIN_ID,
-                nombre: "Administrador",
-                pago: "40000",
-                correspondia: "20000",
-                balance: "20000",
-                moneda: "ARS",
-              },
-              {
-                miembro_id: ANA_ID,
-                nombre: "Ana",
-                pago: "0",
-                correspondia: "20000",
-                balance: "-20000",
-                moneda: "ARS",
-              },
-              {
-                miembro_id: ADMIN_ID,
-                nombre: "Administrador",
-                pago: "0",
-                correspondia: "20",
-                balance: "-20",
-                moneda: "USD",
-              },
-              {
-                miembro_id: ANA_ID,
-                nombre: "Ana",
-                pago: "40",
-                correspondia: "20",
-                balance: "20",
-                moneda: "USD",
-              },
+            totales: [
+              { moneda: "ARS", total_gastos: "500000" },
+              { moneda: "USD", total_gastos: "60" },
             ],
-            transferencias: [
-              { deudor_id: ANA_ID, acreedor_id: ADMIN_ID, monto: "20000", moneda: "ARS" },
-              { deudor_id: ADMIN_ID, acreedor_id: ANA_ID, monto: "20", moneda: "USD" },
+            aportes: [
+              { miembro_id: ADMIN_ID, nombre: "Administrador", total: "300000", moneda: "ARS" },
+              { miembro_id: ANA_ID, nombre: "Ana", total: "200000", moneda: "ARS" },
+              { miembro_id: ADMIN_ID, nombre: "Administrador", total: "0", moneda: "USD" },
+              { miembro_id: ANA_ID, nombre: "Ana", total: "60", moneda: "USD" },
             ],
           }),
         };
@@ -133,14 +103,18 @@ describe("Balance", () => {
     expect(await screen.findByText("Pesos")).toBeInTheDocument();
     expect(await screen.findByText("Dólares")).toBeInTheDocument();
 
-    // Cada sección tiene su propia tabla — el nombre "Administrador"
-    // aparece una vez por sección (fila propia), nunca en un total
-    // combinado que sume ambas monedas.
-    expect(screen.getAllByText("Administrador")).toHaveLength(2);
-    expect(screen.getAllByText("Ana")).toHaveLength(2);
+    expect(screen.getByText("Total gastado: 500000")).toBeInTheDocument();
+    expect(screen.getByText("Total gastado: 60")).toBeInTheDocument();
 
-    // Ninguna suma/total combinando ambas monedas en pantalla.
-    expect(screen.queryByText(/total/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Administrador — Aportó $300000")).toBeInTheDocument();
+    expect(screen.getByText("Ana — Aportó $200000")).toBeInTheDocument();
+    expect(screen.getByText("Administrador — Aportó $0")).toBeInTheDocument();
+    expect(screen.getByText("Ana — Aportó $60")).toBeInTheDocument();
+
+    // Ninguna cifra de deuda ni transferencia sugerida (spec `gastos-sin-reparto`).
+    expect(screen.queryByText(/le correspond/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/transferencia/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/debe transferir/i)).not.toBeInTheDocument();
   });
 
   it("sin actividad en USD, solo renderiza la sección Pesos", async () => {

@@ -97,7 +97,6 @@ def test_tc001_gasto_sin_estado_persiste_pagado_por_default(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
     )
 
     assert gasto.estado == "pagado"
@@ -116,7 +115,6 @@ def test_tc002_gasto_con_estado_a_pagar_persiste_asi(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         estado="a_pagar",
     )
 
@@ -136,7 +134,6 @@ def test_tc003_las_3_cuotas_heredan_el_mismo_estado_a_pagar(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=3,
         estado="a_pagar",
     )
@@ -187,7 +184,6 @@ def test_tc006_actualizar_estado_gasto_cambia_en_ambos_sentidos(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         estado="a_pagar",
     )
 
@@ -209,7 +205,6 @@ def test_tc007_actualizar_estado_gasto_con_valor_invalido_es_rechazado(db_sessio
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
     )
 
     with pytest.raises(ValidationError):
@@ -228,7 +223,6 @@ def test_estado_invalido_en_registrar_gasto_es_rechazado_con_validation_error(db
             categoria.id,
             admin_id,
             admin_id,
-            participantes=[admin_id],
             estado="otro",
         )
 
@@ -333,7 +327,6 @@ def test_tc008_cambiar_estado_no_afecta_calcular_balance(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id, ana.id],
         estado="pagado",
     )
     gasto_a_pagar = registrar_gasto(
@@ -344,7 +337,6 @@ def test_tc008_cambiar_estado_no_afecta_calcular_balance(db_session):
         categoria.id,
         ana.id,
         admin_id,
-        participantes=[admin_id, ana.id],
         estado="a_pagar",
     )
 
@@ -355,13 +347,13 @@ def test_tc008_cambiar_estado_no_afecta_calcular_balance(db_session):
 
     balance_despues = calcular_balance(casa.id, "2026-01")
 
+    totales_antes = {fila.moneda: fila.total_gastos for fila in balance_antes.totales}
+    totales_despues = {fila.moneda: fila.total_gastos for fila in balance_despues.totales}
+    assert totales_antes == totales_despues
+
     def _clave(fila):
         return (fila.miembro_id, fila.moneda)
 
-    montos_antes = {
-        _clave(fila): (fila.pago, fila.correspondia, fila.balance) for fila in balance_antes
-    }
-    montos_despues = {
-        _clave(fila): (fila.pago, fila.correspondia, fila.balance) for fila in balance_despues
-    }
-    assert montos_antes == montos_despues
+    aportes_antes = {_clave(fila): fila.total for fila in balance_antes.aportes}
+    aportes_despues = {_clave(fila): fila.total for fila in balance_despues.aportes}
+    assert aportes_antes == aportes_despues
