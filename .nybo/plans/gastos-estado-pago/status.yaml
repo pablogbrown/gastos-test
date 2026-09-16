@@ -1,5 +1,6 @@
 feature: gastos-estado-pago
-status: ready
+status: shipped
+shipped_at: '2026-09-16T12:35:00Z'
 profile: code
 action_type: ADD
 created_at: '2026-09-16'
