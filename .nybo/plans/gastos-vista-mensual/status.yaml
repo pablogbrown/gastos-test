@@ -1,5 +1,6 @@
 feature: gastos-vista-mensual
-status: verified
+status: shipped
+shipped_at: '2026-09-16T13:00:00Z'
 profile: code
 action_type: ADD
 created_at: '2026-09-16'
