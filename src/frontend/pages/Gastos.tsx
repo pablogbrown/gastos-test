@@ -2,6 +2,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
+import Chip from "@mui/material/Chip";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
@@ -22,6 +23,7 @@ import { Miembro } from "../api/casasClient";
 import {
   Categoria,
   Gasto,
+  actualizarEstadoGasto,
   crearCategoria,
   esApiError,
   listarCategorias,
@@ -45,6 +47,9 @@ type TipoGasto = "unico" | "cuotas" | "suscripcion";
 /** Spec `gastos-multi-moneda`: moneda de un gasto o suscripción. */
 type Moneda = "ARS" | "USD";
 
+/** Spec `gastos-estado-pago`: estado de pago de un gasto. */
+type Estado = "pagado" | "a_pagar";
+
 /** Pantalla "Gastos" (REQ-001, REQ-002, REQ-003, REQ-008): formulario de
  * alta de un gasto y su historial. "Todos los miembros" viene
  * preseleccionado (REQ-003); el historial no filtra por `activo` — la
@@ -61,6 +66,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
   const [cuotas, setCuotas] = useState("");
   const [tipoGasto, setTipoGasto] = useState<TipoGasto>("unico");
   const [moneda, setMoneda] = useState<Moneda>("ARS");
+  const [estado, setEstado] = useState<Estado>("pagado");
   const [nuevaCategoria, setNuevaCategoria] = useState("");
   const [todosLosMiembros, setTodosLosMiembros] = useState(true);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -103,6 +109,10 @@ export function Gastos({ casaId, miembros }: GastosProps) {
       // body — el backend ya lo asume por default (mismo patrón
       // vacío->undefined que `cuotas`).
       const monedaEnviada = moneda === "ARS" ? undefined : moneda;
+      // Spec `gastos-estado-pago`: mismo criterio que `moneda` -- nunca
+      // se fuerza "pagado" explícito en el body cuando queda en el
+      // default.
+      const estadoEnviado = estado === "pagado" ? undefined : estado;
       if (tipoGasto === "suscripcion") {
         // Spec `gastos-suscripcion-mensual`, TC-007: el modo "Suscripción
         // mensual" llama a `crearSuscripcion`, nunca a `registrarGasto` —
@@ -124,6 +134,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
           participantes: todosLosMiembros ? undefined : seleccionados,
           cuotas: cuotas === "" ? undefined : Number(cuotas),
           moneda: monedaEnviada,
+          estado: estadoEnviado,
         });
       }
       setDescripcion("");
@@ -133,6 +144,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
       setCuotas("");
       setTipoGasto("unico");
       setMoneda("ARS");
+      setEstado("pagado");
       setTodosLosMiembros(true);
       setSeleccionados([]);
       await cargar();
@@ -144,6 +156,19 @@ export function Gastos({ casaId, miembros }: GastosProps) {
             ? "No se pudo crear la suscripción."
             : "No se pudo registrar el gasto."
       );
+    }
+  }
+
+  /** Spec `gastos-estado-pago`, TC-010: alterna el estado del gasto
+   * clickeado al contrario del actual y refresca el listado. */
+  async function handleToggleEstado(gasto: Gasto) {
+    setError(null);
+    try {
+      const nuevoEstado: Estado = gasto.estado === "pagado" ? "a_pagar" : "pagado";
+      await actualizarEstadoGasto(casaId, gasto.id, nuevoEstado);
+      await cargar();
+    } catch (err) {
+      setError(esApiError(err) ? err.detail : "No se pudo actualizar el estado del gasto.");
     }
   }
 
@@ -231,6 +256,22 @@ export function Gastos({ casaId, miembros }: GastosProps) {
               >
                 <option value="ARS">ARS</option>
                 <option value="USD">USD</option>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel htmlFor="estado-gasto" shrink>
+                Estado
+              </InputLabel>
+              <Select
+                native
+                id="estado-gasto"
+                label="Estado"
+                value={estado}
+                onChange={(event) => setEstado(event.target.value as Estado)}
+              >
+                <option value="pagado">Pagado</option>
+                <option value="a_pagar">A pagar</option>
               </Select>
             </FormControl>
 
@@ -354,6 +395,7 @@ export function Gastos({ casaId, miembros }: GastosProps) {
               <TableCell>Descripción</TableCell>
               <TableCell>Importe</TableCell>
               <TableCell>Categoría</TableCell>
+              <TableCell>Estado</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -363,6 +405,14 @@ export function Gastos({ casaId, miembros }: GastosProps) {
                 <TableCell>{gasto.descripcion}</TableCell>
                 <TableCell>{importeConPrefijo(gasto)}</TableCell>
                 <TableCell>{nombreCategoria(gasto.categoria_id)}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={gasto.estado === "pagado" ? "Pagado" : "A pagar"}
+                    color={gasto.estado === "pagado" ? "success" : "warning"}
+                    size="small"
+                    onClick={() => void handleToggleEstado(gasto)}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

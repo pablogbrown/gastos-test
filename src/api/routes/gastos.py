@@ -37,7 +37,7 @@ from src.api.dependencies import resolver_actor_en_casa
 from src.services.balance_service import calcular_balance, sugerir_transferencias
 from src.services.categoria_service import crear_categoria, listar_categorias
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
-from src.services.gasto_service import listar_gastos, registrar_gasto
+from src.services.gasto_service import actualizar_estado_gasto, listar_gastos, registrar_gasto
 
 gastos_router = APIRouter(prefix="/casas", tags=["gastos"])
 
@@ -75,6 +75,11 @@ class GastoCreate(BaseModel):
     # rechazado con 400 vía `ValidationError` (TC-008), no un 422
     # genérico de Pydantic. Ausente -> "ARS" (REQ-001).
     moneda: Optional[str] = None
+    # Spec `gastos-estado-pago`: idem -- Optional a nivel de esquema para
+    # que un valor invalido llegue al servicio y sea rechazado con 400
+    # via `ValidationError` (REQ-007), no un 422 generico de Pydantic.
+    # Ausente -> "pagado" (REQ-001).
+    estado: Optional[str] = None
 
 
 class ParticipanteOut(BaseModel):
@@ -105,6 +110,10 @@ class GastoOut(BaseModel):
     # diferencia de `GastoCreate.moneda`, acá es requerido porque
     # `gasto_service.registrar_gasto` siempre persiste un valor válido.
     moneda: str
+    # Spec `gastos-estado-pago`: siempre presente ("pagado" o "a_pagar")
+    # -- idem `moneda`, `gasto_service.registrar_gasto` siempre persiste
+    # un valor valido.
+    estado: str
 
     class Config:
         orm_mode = True
@@ -139,6 +148,10 @@ class TransferenciaOut(BaseModel):
 class BalanceResponse(BaseModel):
     balances: List[BalancePorMiembroOut]
     transferencias: List[TransferenciaOut]
+
+
+class GastoEstadoUpdate(BaseModel):
+    estado: str
 
 
 @gastos_router.post(
@@ -181,7 +194,25 @@ def registrar_gasto_endpoint(
             participantes=payload.participantes,
             cuotas=payload.cuotas,
             moneda=payload.moneda or "ARS",
+            estado=payload.estado or "pagado",
         )
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@gastos_router.patch("/{casa_id}/gastos/{gasto_id}", response_model=GastoOut)
+def actualizar_estado_gasto_endpoint(
+    casa_id: UUID,
+    gasto_id: UUID,
+    payload: GastoEstadoUpdate,
+    actor: UUID = Depends(resolver_actor_en_casa),
+):
+    try:
+        return actualizar_estado_gasto(casa_id, gasto_id, payload.estado, actor)
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except PermissionDeniedError as exc:

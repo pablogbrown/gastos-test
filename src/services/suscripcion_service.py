@@ -119,6 +119,10 @@ def crear_suscripcion(
         actor,
         suscripcion_id=suscripcion.id,
         moneda=suscripcion.moneda,
+        # Spec `gastos-estado-pago`, REQ-003: un cargo automatico de
+        # suscripcion nunca nace "pagado" -- nadie confirmo todavia que
+        # esta saldado.
+        estado="a_pagar",
     )
 
     session = get_session()
@@ -229,6 +233,9 @@ def registrar_suscripcion_detectada(
         suscripcion_id=suscripcion_id,
         moneda=moneda,
         tarjeta_id=tarjeta_id,
+        # Spec `gastos-estado-pago`, REQ-004: el resumen recien se
+        # importo -- el usuario todavia no pago esa tarjeta.
+        estado="a_pagar",
     )
 
     session = get_session()
@@ -343,6 +350,8 @@ def generar_gastos_pendientes(casa_id: UUID) -> None:
             pagado_por,
             suscripcion_id=suscripcion_id,
             moneda=moneda,
+            # Spec `gastos-estado-pago`, REQ-003: idem `crear_suscripcion`.
+            estado="a_pagar",
         )
 
         session = get_session()

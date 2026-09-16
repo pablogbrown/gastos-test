@@ -35,6 +35,8 @@ export interface Gasto {
   cuota_total?: number | null;
   // Spec `gastos-multi-moneda`: siempre presente ("ARS" o "USD").
   moneda: string;
+  // Spec `gastos-estado-pago`: siempre presente ("pagado" o "a_pagar").
+  estado: string;
 }
 
 export interface BalancePorMiembro {
@@ -72,6 +74,10 @@ export interface NuevoGasto {
   // Spec `gastos-multi-moneda`: ausente -> "ARS" (default) en el
   // backend — nunca se fuerza "ARS" explícito en el body.
   moneda?: "ARS" | "USD";
+  // Spec `gastos-estado-pago`: ausente -> "pagado" (default) en el
+  // backend — nunca se fuerza "pagado" explícito en el body, mismo
+  // criterio que `moneda`.
+  estado?: "pagado" | "a_pagar";
 }
 
 const API_BASE = "/casas";
@@ -118,6 +124,7 @@ export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise
       participantes: gasto.participantes,
       cuotas: gasto.cuotas,
       moneda: gasto.moneda,
+      estado: gasto.estado,
     }),
   });
   return parseJsonOrThrow<Gasto>(resp);
@@ -126,6 +133,19 @@ export async function registrarGasto(casaId: string, gasto: NuevoGasto): Promise
 export async function listarGastos(casaId: string): Promise<Gasto[]> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/gastos`);
   return parseJsonOrThrow<Gasto[]>(resp);
+}
+
+export async function actualizarEstadoGasto(
+  casaId: string,
+  gastoId: string,
+  estado: "pagado" | "a_pagar"
+): Promise<Gasto> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/gastos/${gastoId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ estado }),
+  });
+  return parseJsonOrThrow<Gasto>(resp);
 }
 
 export async function obtenerBalance(casaId: string, mes?: string): Promise<BalanceResponse> {
