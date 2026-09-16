@@ -48,18 +48,25 @@ services domain
   attribute a generator marks differently from the manual-entry
   default", not a coincidence.
 
-<!-- added: 2026-09-15 | feature: gastos-en-cuotas | confidence: medium | verified: 2026-09-15 -->
+<!-- added: 2026-09-15 | feature: gastos-en-cuotas | confidence: high | verified: 2026-09-16 -->
 - [SERVP-02] Month arithmetic (adding N calendar months to a `date`,
   clamping the day when the target month is shorter — e.g. 31 ene + 1 mes
-  -> 28/29 feb) is done with stdlib only (`date.year`/`date.month` plus
+  -> 28/29 feb; or resolving a `YYYY-MM` string to its first/last day) is
+  done with stdlib only (`date.year`/`date.month` plus
   `calendar.monthrange` for the day bound), never `python-dateutil` —
   not a declared project dependency. `balance_service._rango_mes` already
   used this technique for "first/last day of a month"; `gasto_service.
-  _sumar_meses` (spec `gastos-en-cuotas`) is the second independent case,
-  confirming it as the project's actual convention for this kind of date
-  math rather than a one-off. Reach for the same stdlib approach before
-  reaching for a new dependency the next time month/date arithmetic comes
-  up.
+  _sumar_meses` (spec `gastos-en-cuotas`) was the second independent
+  case. Spec `gastos-vista-mensual` adds a THIRD: `gasto_service.
+  _rango_mes` — a deliberate near-duplicate of `balance_service.
+  _rango_mes` (same stdlib logic, `mes` required instead of
+  defaulting to "current month" — see that spec's Design Rationale) —
+  confirming both the stdlib-only approach AND "duplicate this small
+  helper per-service rather than share it across `gasto_service`/
+  `balance_service`" as settled conventions, not one-offs. Reach for the
+  same stdlib approach (and the same per-service duplication) before
+  reaching for a new dependency or a shared helper module the next time
+  month/date arithmetic comes up.
 
 <!-- added: 2026-09-15 | feature: invitar-miembro-pendiente | confidence: high | verified: 2026-09-15 -->
 - [SERVP-01] A function meant to be called FROM another service, as part of

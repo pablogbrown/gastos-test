@@ -29,7 +29,7 @@ function mockFetch() {
         json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
       };
     }
-    if (url.endsWith("/gastos")) {
+    if (url.split("?")[0].endsWith("/gastos")) {
       return {
         ok: true,
         json: async () => [
@@ -66,6 +66,49 @@ describe("Gastos", () => {
     expect(screen.getByRole("option", { name: "Supermercado" })).toBeInTheDocument();
   });
 
+  it("TC-005: el selector de mes viene preseleccionado en el mes actual", async () => {
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    const mesActual = new Date().toISOString().slice(0, 7);
+    const selector = (await screen.findByLabelText("Mes")) as HTMLInputElement;
+    expect(selector.value).toBe(mesActual);
+  });
+
+  it("TC-004: pide listarGastos con el mes preseleccionado al cargar", async () => {
+    const fetchMock = mockFetch();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    await screen.findByText("Compra semanal");
+
+    const mesActual = new Date().toISOString().slice(0, 7);
+    const llamadaConMesActual = fetchMock.mock.calls.some((call) =>
+      String(call[0]).includes(`/gastos?mes=${mesActual}`),
+    );
+    expect(llamadaConMesActual).toBe(true);
+  });
+
+  it("TC-004: cambiar el selector de mes vuelve a pedir el listado con el mes elegido", async () => {
+    const fetchMock = mockFetch();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
+    const selector = await screen.findByLabelText("Mes");
+    await screen.findByText("Compra semanal");
+
+    const user = userEvent.setup();
+    fetchMock.mockClear();
+    await user.clear(selector);
+    await user.type(selector, "2026-08");
+
+    await waitFor(() => {
+      const llamadaConMesElegido = fetchMock.mock.calls.some((call) =>
+        String(call[0]).includes("/gastos?mes=2026-08"),
+      );
+      expect(llamadaConMesElegido).toBe(true);
+    });
+  });
+
   it("preselecciona 'todos los miembros' y oculta la lista de participantes", async () => {
     render(<Gastos casaId={CASA_ID} miembros={MIEMBROS} />);
 
@@ -89,7 +132,7 @@ describe("Gastos", () => {
       if (url.endsWith("/categorias")) {
         return { ok: true, json: async () => [] };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -138,7 +181,7 @@ describe("Gastos", () => {
           json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
         };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -183,7 +226,7 @@ describe("Gastos", () => {
       if (url.endsWith("/categorias")) {
         return { ok: true, json: async () => [] };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -227,7 +270,7 @@ describe("Gastos", () => {
           json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
         };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -307,7 +350,7 @@ describe("Gastos", () => {
           json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
         };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -353,7 +396,7 @@ describe("Gastos", () => {
       if (url.endsWith("/categorias")) {
         return { ok: true, json: async () => [] };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -416,7 +459,7 @@ describe("Gastos", () => {
           json: async () => [{ id: CATEGORIA_ID, casa_id: CASA_ID, nombre: "Supermercado" }],
         };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -463,7 +506,7 @@ describe("Gastos", () => {
       if (url.endsWith("/categorias")) {
         return { ok: true, json: async () => [] };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return { ok: true, json: async () => [] };
       }
       return { ok: true, json: async () => ({}) };
@@ -511,7 +554,7 @@ describe("Gastos", () => {
           }),
         };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return {
           ok: true,
           json: async () => [
@@ -561,7 +604,7 @@ describe("Gastos", () => {
       if (url.endsWith("/categorias")) {
         return { ok: true, json: async () => [] };
       }
-      if (url.endsWith("/gastos")) {
+      if (url.split("?")[0].endsWith("/gastos")) {
         return {
           ok: true,
           json: async () => [

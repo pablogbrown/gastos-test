@@ -65,3 +65,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - feat(nav-agrupada): el menú superior (desktop) agrupa las 9 pantallas en 4 elementos de primer nivel — Inicio, Casa (Miembros/Ranking/Actividad), Gastos (Gastos/Balance/Tarjetas/Suscripciones) y Tareas — con menús desplegables para Casa/Gastos; la barra inferior en mobile no cambia.
+- feat(gastos-vista-mensual): la pantalla Gastos ahora muestra un selector de mes (mismo componente que Balance, mes actual preseleccionado) que filtra el listado — en vez de una única lista con todo el historial mezclado; el dashboard de Inicio no cambia, sigue mostrando los últimos 10 gastos de toda la casa.

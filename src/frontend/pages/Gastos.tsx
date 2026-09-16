@@ -71,19 +71,22 @@ export function Gastos({ casaId, miembros }: GastosProps) {
   const [todosLosMiembros, setTodosLosMiembros] = useState(true);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Spec `gastos-vista-mensual` (REQ-002): mes preseleccionado = mes
+  // actual, mismo componente y criterio que el selector de `Balance.tsx`.
+  const [mes, setMes] = useState<string>(() => new Date().toISOString().slice(0, 7));
 
   const cargar = useCallback(async () => {
     try {
       const [listaCategorias, historial] = await Promise.all([
         listarCategorias(casaId),
-        listarGastos(casaId),
+        listarGastos(casaId, mes),
       ]);
       setCategorias(listaCategorias);
       setGastos(historial);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar los gastos.");
     }
-  }, [casaId]);
+  }, [casaId, mes]);
 
   useEffect(() => {
     void cargar();
@@ -192,9 +195,21 @@ export function Gastos({ casaId, miembros }: GastosProps) {
 
   return (
     <Box component="section" aria-label="Gastos" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h5" component="h2">
-        Gastos
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+        <Typography variant="h5" component="h2">
+          Gastos
+        </Typography>
+
+        <TextField
+          id="mes-gastos"
+          label="Mes"
+          type="month"
+          value={mes}
+          onChange={(event) => setMes(event.target.value)}
+          size="small"
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </Box>
 
       {error && <Alert severity="error">{error}</Alert>}
 
