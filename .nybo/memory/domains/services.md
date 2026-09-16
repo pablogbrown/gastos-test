@@ -35,6 +35,19 @@ services domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-16 | feature: gastos-estado-pago | confidence: high | verified: 2026-09-16 -->
+- [SERVP-05] A new purely-informational attribute on `Gasto` (e.g.
+  `moneda`, `tarjeta_id`, now `estado`) is validated against a
+  module-level constant set (`ESTADOS_VALIDOS`, mirroring
+  `MONEDAS_VALIDAS`) in `gasto_service.py`, and every automatic
+  generator (`suscripcion_service.py`, `resumen_importer_service.py`)
+  passes its own value EXPLICITLY at each `registrar_gasto`/sibling call
+  site — never by changing `registrar_gasto`'s own default. This is the
+  4th confirmation of this exact shape (`moneda`, `tarjeta_id`, `estado`)
+  — treat it as the project's settled convention for "a new Gasto
+  attribute a generator marks differently from the manual-entry
+  default", not a coincidence.
+
 <!-- added: 2026-09-15 | feature: gastos-en-cuotas | confidence: medium | verified: 2026-09-15 -->
 - [SERVP-02] Month arithmetic (adding N calendar months to a `date`,
   clamping the day when the target month is shorter — e.g. 31 ene + 1 mes

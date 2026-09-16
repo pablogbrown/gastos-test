@@ -41,6 +41,20 @@ frontend domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-16 | feature: gastos-estado-pago | confidence: medium | verified: 2026-09-16 -->
+- [FRONP-01] When a screen has BOTH a `<Select native>` control and a
+  clickable display element (e.g. a `Chip`) whose visible labels can
+  overlap (e.g. a form's "Estado" selector has an `<option>A pagar
+  </option>` while the list below renders a `Chip` with the exact same
+  text), a plain `screen.findByText(...)`/`getByText(...)` query is
+  ambiguous — native `<option>` elements are always present in the DOM
+  (per the existing `<Select native>` convention above), so both match.
+  Query the specific element by its ARIA role instead —
+  `screen.getByRole("button", { name: "..." })` for a clickable `Chip`
+  (MUI renders it with `role="button"` when `onClick` is passed) — never
+  assume text alone is unique once a screen has more than one control
+  sharing the same label set.
+
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: medium | verified: 2026-09-11 -->
 - When a form needs a `<select>`-like control that existing tests
   assert against with `getByRole("option", ...)`, use MUI's `Select
