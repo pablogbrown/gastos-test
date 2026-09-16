@@ -96,9 +96,12 @@ def test_armar_dashboard_de_casa_vacia_no_lanza_error(db_session):
     assert dashboard.tareas_pendientes == []
     assert dashboard.tareas_completadas_recientes == []
     assert dashboard.ranking == []
-    # `calcular_balance` incluye a todo miembro aunque no tenga gastos.
-    assert len(dashboard.balance) == 1
-    assert dashboard.balance[0].balance == Decimal("0")
+    # `calcular_balance` incluye a todo miembro aunque no tenga gastos
+    # (spec `gastos-sin-reparto`: `dashboard.balance` es un `BalanceCasa`,
+    # no una lista).
+    assert len(dashboard.balance.aportes) == 1
+    assert dashboard.balance.aportes[0].total == Decimal("0")
+    assert dashboard.balance.totales[0].total_gastos == Decimal("0")
 
 
 def test_armar_dashboard_de_casa_inexistente_lanza_not_found(db_session):

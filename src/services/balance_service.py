@@ -1,10 +1,19 @@
-"""Servicio de Balance: cálculo agregado de pagos vs. montos
-correspondientes (REQ-005) y sugerencia de transferencias (REQ-006).
+"""Servicio de Balance: total gastado por la casa y aporte informativo
+por miembro (spec `gastos-sin-reparto`, REQ-003/REQ-004).
 
 Separado de `gasto_service` a propósito (SRP): el registro de gastos y
 el cálculo agregado de balance cambian por razones distintas — nuevas
-reglas de división de un gasto vs. nuevas formas de presentar el saldo
-de una casa.
+reglas de registro de un gasto vs. nuevas formas de presentar el estado
+de la casa.
+
+Spec `gastos-sin-reparto`: un gasto ya no se reparte entre participantes
+ni genera ninguna deuda individual — `calcular_balance` ya NO depende de
+`GastoParticipante` (eliminado del sistema) ni expone ningún campo de
+deuda o transferencia. `sugerir_transferencias`/`Transferencia`/
+`BalancePorMiembro` se eliminan por completo: sin reparto no hay ninguna
+deuda entre miembros que sugerir saldar (esa noción pasa a vivir,
+conceptualmente, en la spec separada `prestamos-entre-miembros`, un
+registro explícito, no un cálculo derivado).
 """
 import calendar
 from dataclasses import dataclass
@@ -17,33 +26,40 @@ from sqlalchemy import func
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
-from src.db.models.gasto import Gasto, GastoParticipante
+from src.db.models.gasto import Gasto
 from src.db.models.miembro import Miembro
 from src.services.exceptions import NotFoundError, ValidationError
 
 
 @dataclass
-class BalancePorMiembro:
+class TotalCasaPorMoneda:
+    """Total gastado por la casa en una moneda dada, en el mes
+    consultado (REQ-003)."""
+
+    moneda: str
+    total_gastos: Decimal
+
+
+@dataclass
+class AportePorMiembro:
+    """Cuánto pagó un miembro en una moneda dada, en el mes consultado
+    (REQ-004) — puramente informativo, nunca una deuda ni una cifra de
+    "correspondía"."""
+
     miembro_id: UUID
     nombre: str
-    pago: Decimal
-    correspondia: Decimal
-    balance: Decimal
-    # Spec `gastos-multi-moneda`, REQ-002: `calcular_balance` ahora
-    # agrupa por (miembro, moneda) — cada fila lleva su propia moneda,
-    # nunca sumadas ni convertidas entre sí.
+    total: Decimal
     moneda: str = "ARS"
 
 
 @dataclass
-class Transferencia:
-    deudor_id: UUID
-    acreedor_id: UUID
-    monto: Decimal
-    # Spec `gastos-multi-moneda`, REQ-003: la moneda del grupo dentro del
-    # que `sugerir_transferencias` emparejó este deudor con este acreedor
-    # — nunca mezclada entre grupos.
-    moneda: str = "ARS"
+class BalanceCasa:
+    """Resultado de `calcular_balance`: el total de la casa por moneda
+    más el aporte informativo de cada miembro — sin ningún campo de
+    deuda ni transferencia sugerida (REQ-003/REQ-004)."""
+
+    totales: List[TotalCasaPorMoneda]
+    aportes: List[AportePorMiembro]
 
 
 def _rango_mes(mes: Optional[str]) -> Tuple[date, date]:
@@ -64,21 +80,23 @@ def _rango_mes(mes: Optional[str]) -> Tuple[date, date]:
     return date(anio, numero_mes, 1), date(anio, numero_mes, ultimo_dia)
 
 
-def calcular_balance(casa_id: UUID, mes: Optional[str] = None) -> List[BalancePorMiembro]:
-    """Balance por miembro: total pagado menos total correspondiente
-    (REQ-005), filtrado por mes (spec `balance-mensual`, REQ-001/REQ-002)
-    — sin `mes`, usa el mes calendario actual. Incluye a todo miembro de
-    la casa, activo o no — REQ-007/REQ-008 exigen que el historial y sus
-    efectos sobrevivan a la desactivación de un miembro.
+def calcular_balance(casa_id: UUID, mes: Optional[str] = None) -> BalanceCasa:
+    """Balance de la casa: total gastado por moneda (REQ-003) más el
+    aporte informativo de cada miembro (REQ-004), filtrado por mes — sin
+    `mes`, usa el mes calendario actual (spec `balance-mensual`).
 
-    Spec `gastos-multi-moneda` (REQ-002): agrupa por `(miembro, moneda)`
-    en vez de solo por miembro — nunca suma ni convierte entre monedas.
-    Para `"ARS"` se mantiene el comportamiento actual sin cambios: una
-    fila por cada miembro de la casa, incluso en 0 (TC-004, control).
-    Para cualquier otra moneda con actividad ese mes (hoy solo `"USD"`),
-    se emite una fila únicamente para los miembros con pago o
-    correspondencia distinta de cero en esa moneda — nunca una fila en 0
-    para toda la casa (TC-004).
+    Spec `gastos-sin-reparto`: ya NO depende de `GastoParticipante` (T1
+    la eliminó por completo) ni calcula ninguna cifra de deuda —
+    `pagado_por` es la única fuente de `aportes`, puramente informativa
+    (REQ-005). Incluye a todo miembro de la casa, activo o no — mismo
+    criterio ya establecido (el historial sobrevive a la desactivación
+    de un miembro).
+
+    Mismo criterio de separación por moneda ya existente (spec
+    `gastos-multi-moneda`, nunca sumado ni convertido): para `"ARS"` se
+    emite siempre una fila por cada miembro/una fila de total, incluso en
+    0; para cualquier otra moneda (hoy solo `"USD"`), solo si hubo
+    actividad real ese mes.
     """
     desde, hasta = _rango_mes(mes)
 
@@ -88,9 +106,20 @@ def calcular_balance(casa_id: UUID, mes: Optional[str] = None) -> List[BalancePo
             raise NotFoundError(f"La casa {casa_id} no existe.")
 
         miembros = session.query(Miembro).filter(Miembro.casa_id == casa_id).all()
+        nombres_por_id = {miembro.id: miembro.nombre for miembro in miembros}
 
-        pagos = {
-            (miembro_id, moneda): total
+        totales_por_moneda = {
+            moneda: Decimal(total)
+            for moneda, total in (
+                session.query(Gasto.moneda, func.sum(Gasto.importe))
+                .filter(Gasto.casa_id == casa_id)
+                .filter(Gasto.fecha.between(desde, hasta))
+                .group_by(Gasto.moneda)
+                .all()
+            )
+        }
+        aportes_por_clave = {
+            (miembro_id, moneda): Decimal(total)
             for miembro_id, moneda, total in (
                 session.query(Gasto.pagado_por, Gasto.moneda, func.sum(Gasto.importe))
                 .filter(Gasto.casa_id == casa_id)
@@ -99,112 +128,44 @@ def calcular_balance(casa_id: UUID, mes: Optional[str] = None) -> List[BalancePo
                 .all()
             )
         }
-        correspondientes = {
-            (miembro_id, moneda): total
-            for miembro_id, moneda, total in (
-                session.query(
-                    GastoParticipante.miembro_id,
-                    Gasto.moneda,
-                    func.sum(GastoParticipante.monto_correspondiente),
-                )
-                .join(Gasto, Gasto.id == GastoParticipante.gasto_id)
-                .filter(Gasto.casa_id == casa_id)
-                .filter(Gasto.fecha.between(desde, hasta))
-                .group_by(GastoParticipante.miembro_id, Gasto.moneda)
-                .all()
-            )
-        }
 
-        resultado: List[BalancePorMiembro] = []
+        # "ARS": siempre una fila de total (incluso en 0) — mismo
+        # criterio que ya regía para `BalancePorMiembro` antes de esta
+        # spec, ahora aplicado al total de la casa.
+        totales: List[TotalCasaPorMoneda] = [
+            TotalCasaPorMoneda(moneda="ARS", total_gastos=totales_por_moneda.get("ARS") or Decimal(0))
+        ]
+        for moneda in sorted(m for m in totales_por_moneda if m != "ARS"):
+            totales.append(TotalCasaPorMoneda(moneda=moneda, total_gastos=totales_por_moneda[moneda]))
 
-        # "ARS": comportamiento actual sin cambios — una fila por cada
-        # miembro de la casa, incluso en 0.
+        # "ARS": una fila por cada miembro de la casa, incluso en 0
+        # (mismo criterio preexistente). Cualquier otra moneda con
+        # actividad real: una fila solo para los miembros involucrados.
+        aportes: List[AportePorMiembro] = []
         for miembro in miembros:
-            pago = Decimal(pagos.get((miembro.id, "ARS")) or 0)
-            correspondia = Decimal(correspondientes.get((miembro.id, "ARS")) or 0)
-            resultado.append(
-                BalancePorMiembro(
+            aportes.append(
+                AportePorMiembro(
                     miembro_id=miembro.id,
                     nombre=miembro.nombre,
-                    pago=pago,
-                    correspondia=correspondia,
-                    balance=pago - correspondia,
+                    total=aportes_por_clave.get((miembro.id, "ARS")) or Decimal(0),
                     moneda="ARS",
                 )
             )
 
-        # Cualquier otra moneda con actividad real este mes: una fila solo
-        # para los miembros involucrados — nunca una sección vacía.
-        nombres_por_id = {miembro.id: miembro.nombre for miembro in miembros}
         claves_no_ars = sorted(
-            (clave for clave in set(pagos) | set(correspondientes) if clave[1] != "ARS"),
+            (clave for clave in aportes_por_clave if clave[1] != "ARS"),
             key=lambda clave: (clave[1], str(clave[0])),
         )
         for miembro_id, moneda in claves_no_ars:
-            pago = Decimal(pagos.get((miembro_id, moneda)) or 0)
-            correspondia = Decimal(correspondientes.get((miembro_id, moneda)) or 0)
-            resultado.append(
-                BalancePorMiembro(
+            aportes.append(
+                AportePorMiembro(
                     miembro_id=miembro_id,
                     nombre=nombres_por_id.get(miembro_id, str(miembro_id)),
-                    pago=pago,
-                    correspondia=correspondia,
-                    balance=pago - correspondia,
+                    total=aportes_por_clave[(miembro_id, moneda)],
                     moneda=moneda,
                 )
             )
 
-        return resultado
+        return BalanceCasa(totales=totales, aportes=aportes)
     finally:
         session.close()
-
-
-def sugerir_transferencias(balance: List[BalancePorMiembro]) -> List[Transferencia]:
-    """Algoritmo greedy (REQ-006): empareja al mayor deudor con el mayor
-    acreedor hasta saldar todas las cuentas. No optimiza el número
-    mínimo de transferencias — asunción documentada en la spec.
-
-    Spec `gastos-multi-moneda` (REQ-003): `balance` es la lista plana
-    multi-moneda de `calcular_balance` — se agrupa internamente por
-    `moneda` y el algoritmo greedy corre por separado dentro de cada
-    grupo, nunca emparejando un deudor de una moneda con un acreedor de
-    otra. Cada `Transferencia` resultante lleva la `moneda` de su grupo.
-    """
-    grupos: dict = {}
-    for fila in balance:
-        grupos.setdefault(fila.moneda, []).append(fila)
-
-    transferencias: List[Transferencia] = []
-    for moneda in sorted(grupos):
-        transferencias.extend(_sugerir_transferencias_de_una_moneda(grupos[moneda], moneda))
-    return transferencias
-
-
-def _sugerir_transferencias_de_una_moneda(
-    balance: List[BalancePorMiembro], moneda: str
-) -> List[Transferencia]:
-    deudores = sorted((b for b in balance if b.balance < 0), key=lambda b: b.balance)
-    acreedores = sorted((b for b in balance if b.balance > 0), key=lambda b: -b.balance)
-
-    deudas = [[d.miembro_id, -d.balance] for d in deudores]
-    creditos = [[c.miembro_id, c.balance] for c in acreedores]
-
-    transferencias: List[Transferencia] = []
-    i, j = 0, 0
-    while i < len(deudas) and j < len(creditos):
-        deudor_id, monto_deuda = deudas[i]
-        acreedor_id, monto_credito = creditos[j]
-        monto = min(monto_deuda, monto_credito)
-        if monto > 0:
-            transferencias.append(
-                Transferencia(
-                    deudor_id=deudor_id, acreedor_id=acreedor_id, monto=monto, moneda=moneda
-                )
-            )
-        deudas[i][1] -= monto
-        creditos[j][1] -= monto
-        if deudas[i][1] <= 0:
-            i += 1
-        if creditos[j][1] <= 0:
-            j += 1
-    return transferencias

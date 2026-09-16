@@ -31,6 +31,31 @@ db domain
   Postgres-level default exists anywhere" — check which path created the
   column before reasoning about raw-SQL insert safety.
 
+<!-- [DBP-02] added: 2026-09-16 | feature: gastos-sin-reparto | confidence: high | verified: 2026-09-16 -->
+- [DBP-02] Removing a whole related-table concept (a model class the
+  project no longer wants, e.g. `GastoParticipante`) is the mirror image
+  of this project's additive-migration convention (`0006`-`0013`'s
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`): delete the model class
+  entirely (never soft-delete or comment it out), remove it from its
+  original creating migration's `TABLES` list (so a brand-new database
+  never creates it at all), and add ONE new migration whose `upgrade`
+  is a plain `DROP TABLE IF EXISTS <table>` — no dialect check needed
+  (unlike the additive `ALTER ... ADD COLUMN IF NOT EXISTS` migrations,
+  `DROP TABLE IF EXISTS` is already a no-op on SQLite/fresh-Postgres, so
+  there's nothing to special-case). `downgrade` is `pass` with a comment
+  explaining the data loss is deliberate (same shape as every additive
+  migration's own `downgrade` already documents "aditivo, no se
+  remueve"). First (and so far only) subtractive migration in this
+  project — see `0015_eliminar_gasto_participantes.py` (originally
+  planned as `0014`; renumbered on rebase after a sibling spec built in
+  parallel, `prestamos-entre-miembros`, claimed `0014` for its own
+  migration and merged first — same collision its own Judgment log
+  already flagged as an expected risk). Verified live
+  against a real Postgres pre-seeded with the legacy table (CHAR(36) FK
+  columns, matching [DBG-03] — a native `UUID` column against this
+  project's `GUID()` primary keys fails at `CREATE TABLE` time exactly
+  like it does at `ALTER TABLE` time).
+
 ## Gotchas
 <!-- Things that tripped us up -->
 

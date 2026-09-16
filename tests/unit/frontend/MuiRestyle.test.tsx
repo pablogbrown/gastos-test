@@ -29,7 +29,7 @@ function mockFetchGenerico() {
         json: async () => ({
           miembros: [],
           gastosRecientes: [],
-          balance: [],
+          balance: { totales: [], aportes: [] },
           tareasPendientes: [],
           tareasCompletadasRecientes: [],
           ranking: [],
@@ -40,7 +40,8 @@ function mockFetchGenerico() {
     if (url.includes("/balance")) {
       // Spec `balance-mensual`: `obtenerBalance` ahora agrega
       // `?mes=YYYY-MM` a la URL, así que ya no termina en `/balance`.
-      return { ok: true, json: async () => ({ balances: [], transferencias: [] }) };
+      // Spec `gastos-sin-reparto`: nuevo contrato `{totales, aportes}`.
+      return { ok: true, json: async () => ({ totales: [], aportes: [] }) };
     }
     return { ok: true, json: async () => [] };
   });
@@ -99,16 +100,14 @@ describe("TC-003 — las 8 pantallas usan componentes MUI, no HTML nativo sin es
   });
 
   it("Gastos", async () => {
-    const { container, findByLabelText } = render(
-      conTema(<Gastos casaId={CASA_ID} miembros={[]} />)
-    );
+    const { container, findByLabelText } = render(conTema(<Gastos casaId={CASA_ID} />));
     await findByLabelText("Nuevo gasto");
     assertSoloControlesMui(container);
   });
 
   it("Balance", async () => {
     const { container, findByText } = render(conTema(<Balance casaId={CASA_ID} />));
-    await findByText("Transferencias sugeridas");
+    await findByText("Balance");
     assertSoloControlesMui(container);
   });
 

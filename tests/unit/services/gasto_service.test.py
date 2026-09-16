@@ -116,18 +116,27 @@ def test_no_admin_no_puede_crear_categoria(db_session):
         crear_categoria(casa.id, "Otra", ana.id)
 
 
-def test_gasto_sin_participantes_explicitos_se_divide_entre_todos_los_activos(db_session):
+def test_registrar_gasto_no_acepta_participantes_ni_genera_reparto(db_session):
+    """TC-001 (spec `gastos-sin-reparto`): `registrar_gasto` ya no tiene
+    ningún parámetro `participantes` — pasarlo explícitamente falla con
+    un `TypeError`, y el gasto en sí no expone ningún atributo de
+    reparto."""
     casa, admin_id, categoria = _casa_con_categoria(db_session)
     agregar_miembro(
         casa.id, "Ana", "ANA1", _crear_usuario_de_prueba(db_session, "ana@example.com").email, admin_id
     )
-    agregar_miembro(
-        casa.id, "Bruno", "BRU1", _crear_usuario_de_prueba(db_session, "bruno@example.com").email, admin_id
-    )
-    agregar_miembro(
-        casa.id, "Carla", "CAR1", _crear_usuario_de_prueba(db_session, "carla@example.com").email, admin_id
-    )
-    # 4 miembros activos en total (admin + 3).
+
+    with pytest.raises(TypeError):
+        registrar_gasto(
+            casa.id,
+            "Gasto compartido",
+            Decimal("40000.00"),
+            date(2026, 1, 1),
+            categoria.id,
+            admin_id,
+            admin_id,
+            participantes=[admin_id],
+        )
 
     gasto = registrar_gasto(
         casa.id,
@@ -138,63 +147,7 @@ def test_gasto_sin_participantes_explicitos_se_divide_entre_todos_los_activos(db
         admin_id,
         admin_id,
     )
-
-    assert len(gasto.participantes) == 4
-
-
-def test_gasto_con_participantes_explicitos_solo_los_afecta_a_ellos(db_session):
-    casa, admin_id, categoria = _casa_con_categoria(db_session)
-    ana = agregar_miembro(
-        casa.id, "Ana", "ANA1", _crear_usuario_de_prueba(db_session, "ana@example.com").email, admin_id
-    )
-    agregar_miembro(
-        casa.id, "Bruno", "BRU1", _crear_usuario_de_prueba(db_session, "bruno@example.com").email, admin_id
-    )
-    agregar_miembro(
-        casa.id, "Carla", "CAR1", _crear_usuario_de_prueba(db_session, "carla@example.com").email, admin_id
-    )
-
-    gasto = registrar_gasto(
-        casa.id,
-        "Cena",
-        Decimal("30000.00"),
-        date(2026, 1, 1),
-        categoria.id,
-        admin_id,
-        admin_id,
-        participantes=[admin_id, ana.id],
-    )
-
-    ids_participantes = {p.miembro_id for p in gasto.participantes}
-    assert ids_participantes == {admin_id, ana.id}
-
-
-def test_division_de_40000_entre_4_participantes_da_10000_cada_uno(db_session):
-    casa, admin_id, categoria = _casa_con_categoria(db_session)
-    ana = agregar_miembro(
-        casa.id, "Ana", "ANA1", _crear_usuario_de_prueba(db_session, "ana@example.com").email, admin_id
-    )
-    bruno = agregar_miembro(
-        casa.id, "Bruno", "BRU1", _crear_usuario_de_prueba(db_session, "bruno@example.com").email, admin_id
-    )
-    carla = agregar_miembro(
-        casa.id, "Carla", "CAR1", _crear_usuario_de_prueba(db_session, "carla@example.com").email, admin_id
-    )
-
-    gasto = registrar_gasto(
-        casa.id,
-        "Gasto compartido",
-        Decimal("40000.00"),
-        date(2026, 1, 1),
-        categoria.id,
-        admin_id,
-        admin_id,
-        participantes=[admin_id, ana.id, bruno.id, carla.id],
-    )
-
-    for participante in gasto.participantes:
-        assert participante.monto_correspondiente == Decimal("10000.00")
-    assert sum(p.monto_correspondiente for p in gasto.participantes) == gasto.importe
+    assert not hasattr(gasto, "participantes")
 
 
 def test_registrar_gasto_actor_sin_membresia_activa_es_rechazado(db_session):

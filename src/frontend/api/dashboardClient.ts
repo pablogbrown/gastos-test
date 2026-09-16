@@ -9,7 +9,7 @@
 // <jwt>) en vez de `X-Usuario-Id`.
 import { fetchAutenticado } from "./authClient";
 import { ApiError, esApiError, formatErrorDetail, Miembro } from "./casasClient";
-import { BalancePorMiembro, Gasto } from "./gastosClient";
+import { AporteMiembro, Gasto, TotalCasa } from "./gastosClient";
 import { HistorialTarea, RankingEntry, Tarea } from "./tareasClient";
 
 export type { ApiError };
@@ -47,10 +47,18 @@ export interface TarjetaAlerta {
   vencida: boolean;
 }
 
+/** Spec `gastos-sin-reparto`: mismo contrato que `BalanceResponse`
+ * (`gastosClient.ts`) — total de la casa por moneda más el aporte
+ * informativo de cada miembro, sin ningún campo de deuda. */
+export interface BalanceCasa {
+  totales: TotalCasa[];
+  aportes: AporteMiembro[];
+}
+
 export interface DashboardCasa {
   miembros: Miembro[];
   gastosRecientes: Gasto[];
-  balance: BalancePorMiembro[];
+  balance: BalanceCasa;
   tareasPendientes: Tarea[];
   tareasCompletadasRecientes: HistorialTarea[];
   ranking: RankingEntry[];

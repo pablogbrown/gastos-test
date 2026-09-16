@@ -97,17 +97,14 @@ def test_sin_mes_usa_el_mes_actual(db_session):
 
     registrar_gasto(
         casa.id, "Gasto de este mes", Decimal("100.00"), hoy, categoria.id, pablo_id, pablo_id,
-        participantes=[pablo_id],
     )
     registrar_gasto(
         casa.id, "Gasto de mes anterior", Decimal("500.00"), mes_pasado, categoria.id, pablo_id, pablo_id,
-        participantes=[pablo_id],
     )
 
     balance = calcular_balance(casa.id)
-    por_id = {b.miembro_id: b for b in balance}
-    assert por_id[pablo_id].pago == Decimal("100.00")
-    assert por_id[pablo_id].correspondia == Decimal("100.00")
+    por_id = {a.miembro_id: a for a in balance.aportes}
+    assert por_id[pablo_id].total == Decimal("100.00")
 
 
 def test_con_mes_explicito_filtra_correctamente(db_session):
@@ -120,21 +117,18 @@ def test_con_mes_explicito_filtra_correctamente(db_session):
 
     registrar_gasto(
         casa.id, "Gasto de agosto", Decimal("200.00"), date(2026, 8, 15), categoria.id, pablo_id, pablo_id,
-        participantes=[pablo_id],
     )
     registrar_gasto(
         casa.id, "Gasto de septiembre", Decimal("300.00"), date(2026, 9, 1), categoria.id, pablo_id, pablo_id,
-        participantes=[pablo_id],
     )
 
     balance_agosto = calcular_balance(casa.id, mes="2026-08")
-    por_id = {b.miembro_id: b for b in balance_agosto}
-    assert por_id[pablo_id].pago == Decimal("200.00")
-    assert por_id[pablo_id].correspondia == Decimal("200.00")
+    por_id = {a.miembro_id: a for a in balance_agosto.aportes}
+    assert por_id[pablo_id].total == Decimal("200.00")
 
     balance_septiembre = calcular_balance(casa.id, mes="2026-09")
-    por_id_sep = {b.miembro_id: b for b in balance_septiembre}
-    assert por_id_sep[pablo_id].pago == Decimal("300.00")
+    por_id_sep = {a.miembro_id: a for a in balance_septiembre.aportes}
+    assert por_id_sep[pablo_id].total == Decimal("300.00")
 
 
 def test_mes_con_formato_invalido_lanza_validation_error(db_session):
@@ -165,4 +159,5 @@ def test_dashboard_service_no_rompe_con_el_nuevo_default(db_session):
     usuario_id = uuid.uuid4()
     casa = crear_casa("Casa Brown", usuario_id)
     dashboard = armar_dashboard(casa.id)
-    assert all(b.pago == Decimal("0") and b.correspondia == Decimal("0") for b in dashboard.balance)
+    assert all(t.total_gastos == Decimal("0") for t in dashboard.balance.totales)
+    assert all(a.total == Decimal("0") for a in dashboard.balance.aportes)

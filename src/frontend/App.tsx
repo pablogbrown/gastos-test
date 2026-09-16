@@ -116,7 +116,7 @@ export function App() {
         {pantalla === "miembros" && (
           <Miembros casaId={casaActual.id} rolUsuarioActual={rolUsuarioActual} />
         )}
-        {pantalla === "gastos" && <Gastos casaId={casaActual.id} miembros={miembros} />}
+        {pantalla === "gastos" && <Gastos casaId={casaActual.id} />}
         {pantalla === "balance" && <Balance casaId={casaActual.id} />}
         {pantalla === "tareas" && (
           <Tareas

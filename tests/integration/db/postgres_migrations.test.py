@@ -235,6 +235,11 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
             "prestamos",
         } <= tablas
 
+        # T1 (spec `gastos-sin-reparto`, TC-002): `gasto_participantes`
+        # se eliminó por completo — una base creada desde cero por
+        # `run_migrations` nunca la crea en absoluto.
+        assert "gasto_participantes" not in tablas
+
         # El enum de rol se creó como tipo nativo de Postgres, no como texto libre.
         columnas_miembro = {c["name"]: c for c in inspector.get_columns("miembros")}
         assert "rol" in columnas_miembro
@@ -466,4 +471,66 @@ def test_migracion_0006_agrega_miembro_desactivado_a_un_enum_ya_existente(postgr
         with engine.begin() as conn:
             conn.execute(sqlalchemy.text("DROP TABLE IF EXISTS historial_actividad"))
             conn.execute(sqlalchemy.text("DROP TYPE IF EXISTS tipoactividadenum"))
+        engine.dispose()
+
+
+def test_migracion_0015_elimina_gasto_participantes_de_una_base_preexistente(postgres_dsn):
+    """TC-002 (spec `gastos-sin-reparto`): un Postgres con
+    `gasto_participantes` ya creada ANTES de este cambio (el volumen
+    persistente de `docker-compose` de este proyecto, o cualquier
+    deployment real que corrió alguna vez `0002_gastos.py` cuando esa
+    tabla todavía existía) debe quedarse SIN esa tabla después de correr
+    las migraciones — sin recrear el esquema ni tocar `gastos`/`casas`/
+    `miembros`, que ya existen. También confirma que la migración es
+    idempotente (correrla dos veces no lanza).
+
+    Nota de numeración: el plan original de esta spec asumía `0014`
+    (próximo número libre en su propia rama) — la spec hermana
+    `prestamos-entre-miembros`, construida en paralelo, también asumió
+    `0014` para la suya y mergeó a `main` primero. Renumerado a `0015`
+    al rebasear contra `main` (mismo criterio que el propio Judgment de
+    `prestamos-entre-miembros` ya documentaba como riesgo esperado)."""
+    engine = sqlalchemy.create_engine(postgres_dsn)
+    try:
+        # `postgres_dsn` es module-scoped y comparte el Postgres con los
+        # tests anteriores, que ya corrieron `run_migrations` (0015
+        # incluida, así que `gasto_participantes` ya no existe acá) —
+        # se recrea a mano el escenario "tabla vieja todavía presente"
+        # que este test necesita, simulando un deploy anterior a esta
+        # spec.
+        with engine.begin() as conn:
+            # `CHAR(36)`, no `UUID` nativo — `GUID()` (`src/db/types.py`)
+            # siempre materializa como `CHAR(36)` en Postgres (ver
+            # [DBG-03], `.nybo/memory/domains/db.md`), así que la FK
+            # real de `gastos.id`/`miembros.id` es `CHAR(36)`.
+            conn.execute(
+                sqlalchemy.text(
+                    "CREATE TABLE IF NOT EXISTS gasto_participantes ("
+                    "gasto_id CHAR(36) NOT NULL REFERENCES gastos(id), "
+                    "miembro_id CHAR(36) NOT NULL REFERENCES miembros(id), "
+                    "monto_correspondiente NUMERIC(12, 2) NOT NULL, "
+                    "PRIMARY KEY (gasto_id, miembro_id))"
+                )
+            )
+
+        inspector_antes = sqlalchemy.inspect(engine)
+        assert "gasto_participantes" in set(inspector_antes.get_table_names())
+
+        # Corre TODAS las migraciones, incluida 0015, sobre esta base que
+        # ya tenía `gasto_participantes` creada de antes.
+        run_migrations(engine)
+
+        inspector_despues = sqlalchemy.inspect(engine)
+        tablas = set(inspector_despues.get_table_names())
+        assert "gasto_participantes" not in tablas
+        # `gastos`/`casas`/`miembros` (y el resto del esquema) siguen
+        # intactos — la migración solo elimina la tabla de reparto.
+        assert {"gastos", "casas", "miembros"} <= tablas
+
+        # Idempotente: correrla de nuevo (tabla ya ausente) no lanza.
+        run_migrations(engine)
+        assert "gasto_participantes" not in set(sqlalchemy.inspect(engine).get_table_names())
+    finally:
+        with engine.begin() as conn:
+            conn.execute(sqlalchemy.text("DROP TABLE IF EXISTS gasto_participantes"))
         engine.dispose()

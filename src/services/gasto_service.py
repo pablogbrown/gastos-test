@@ -1,8 +1,10 @@
-"""Servicio de Gasto: registro y división entre participantes.
+"""Servicio de Gasto: registro de gastos de la casa.
 
-Cubre REQ-001 (registro), REQ-003 (participantes por defecto/explícitos),
-REQ-004 (división en partes iguales), REQ-007 (los participantes quedan
-fijos al momento del registro) y REQ-008 (historial).
+Cubre REQ-001 (registro) y REQ-008 (historial). Spec `gastos-sin-
+reparto`: un gasto ya NO se reparte entre participantes ni genera
+ninguna deuda individual — es simplemente una salida de fondos de la
+casa; `pagado_por` queda como dato puramente informativo (REQ-005), sin
+ningún efecto sobre `balance_service`.
 
 Toda operación de registro llama a `requiere_membresia_activa` — el
 guard transversal de la spec `casas-miembros` — exactamente como sus
@@ -25,13 +27,13 @@ import calendar
 import uuid
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Iterable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
 from src.db.models.categoria import Categoria
-from src.db.models.gasto import Gasto, GastoParticipante
+from src.db.models.gasto import Gasto
 from src.db.models.historial_actividad import TipoActividadEnum
 from src.db.models.miembro import Miembro
 from src.services.actividad_service import registrar_actividad
@@ -59,26 +61,27 @@ def registrar_gasto(
     categoria_id: Optional[UUID],
     pagado_por: UUID,
     actor: UUID,
-    participantes: Optional[Iterable[UUID]] = None,
     cuotas: Optional[int] = None,
     suscripcion_id: Optional[UUID] = None,
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
     estado: str = "pagado",
 ) -> Gasto:
-    """Registra un Gasto y sus GastoParticipante asociados.
+    """Registra un Gasto — una salida de fondos de la casa (spec
+    `gastos-sin-reparto`, REQ-001).
 
-    `participantes=None` (o vacío) aplica el gasto a todos los miembros
-    activos de la casa al momento del registro (REQ-003/TC-004); una
-    lista explícita restringe la división a esos miembros (TC-005). El
-    importe se divide en partes iguales, ajustando el redondeo en el
-    último participante (REQ-004/TC-006).
+    Un gasto ya NO se reparte entre participantes ni genera ninguna
+    deuda individual (REQ-001/REQ-002) — `pagado_por` queda como dato
+    puramente informativo (REQ-005), sin ningún efecto sobre
+    `balance_service.calcular_balance`. La única relación de deuda real
+    entre personas es un préstamo explícito (spec separada
+    `prestamos-entre-miembros`), nunca un gasto de la casa.
 
     `cuotas` (spec `gastos-en-cuotas`, REQ-001 a REQ-004): un entero
     ≥ 2 crea esa cantidad de gastos consecutivos, uno por mes, cada uno
     por el importe total dividido en partes iguales (ajuste de redondeo
-    en la última — mismo criterio que entre participantes) y
-    compartiendo un `cuota_grupo_id`. `cuotas` ausente, `None`, o
+    en la última cuota) y compartiendo un `cuota_grupo_id`. `cuotas`
+    ausente, `None`, o
     explícitamente `1` se comporta exactamente igual que hoy (REQ-003):
     un único Gasto, sin ningún dato de cuota poblado. Solo `0` o un
     valor negativo, enviados explícitamente, son rechazados (REQ-004).
@@ -141,12 +144,6 @@ def registrar_gasto(
         if pagador is None:
             raise NotFoundError(f"El miembro {pagado_por} no existe en la casa {casa_id}.")
 
-        miembros_participantes = _resolver_participantes(session, casa_id, participantes)
-        if not miembros_participantes:
-            raise ValidationError(
-                "No hay miembros activos disponibles para dividir el gasto."
-            )
-
         importe_decimal = Decimal(str(importe)).quantize(Decimal("0.01"))
 
         if generar_en_cuotas:
@@ -158,7 +155,6 @@ def registrar_gasto(
                 fecha,
                 pagado_por,
                 categoria_id,
-                miembros_participantes,
                 cuotas,
                 moneda,
                 tarjeta_id,
@@ -180,20 +176,11 @@ def registrar_gasto(
             )
             session.add(gasto)
             session.flush()
-
-            partes = _dividir_importe(importe_decimal, len(miembros_participantes))
-            for miembro, parte in zip(miembros_participantes, partes):
-                session.add(
-                    GastoParticipante(
-                        gasto_id=gasto.id, miembro_id=miembro.id, monto_correspondiente=parte
-                    )
-                )
             gastos_creados = [gasto]
 
         session.commit()
         for gasto_creado in gastos_creados:
             session.refresh(gasto_creado)
-            _ = gasto_creado.participantes  # fuerza la carga antes de cerrar la sesión
 
         # Hook de actividad (REQ-002/TC-003, spec `dashboard-actividad`):
         # se dispara recién después del commit de arriba, nunca antes,
@@ -226,7 +213,6 @@ def _crear_gastos_en_cuotas(
     fecha,
     pagado_por: UUID,
     categoria_id: UUID,
-    miembros_participantes,
     cuotas: int,
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
@@ -234,10 +220,10 @@ def _crear_gastos_en_cuotas(
 ) -> List[Gasto]:
     """Crea `cuotas` filas `Gasto`, una por mes consecutivo a partir de
     `fecha`, compartiendo un `cuota_grupo_id` (spec `gastos-en-cuotas`,
-    REQ-001/REQ-002). Reutiliza `_dividir_importe` dos veces: una para
-    repartir el importe total entre las `cuotas`, y otra vez por cuota
-    para repartir esa parte entre `miembros_participantes` — mismo
-    criterio de ajuste de redondeo (última parte) en ambos niveles.
+    REQ-001/REQ-002). Reutiliza `_dividir_importe` para repartir el
+    importe total entre las `cuotas` — sin relación con participantes
+    (spec `gastos-sin-reparto`): cada cuota queda con su importe
+    completo, sin ninguna subdivisión adicional.
 
     `moneda` (spec `gastos-multi-moneda`, REQ-005/TC-007): se propaga sin
     cambios a las N cuotas generadas — ninguna parte de una misma compra
@@ -271,16 +257,6 @@ def _crear_gastos_en_cuotas(
         )
         session.add(gasto)
         session.flush()
-
-        partes_participantes = _dividir_importe(parte_cuota, len(miembros_participantes))
-        for miembro, parte_participante in zip(miembros_participantes, partes_participantes):
-            session.add(
-                GastoParticipante(
-                    gasto_id=gasto.id,
-                    miembro_id=miembro.id,
-                    monto_correspondiente=parte_participante,
-                )
-            )
         gastos_creados.append(gasto)
 
     return gastos_creados
@@ -314,9 +290,10 @@ def registrar_gasto_cuotas_restantes(
     cualquier grupo que ya existiera para las cuotas anteriores, que esta
     spec no tiene forma de conocer ni necesita reconciliar).
 
-    Reutiliza `_sumar_meses`/`_dividir_importe`/`_resolver_participantes`
-    — nunca reimplementa el reparto entre participantes ni la aritmética
-    de fechas, mismo criterio que el resto de `gasto_service`.
+    Reutiliza `_sumar_meses` — nunca reimplementa la aritmética de
+    fechas, mismo criterio que el resto de `gasto_service`. Sin reparto
+    entre participantes (spec `gastos-sin-reparto`): cada cuota queda
+    con su `importe_por_cuota` completo.
     """
     if cuota_actual is None or cuota_total is None or cuota_actual < 1 or cuota_total < cuota_actual:
         raise ValidationError(
@@ -357,12 +334,6 @@ def registrar_gasto_cuotas_restantes(
         if pagador is None:
             raise NotFoundError(f"El miembro {pagado_por} no existe en la casa {casa_id}.")
 
-        miembros_participantes = _resolver_participantes(session, casa_id, None)
-        if not miembros_participantes:
-            raise ValidationError(
-                "No hay miembros activos disponibles para dividir el gasto."
-            )
-
         importe_decimal = Decimal(str(importe_por_cuota)).quantize(Decimal("0.01"))
         cuota_grupo_id = uuid.uuid4()
         cantidad_restantes = cuota_total - cuota_actual + 1
@@ -386,22 +357,11 @@ def registrar_gasto_cuotas_restantes(
             )
             session.add(gasto)
             session.flush()
-
-            partes_participantes = _dividir_importe(importe_decimal, len(miembros_participantes))
-            for miembro, parte_participante in zip(miembros_participantes, partes_participantes):
-                session.add(
-                    GastoParticipante(
-                        gasto_id=gasto.id,
-                        miembro_id=miembro.id,
-                        monto_correspondiente=parte_participante,
-                    )
-                )
             gastos_creados.append(gasto)
 
         session.commit()
         for gasto_creado in gastos_creados:
             session.refresh(gasto_creado)
-            _ = gasto_creado.participantes
 
         for gasto_creado in gastos_creados:
             registrar_actividad(
@@ -450,7 +410,6 @@ def actualizar_estado_gasto(casa_id: UUID, gasto_id: UUID, estado: str, actor: U
         gasto.estado = estado
         session.commit()
         session.refresh(gasto)
-        _ = gasto.participantes  # fuerza la carga antes de cerrar la sesión
         return gasto
     except (ValidationError, PermissionDeniedError, NotFoundError):
         session.rollback()
@@ -472,29 +431,13 @@ def _sumar_meses(fecha: date, n: int) -> date:
     return date(anio, mes, dia)
 
 
-def _resolver_participantes(session, casa_id: UUID, participantes: Optional[Iterable[UUID]]):
-    if participantes:
-        ids_unicos = list(dict.fromkeys(participantes))
-        miembros = (
-            session.query(Miembro)
-            .filter(Miembro.casa_id == casa_id, Miembro.id.in_(ids_unicos))
-            .all()
-        )
-        if len(miembros) != len(ids_unicos):
-            raise NotFoundError("Uno o más participantes no pertenecen a esta casa.")
-        return miembros
-
-    return (
-        session.query(Miembro)
-        .filter(Miembro.casa_id == casa_id, Miembro.activo.is_(True))
-        .all()
-    )
-
-
 def _dividir_importe(importe: Decimal, cantidad: int) -> List[Decimal]:
     """Divide `importe` en `cantidad` partes iguales, ajustando el
     redondeo en la última parte para que la suma sea exactamente
-    `importe` (REQ-004, TC-006)."""
+    `importe`. Spec `gastos-sin-reparto`: ya no se usa para repartir
+    entre participantes — sigue existiendo tal cual para dividir el
+    importe total de una compra entre sus N cuotas mensuales (spec
+    `gastos-en-cuotas`), una división por fecha, no por participante."""
     parte = (importe / cantidad).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     partes = [parte] * (cantidad - 1)
     ultima = importe - sum(partes)
@@ -558,8 +501,6 @@ def listar_gastos(casa_id: UUID, mes: Optional[str] = None) -> List[Gasto]:
             desde, hasta = _rango_mes(mes)
             query = query.filter(Gasto.fecha.between(desde, hasta))
         gastos = query.order_by(Gasto.fecha.desc()).all()
-        for gasto in gastos:
-            _ = gasto.participantes
         return gastos
     finally:
         session.close()

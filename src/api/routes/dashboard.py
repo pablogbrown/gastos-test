@@ -23,7 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from src.api.dependencies import resolver_actor_en_casa
-from src.api.routes.gastos import BalancePorMiembroOut, GastoOut
+from src.api.routes.gastos import AporteOut, GastoOut, TotalCasaOut
 from src.api.routes.tarjetas import TarjetaAlertaOut
 from src.api.schemas import HistorialTareaOut, MiembroOut, RankingEntryOut, TareaOut
 from src.services.actividad_service import obtener_actividad
@@ -33,12 +33,24 @@ from src.services.exceptions import NotFoundError
 dashboard_router = APIRouter(prefix="/casas", tags=["dashboard"])
 
 
+class BalanceCasaOut(BaseModel):
+    """Spec `gastos-sin-reparto`: mismo contrato que `BalanceResponse`
+    (`gastos.py`) — total de la casa por moneda más el aporte
+    informativo de cada miembro, sin ningún campo de deuda."""
+
+    totales: List[TotalCasaOut] = Field(default_factory=list)
+    aportes: List[AporteOut] = Field(default_factory=list)
+
+    class Config:
+        orm_mode = True
+
+
 class DashboardOut(BaseModel):
     """Contrato de `GET /casas/{casaId}/inicio` (00-overview.md)."""
 
     miembros: List[MiembroOut]
     gastos_recientes: List[GastoOut] = Field(default_factory=list, alias="gastosRecientes")
-    balance: List[BalancePorMiembroOut] = Field(default_factory=list)
+    balance: BalanceCasaOut = Field(default_factory=BalanceCasaOut)
     tareas_pendientes: List[TareaOut] = Field(default_factory=list, alias="tareasPendientes")
     tareas_completadas_recientes: List[HistorialTareaOut] = Field(
         default_factory=list, alias="tareasCompletadasRecientes"

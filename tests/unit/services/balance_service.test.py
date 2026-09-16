@@ -1,6 +1,9 @@
-"""T2 — Service Layer (unit slice): calcular_balance y sugerir_transferencias.
+"""T2 (spec `gastos-sin-reparto`) — Service Layer (unit slice):
+`calcular_balance` devuelve el total gastado de la casa por moneda
+(`totales`) y el aporte informativo de cada miembro (`aportes`), sin
+ningún campo de deuda ni transferencia sugerida.
 
-Cubre TC-007 y TC-008.
+Cubre TC-003, TC-004 y TC-005.
 """
 import importlib
 import uuid
@@ -13,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.db.models.usuario import Usuario
-from src.services.balance_service import calcular_balance, sugerir_transferencias
+from src.services.balance_service import BalanceCasa, calcular_balance
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.gasto_service import registrar_gasto
@@ -65,90 +68,101 @@ def db_session(monkeypatch):
     yield TestSession
 
 
-def test_balance_pablo_mas_30000_ana_menos_30000_segun_ejemplo_del_documento(db_session):
+def _armar_casa_con_dos_miembros(db_session):
     usuario_id = uuid.uuid4()
     casa = crear_casa("Casa Brown", usuario_id)
     pablo_id = casa.miembros[0].id
     categoria = crear_categoria(casa.id, "Supermercado", pablo_id)
     ana_usuario = _crear_usuario_de_prueba(db_session, "ana@example.com")
     ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, pablo_id)
+    return casa, pablo_id, ana.id, categoria
 
-    # Pablo pagó $80.000, Ana pagó $20.000; a cada uno le correspondía $50.000.
+
+def test_tc003_total_gastado_de_la_casa_por_moneda(db_session):
+    casa, pablo_id, ana_id, categoria = _armar_casa_con_dos_miembros(db_session)
+
     registrar_gasto(
-        casa.id,
-        "Gasto de Pablo",
-        Decimal("80000.00"),
-        date(2026, 1, 1),
-        categoria.id,
-        pablo_id,
-        pablo_id,
-        participantes=[pablo_id, ana.id],
+        casa.id, "Super en pesos", Decimal("50000.00"), date(2026, 1, 1), categoria.id,
+        pablo_id, pablo_id,
     )
     registrar_gasto(
-        casa.id,
-        "Gasto de Ana",
-        Decimal("20000.00"),
-        date(2026, 1, 2),
-        categoria.id,
-        ana.id,
-        ana.id,
-        participantes=[pablo_id, ana.id],
-    )
-
-    # Los gastos son de enero 2026 (spec `balance-mensual`: sin `mes`
-    # explícito, `calcular_balance` ahora filtra por el mes calendario
-    # actual, no por el mes de estos gastos de prueba).
-    balance = calcular_balance(casa.id, mes="2026-01")
-    por_id = {b.miembro_id: b for b in balance}
-
-    assert por_id[pablo_id].pago == Decimal("80000.00")
-    assert por_id[pablo_id].correspondia == Decimal("50000.00")
-    assert por_id[pablo_id].balance == Decimal("30000.00")
-
-    assert por_id[ana.id].pago == Decimal("20000.00")
-    assert por_id[ana.id].correspondia == Decimal("50000.00")
-    assert por_id[ana.id].balance == Decimal("-30000.00")
-
-
-def test_transferencia_sugerida_exacta_entre_deudor_y_acreedor(db_session):
-    usuario_id = uuid.uuid4()
-    casa = crear_casa("Casa Brown", usuario_id)
-    pablo_id = casa.miembros[0].id
-    categoria = crear_categoria(casa.id, "Supermercado", pablo_id)
-    ana_usuario = _crear_usuario_de_prueba(db_session, "ana@example.com")
-    ana = agregar_miembro(casa.id, "Ana", "ANA1", ana_usuario.email, pablo_id)
-
-    registrar_gasto(
-        casa.id,
-        "Gasto de Pablo",
-        Decimal("80000.00"),
-        date(2026, 1, 1),
-        categoria.id,
-        pablo_id,
-        pablo_id,
-        participantes=[pablo_id, ana.id],
+        casa.id, "Otro gasto en pesos", Decimal("30000.00"), date(2026, 1, 2), categoria.id,
+        ana_id, ana_id,
     )
     registrar_gasto(
-        casa.id,
-        "Gasto de Ana",
-        Decimal("20000.00"),
-        date(2026, 1, 2),
-        categoria.id,
-        ana.id,
-        ana.id,
-        participantes=[pablo_id, ana.id],
+        casa.id, "Compra en dólares", Decimal("20.00"), date(2026, 1, 3), categoria.id,
+        pablo_id, pablo_id, moneda="USD",
     )
 
     balance = calcular_balance(casa.id, mes="2026-01")
-    transferencias = sugerir_transferencias(balance)
+    totales_por_moneda = {t.moneda: t.total_gastos for t in balance.totales}
 
-    assert len(transferencias) == 1
-    transferencia = transferencias[0]
-    assert transferencia.deudor_id == ana.id
-    assert transferencia.acreedor_id == pablo_id
-    assert transferencia.monto == Decimal("30000.00")
+    assert totales_por_moneda["ARS"] == Decimal("80000.00")
+    assert totales_por_moneda["USD"] == Decimal("20.00")
 
 
-def test_sugerir_transferencias_sin_deudores_no_genera_movimientos(db_session):
-    balance = calcular_balance(crear_casa("Casa Brown", uuid.uuid4()).id)
-    assert sugerir_transferencias(balance) == []
+def test_tc003_ars_siempre_presente_incluso_sin_actividad(db_session):
+    casa, _pablo_id, _ana_id, _categoria = _armar_casa_con_dos_miembros(db_session)
+
+    balance = calcular_balance(casa.id, mes="2026-01")
+    monedas = {t.moneda for t in balance.totales}
+
+    assert "ARS" in monedas
+    assert "USD" not in monedas
+    total_ars = next(t for t in balance.totales if t.moneda == "ARS")
+    assert total_ars.total_gastos == Decimal("0")
+
+
+def test_tc004_aporte_por_miembro_sin_ningun_campo_de_deuda(db_session):
+    casa, pablo_id, ana_id, categoria = _armar_casa_con_dos_miembros(db_session)
+
+    registrar_gasto(
+        casa.id, "Gasto de Pablo", Decimal("80000.00"), date(2026, 1, 1), categoria.id,
+        pablo_id, pablo_id,
+    )
+    registrar_gasto(
+        casa.id, "Gasto de Ana", Decimal("20000.00"), date(2026, 1, 2), categoria.id,
+        ana_id, ana_id,
+    )
+
+    balance = calcular_balance(casa.id, mes="2026-01")
+    aportes_por_id = {a.miembro_id: a for a in balance.aportes}
+
+    assert aportes_por_id[pablo_id].total == Decimal("80000.00")
+    assert aportes_por_id[pablo_id].nombre == "Administrador"
+    assert aportes_por_id[ana_id].total == Decimal("20000.00")
+
+    # Ningún dataclass expone "correspondía"/"balance" — solo `total`.
+    for aporte in balance.aportes:
+        assert not hasattr(aporte, "correspondia")
+        assert not hasattr(aporte, "balance")
+        assert not hasattr(aporte, "pago")
+
+
+def test_tc004_aporte_incluye_todo_miembro_de_la_casa_incluso_en_cero(db_session):
+    casa, pablo_id, ana_id, categoria = _armar_casa_con_dos_miembros(db_session)
+
+    registrar_gasto(
+        casa.id, "Solo Pablo gasta", Decimal("10000.00"), date(2026, 1, 1), categoria.id,
+        pablo_id, pablo_id,
+    )
+
+    balance = calcular_balance(casa.id, mes="2026-01")
+    aportes_por_id = {a.miembro_id: a for a in balance.aportes}
+
+    assert aportes_por_id[pablo_id].total == Decimal("10000.00")
+    assert aportes_por_id[ana_id].total == Decimal("0")
+
+
+def test_tc005_balance_casa_no_expone_ninguna_transferencia(db_session):
+    """Control (REQ-004): `BalanceCasa` — y el módulo `balance_service`
+    en su conjunto — no exponen ningún concepto de transferencia
+    sugerida ni de deuda entre miembros."""
+    import src.services.balance_service as balance_service_module
+
+    assert not hasattr(balance_service_module, "sugerir_transferencias")
+    assert not hasattr(balance_service_module, "Transferencia")
+    assert not hasattr(balance_service_module, "BalancePorMiembro")
+
+    campos_balance_casa = BalanceCasa.__dataclass_fields__.keys()
+    assert set(campos_balance_casa) == {"totales", "aportes"}

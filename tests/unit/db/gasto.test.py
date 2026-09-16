@@ -1,9 +1,11 @@
-"""T1 — Data Layer: Gasto, Categoria y GastoParticipante.
+"""T1 — Data Layer: Gasto y Categoria.
 
-Cubre TC-001 (inserción válida) y TC-006 (la suma de las partes de un
-gasto puede compararse contra su importe) a nivel de esquema, más la
-siembra idempotente de categorías predefinidas requerida por el "Done
-When" de T1.
+Cubre TC-001 (inserción válida) a nivel de esquema, más la siembra
+idempotente de categorías predefinidas requerida por el "Done When" de
+T1. Spec `gastos-sin-reparto`: `GastoParticipante` se eliminó por
+completo del modelo (modelo, tabla, y todo el reparto que generaba) —
+este archivo ya no cubre nada relacionado con reparto entre
+participantes.
 """
 import importlib
 import uuid
@@ -17,7 +19,7 @@ from sqlalchemy.pool import StaticPool
 
 from src.db.models.casa import Casa
 from src.db.models.categoria import CATEGORIAS_PREDEFINIDAS, Categoria
-from src.db.models.gasto import Gasto, GastoParticipante
+from src.db.models.gasto import Gasto
 from src.db.models.miembro import Miembro, RolEnum
 
 migration_casas = importlib.import_module("src.db.migrations.0001_casas_miembros")
@@ -74,7 +76,9 @@ def test_migracion_de_gastos_corre_limpia_sobre_base_vacia():
     migration_gastos.upgrade(eng)
 
 
-def test_insertar_gasto_y_participante_consistentes(session):
+def test_insertar_gasto_se_persiste_correctamente(session):
+    """TC-001: un Gasto se inserta y se lee de vuelta sin ningún dato de
+    reparto asociado — spec `gastos-sin-reparto`, T1."""
     casa, miembro = _crear_casa_con_miembro(session)
     categoria = Categoria(id=uuid.uuid4(), casa_id=casa.id, nombre="Supermercado")
     session.add(categoria)
@@ -92,64 +96,10 @@ def test_insertar_gasto_y_participante_consistentes(session):
     session.add(gasto)
     session.commit()
 
-    participante = GastoParticipante(
-        gasto_id=gasto.id, miembro_id=miembro.id, monto_correspondiente=Decimal("100.00")
-    )
-    session.add(participante)
-    session.commit()
-
     persisted = session.query(Gasto).one()
     assert persisted.descripcion == "Compra semanal"
     assert persisted.importe == Decimal("100.00")
-    assert len(persisted.participantes) == 1
-    assert persisted.participantes[0].monto_correspondiente == Decimal("100.00")
-
-
-def test_suma_de_participantes_puede_compararse_contra_el_importe(session):
-    casa, miembro = _crear_casa_con_miembro(session)
-    categoria = Categoria(id=uuid.uuid4(), casa_id=casa.id, nombre="Comida")
-    session.add(categoria)
-    session.commit()
-
-    otro_miembro = Miembro(
-        id=uuid.uuid4(),
-        casa_id=casa.id,
-        nombre="Ana",
-        identificacion=f"A-{uuid.uuid4()}",
-        rol=RolEnum.MEMBER,
-    )
-    session.add(otro_miembro)
-    session.commit()
-
-    gasto = Gasto(
-        id=uuid.uuid4(),
-        casa_id=casa.id,
-        descripcion="Cena",
-        importe=Decimal("40000.00"),
-        fecha=date(2026, 1, 2),
-        pagado_por=miembro.id,
-        categoria_id=categoria.id,
-    )
-    session.add(gasto)
-    session.commit()
-
-    session.add_all(
-        [
-            GastoParticipante(
-                gasto_id=gasto.id, miembro_id=miembro.id, monto_correspondiente=Decimal("20000.00")
-            ),
-            GastoParticipante(
-                gasto_id=gasto.id,
-                miembro_id=otro_miembro.id,
-                monto_correspondiente=Decimal("20000.00"),
-            ),
-        ]
-    )
-    session.commit()
-
-    persisted = session.query(Gasto).one()
-    suma_partes = sum(p.monto_correspondiente for p in persisted.participantes)
-    assert suma_partes == persisted.importe
+    assert not hasattr(persisted, "participantes")
 
 
 def test_seed_de_categorias_predefinidas_para_casa_existente():

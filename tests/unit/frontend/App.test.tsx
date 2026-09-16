@@ -51,7 +51,7 @@ function mockFetchConMiembros(miembros: unknown[]) {
         json: async () => ({
           miembros: [],
           gastosRecientes: [],
-          balance: [],
+          balance: { totales: [], aportes: [] },
           tareasPendientes: [],
           tareasCompletadasRecientes: [],
           ranking: [],
@@ -133,7 +133,7 @@ describe("App — gate de sesión", () => {
             json: async () => ({
               miembros: [],
               gastosRecientes: [],
-              balance: [],
+              balance: { totales: [], aportes: [] },
               tareasPendientes: [],
               tareasCompletadasRecientes: [],
               ranking: [],

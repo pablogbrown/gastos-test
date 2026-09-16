@@ -79,7 +79,6 @@ def test_tc001_gasto_con_moneda_usd_persiste_usd(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         moneda="USD",
     )
 
@@ -99,7 +98,6 @@ def test_tc002_gasto_sin_moneda_persiste_ars_por_default(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
     )
 
     assert gasto.moneda == "ARS"
@@ -116,7 +114,6 @@ def test_tc007_las_3_cuotas_mantienen_la_misma_moneda_usd(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        participantes=[admin_id],
         cuotas=3,
         moneda="USD",
     )
@@ -138,7 +135,6 @@ def test_moneda_invalida_es_rechazada_con_validation_error(db_session):
             categoria.id,
             admin_id,
             admin_id,
-            participantes=[admin_id],
             moneda="EUR",
         )
 
