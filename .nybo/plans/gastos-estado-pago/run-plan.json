@@ -1,0 +1,103 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gastos-estado-pago",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gastos-estado-pago/feat/01-plan-01-columna-estado.md",
+      "files_touched": [
+        "src/db/models/gasto.py",
+        "src/db/migrations/0013_gasto_estado.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 15,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Gasto.estado", "signature": "str", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Gasto tiene columna estado NOT NULL DEFAULT 'pagado', y la migración corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepción; la columna existe con default 'pagado'.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gastos-estado-pago/feat/01-plan-02-servicios-estado.md",
+      "files_touched": [
+        "src/services/gasto_service.py",
+        "src/services/suscripcion_service.py",
+        "src/services/resumen_importer_service.py",
+        "tests/integration/services/gasto_estado.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006", "TC-008"],
+      "interfaces_produced": [
+        { "name": "actualizar_estado_gasto", "signature": "(casa_id, gasto_id, estado, actor) -> Gasto", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Gasto.estado" }
+      ],
+      "contract": {
+        "statement": "registrar_gasto/actualizar_estado_gasto validan y persisten estado; los generadores automaticos (suscripcion, importacion de resumen) siempre pasan estado='a_pagar'; calcular_balance no cambia.",
+        "postcondition": "Un gasto manual sin estado queda 'pagado'; una suscripcion generada y un gasto importado quedan 'a_pagar'; actualizar_estado_gasto cambia el valor en ambos sentidos; calcular_balance devuelve los mismos montos antes y despues de cambiar el estado.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/gasto_estado.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gastos-estado-pago/feat/01-plan-03-api-estado.md",
+      "files_touched": [
+        "src/api/routes/gastos.py",
+        "tests/integration/api/gastos_estado_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 20,
+      "test_cases": ["TC-007"],
+      "interfaces_produced": [
+        { "name": "GastoEstadoUpdate", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "actualizar_estado_gasto" }
+      ],
+      "contract": {
+        "statement": "GastoCreate/GastoOut exponen estado y PATCH /casas/{id}/gastos/{id} permite cambiarlo, rechazando un valor invalido con 400.",
+        "postcondition": "Un PATCH con estado='otro' responde 400; un PATCH valido cambia el estado y lo refleja en la respuesta GastoOut.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/gastos_estado_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gastos-estado-pago/feat/01-plan-04-frontend-estado.md",
+      "files_touched": [
+        "src/frontend/api/gastosClient.ts",
+        "src/frontend/pages/Gastos.tsx",
+        "tests/unit/frontend/Gastos.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 25,
+      "test_cases": ["TC-009", "TC-010"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "GastoOut.estado" }
+      ],
+      "contract": {
+        "statement": "El formulario Nuevo gasto ofrece un selector Estado y el listado muestra un chip clickeable que actualiza el estado.",
+        "postcondition": "Con Estado='A pagar' seleccionado, el body enviado incluye estado: 'a_pagar'; un clic en el chip llama a actualizarEstadoGasto y el chip refleja el nuevo estado.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Gastos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
