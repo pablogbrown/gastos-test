@@ -42,6 +42,13 @@ class Gasto(Base):
     tarjetas_credito(id)` (SQL crudo, no metadata de SQLAlchemy), evitando
     depender de que `tarjeta_credito.py` ya esté importado en todo
     contexto donde se importe este módulo.
+
+    `estado` (spec `gastos-estado-pago`): `"pagado"` (default) o
+    `"a_pagar"` -- puramente informativo, no afecta ningun calculo de
+    `balance_service`. Un gasto cargado a mano nace `"pagado"`; un gasto
+    generado automaticamente (cuota futura, suscripcion mensual, consumo
+    importado de un resumen) nace `"a_pagar"`. Columna `String` simple,
+    sin enum nativo de Postgres -- mismo criterio que `moneda`.
     """
 
     __tablename__ = "gastos"
@@ -71,6 +78,7 @@ class Gasto(Base):
     suscripcion_id = Column(GUID(), nullable=True)
     moneda = Column(String(3), nullable=False, default="ARS")
     tarjeta_id = Column(GUID(), nullable=True)
+    estado = Column(String, nullable=False, default="pagado")
 
     participantes = relationship(
         "GastoParticipante", back_populates="gasto", cascade="all, delete-orphan"
