@@ -78,3 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 
 - feat(gastos-sin-reparto): se elimina `GastoParticipante` y todo el reparto de gastos entre participantes, junto con su historial — el formulario "Nuevo gasto" ya no pide elegir con quién se comparte.
+
+### Changed
+
+- feat(prestamos-confirmacion-mutua): un préstamo recién registrado ya no queda activo al instante — la parte que lo registra queda confirmada automáticamente y la otra debe confirmarlo o rechazarlo; solo confirmado por ambas partes habilita marcarlo pagado/pendiente. Evita cargas de préstamos que no correspondan.
