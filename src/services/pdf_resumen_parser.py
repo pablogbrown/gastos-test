@@ -52,15 +52,33 @@ _MESES = {
 }
 
 _FECHA_RE = re.compile(r"(\d{2})-([A-Za-z]{3})-(\d{2})")
-_CIERRE_RE = re.compile(r"CIERRE ACTUAL\s+(\d{2}-[A-Za-z]{3}-\d{2})")
-_VENCIMIENTO_RE = re.compile(r"VENCIMIENTO ACTUAL\s+(\d{2}-[A-Za-z]{3}-\d{2})")
-_SALDO_ARS_RE = re.compile(r"SALDO ACTUAL \$\s+([\d.,]+)")
-_SALDO_USD_RE = re.compile(r"SALDO ACTUAL U\$S\s+([\d.,]+)")
+# Encabezado real (confirmado contra el PDF de muestra real, no solo el
+# fixture sintético original): las 5 etiquetas van en una línea de texto
+# y sus 5 valores en la línea SIGUIENTE — nunca en la misma línea que su
+# etiqueta. `_parsear_encabezado` busca esta línea de etiquetas y toma
+# los 2 primeros grupos de fecha y los 2 primeros montos de la línea de
+# valores que la sigue, en orden (cierre, vencimiento, saldo ARS, saldo
+# USD) — nunca por posición de columna, porque acá ninguna columna tiene
+# ancho fijo garantizado.
+_ENCABEZADO_RE = re.compile(
+    r"CIERRE ACTUAL\s+VENCIMIENTO ACTUAL\s+SALDO ACTUAL \$\s+SALDO ACTUAL U\$S\s+PAGO M[ÍI]NIMO \$"
+)
 _CUOTA_RE = re.compile(r"C\.(\d{2})/(\d{2})")
 _MONTO_RE = re.compile(r"\d{1,3}(?:\.\d{3})*,\d{2}")
 _CUPON_RE = re.compile(r"(?<!\d)\d{3,6}(?!\d)")
 _TOTAL_CONSUMOS_RE = re.compile(r"^TOTAL CONSUMOS\b")
 _IMPUESTOS_RE = re.compile(r"^Impuestos, cargos e intereses\b")
+# La tabla de "Consumos" real trae el nombre del titular a continuación
+# ("Consumos Pablo Gabriel Brown"), nunca la palabra sola — \b tolera
+# ambos casos (con o sin sufijo).
+_CONSUMOS_INICIO_RE = re.compile(r"^Consumos\b")
+# Distancia máxima (caracteres) a un offset de columna (ars_offset/
+# usd_offset) para aceptar un monto como valor real de esa columna, no
+# texto libre embebido en la descripción — confirmado contra el PDF real:
+# un monto embebido en la descripción (ej. "... USD 2,99 ...") cae a más
+# de 10 caracteres de ambos offsets; un valor de columna real siempre cae
+# a 4 caracteres o menos del offset correspondiente.
+_UMBRAL_COLUMNA = 10
 
 
 @dataclass
@@ -113,17 +131,47 @@ def _parsear_monto(texto: str) -> Decimal:
 
 
 def _extraer_texto(pdf_bytes: bytes) -> str:
+    """Concatena el texto de TODAS las páginas del PDF — el resumen real
+    trae el encabezado (cierre/vencimiento/saldo) en la página 1 y la
+    tabla "Consumos" recién en la página 2 (nunca ambos en la primera
+    página, a diferencia de lo que asumía la versión original de este
+    parser, que solo leía `pdf.pages[0]`)."""
     import io
 
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-            if not pdf.pages:
-                return ""
-            return pdf.pages[0].extract_text(layout=True) or ""
+            return "\n".join(pagina.extract_text(layout=True) or "" for pagina in pdf.pages)
     except Exception as exc:  # pragma: no cover - PDF corrupto/no abrible
         raise PdfFormatoNoReconocidoError(
             "El archivo no pudo leerse como un PDF válido."
         ) from exc
+
+
+def _parsear_encabezado(lineas: List[str]) -> Optional[tuple]:
+    """Devuelve `(fecha_cierre, fecha_vencimiento, saldo_ars, saldo_usd)`
+    a partir de la fila de valores que sigue a la línea de etiquetas
+    "CIERRE ACTUAL VENCIMIENTO ACTUAL SALDO ACTUAL $ SALDO ACTUAL U$S
+    PAGO MÍNIMO $" — en el PDF real, la fila de etiquetas y la fila de
+    valores son dos líneas de texto consecutivas y distintas, nunca la
+    misma línea. `None` si no se encuentra la línea de etiquetas, o si la
+    línea que la sigue no trae al menos 2 fechas."""
+    for i, linea in enumerate(lineas):
+        if _ENCABEZADO_RE.search(linea):
+            for valores in lineas[i + 1 :]:
+                if not valores.strip():
+                    continue
+                fechas = [m.group() for m in _FECHA_RE.finditer(valores)]
+                montos = [m.group() for m in _MONTO_RE.finditer(valores)]
+                if len(fechas) < 2:
+                    return None
+                return (
+                    _parsear_fecha(fechas[0]),
+                    _parsear_fecha(fechas[1]),
+                    _parsear_monto(montos[0]) if len(montos) >= 1 else None,
+                    _parsear_monto(montos[1]) if len(montos) >= 2 else None,
+                )
+            return None
+    return None
 
 
 def _extraer_offsets_columnas(lineas: List[str]) -> Optional[tuple]:
@@ -168,7 +216,17 @@ def _parsear_consumo(linea: str, offsets_columnas: Optional[tuple]) -> Optional[
             # ambos totales): único importe encontrado -> se asume pesos,
             # el caso más común de un resumen sin consumos en dólares.
             importe_ars = valor
-        elif abs(monto_match.start() - ars_offset) <= abs(monto_match.start() - usd_offset):
+            continue
+        distancia_ars = abs(monto_match.start() - ars_offset)
+        distancia_usd = abs(monto_match.start() - usd_offset)
+        if min(distancia_ars, distancia_usd) > _UMBRAL_COLUMNA:
+            # Confirmado contra el PDF real: una descripción de consumo en
+            # dólares suele repetir el monto como texto libre (ej. "GOOGLE
+            # *Google O P1ngEt7f USD 2,99"), lejos de ambas columnas reales
+            # — se ignora, o quedaría poblando importe_ars Y importe_usd a
+            # la vez, violando la exclusión mutua documentada arriba.
+            continue
+        if distancia_ars <= distancia_usd:
             importe_ars = valor
         else:
             importe_usd = valor
@@ -199,37 +257,27 @@ def parse_resumen_bbva(pdf_bytes: bytes) -> ResumenParseado:
     "Impuestos, cargos e intereses", lo que aparezca primero.
     """
     texto = _extraer_texto(pdf_bytes)
+    lineas = texto.splitlines()
 
-    cierre_match = _CIERRE_RE.search(texto)
-    vencimiento_match = _VENCIMIENTO_RE.search(texto)
-    if cierre_match is None or vencimiento_match is None:
-        raise PdfFormatoNoReconocidoError(
-            "El PDF no tiene el formato de resumen BBVA Visa Platinum reconocido "
-            "(faltan los marcadores de cierre/vencimiento actual)."
-        )
-
-    fecha_cierre_actual = _parsear_fecha(cierre_match.group(1))
-    fecha_vencimiento_actual = _parsear_fecha(vencimiento_match.group(1))
-
-    saldo_ars_match = _SALDO_ARS_RE.search(texto)
-    saldo_usd_match = _SALDO_USD_RE.search(texto)
     try:
-        saldo_actual_ars = (
-            _parsear_monto(saldo_ars_match.group(1)) if saldo_ars_match else None
-        )
-        saldo_actual_usd = (
-            _parsear_monto(saldo_usd_match.group(1)) if saldo_usd_match else None
-        )
+        encabezado = _parsear_encabezado(lineas)
     except InvalidOperation as exc:  # pragma: no cover - defensivo
         raise PdfFormatoNoReconocidoError(
             "El PDF no tiene el formato de resumen BBVA Visa Platinum reconocido "
             "(saldo con formato inesperado)."
         ) from exc
 
-    lineas = texto.splitlines()
+    if encabezado is None:
+        raise PdfFormatoNoReconocidoError(
+            "El PDF no tiene el formato de resumen BBVA Visa Platinum reconocido "
+            "(faltan los marcadores de cierre/vencimiento actual)."
+        )
+
+    fecha_cierre_actual, fecha_vencimiento_actual, saldo_actual_ars, saldo_actual_usd = encabezado
+
     consumos: List[ConsumoParseado] = []
 
-    indices_consumos = [i for i, linea in enumerate(lineas) if linea.strip() == "Consumos"]
+    indices_consumos = [i for i, linea in enumerate(lineas) if _CONSUMOS_INICIO_RE.match(linea.strip())]
     if indices_consumos:
         inicio = indices_consumos[0] + 1
         fin = len(lineas)

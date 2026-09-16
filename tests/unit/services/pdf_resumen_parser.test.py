@@ -54,31 +54,43 @@ def _construir_pdf_resumen_bbva(
     total_ars="41.199,00",
     total_usd="45,00",
     incluir_consumos=True,
+    incluir_usd_embebido_en_descripcion=False,
 ) -> bytes:
-    """Construye un PDF sintético con el layout del resumen BBVA Visa
-    Platinum: encabezado + tabla "Consumos" (una línea en pesos, una en
-    dólares, una en cuotas "C.04/06", una de un comercio reconocido
-    "NETFLIX.COM") + sección "Impuestos, cargos e intereses" con líneas
-    que NUNCA deben aparecer como consumos parseados."""
+    """Construye un PDF sintético con el layout REAL del resumen BBVA
+    Visa Platinum (confirmado contra el PDF de muestra real, no solo la
+    versión original de este fixture): las 5 etiquetas del encabezado
+    van en una línea y sus 5 valores en la línea SIGUIENTE (nunca
+    etiqueta y valor en la misma línea); la tabla "Consumos" trae el
+    nombre del titular a continuación ("Consumos <nombre>") y vive en
+    una PÁGINA SEPARADA del encabezado — ambos detalles reproducen fallas
+    reales encontradas al importar el resumen real por primera vez (ver
+    `.nybo/plans/importar-resumen-tarjeta/evidence/decisions.yaml`).
+
+    Tabla "Consumos": una línea en pesos, una en dólares, una en cuotas
+    "C.04/06", una de un comercio reconocido "NETFLIX.COM", más una
+    sección "Impuestos, cargos e intereses" con líneas que NUNCA deben
+    aparecer como consumos parseados."""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer)
 
     y = 800
     c.drawString(40, y, "BBVA Visa Platinum")
-    y -= 20
-    c.drawString(40, y, "CIERRE ACTUAL")
-    c.drawString(200, y, cierre)
-    y -= 16
-    c.drawString(40, y, "VENCIMIENTO ACTUAL")
-    c.drawString(200, y, vencimiento)
-    y -= 16
-    c.drawString(40, y, "SALDO ACTUAL $")
-    c.drawString(200, y, saldo_ars)
-    y -= 16
-    c.drawString(40, y, "SALDO ACTUAL U$S")
-    c.drawString(200, y, saldo_usd)
     y -= 30
-    c.drawString(40, y, "Consumos")
+    # Una sola línea de texto por fila (en vez de varios drawString
+    # posicionados) — evita que columnas angostas se superpongan a nivel
+    # de caracteres, que es justamente lo que rompía la extracción real:
+    # acá solo importa que quede en UNA línea de etiquetas seguida de UNA
+    # línea de valores, nunca ambas en la misma línea.
+    c.drawString(
+        40, y, "CIERRE ACTUAL     VENCIMIENTO ACTUAL     SALDO ACTUAL $     "
+        "SALDO ACTUAL U$S     PAGO MÍNIMO $"
+    )
+    y -= 16
+    c.drawString(40, y, f"{cierre}     {vencimiento}     {saldo_ars}     {saldo_usd}     50.000,00")
+
+    c.showPage()  # la tabla "Consumos" real vive en la página siguiente
+    y = 800
+    c.drawString(40, y, "Consumos Juan Pérez")
     y -= 20
 
     if incluir_consumos:
@@ -90,6 +102,15 @@ def _construir_pdf_resumen_bbva(
         y -= 16
         _fila(c, y, "05-Ago-26", "NETFLIX.COM", "3456", "3.999,00", "")
         y -= 16
+        if incluir_usd_embebido_en_descripcion:
+            # Reproduce un caso real: la descripción de un consumo en
+            # dólares suele repetir el monto como texto libre (ej. "GOOGLE
+            # *Google O P1ngEt7f USD 2,99"), lejos de la columna dólares
+            # real — puede generar un segundo match de monto que, sin el
+            # umbral de distancia por columna, se leía como si fuera el
+            # valor de la columna pesos (ver `_UMBRAL_COLUMNA`).
+            _fila(c, y, "08-Ago-26", "GOOGLE USD 2,99", "469627", "", "2,99")
+            y -= 16
         y -= 4
 
     _fila(c, y, "", "TOTAL CONSUMOS", "", total_ars, total_usd)
@@ -158,6 +179,21 @@ def test_comercio_reconocido_netflix_se_parsea_como_consumo_normal():
     netflix = next(c for c in resumen.consumos if "NETFLIX" in c.descripcion)
     assert netflix.importe_ars == Decimal("3999.00")
     assert netflix.cuota_actual is None
+
+
+def test_consumo_en_dolares_con_monto_repetido_en_la_descripcion_no_puebla_importe_ars():
+    """Regresión: encontrado al importar el PDF real por primera vez — una
+    descripción como "GOOGLE *Google O P1ngEt7f USD 2,99" repite el monto
+    como texto libre, lejos de ambas columnas reales; sin el umbral de
+    distancia por columna, ese texto se leía como si fuera el valor de la
+    columna pesos, violando la exclusión mutua de `ConsumoParseado`."""
+    resumen = parse_resumen_bbva(
+        _construir_pdf_resumen_bbva(incluir_usd_embebido_en_descripcion=True)
+    )
+
+    google = next(c for c in resumen.consumos if "GOOGLE" in c.descripcion)
+    assert google.importe_usd == Decimal("2.99")
+    assert google.importe_ars is None
 
 
 def test_tc008_lineas_de_impuestos_y_cargos_nunca_generan_consumos():
