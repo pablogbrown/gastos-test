@@ -29,6 +29,7 @@ from uuid import UUID
 from sqlalchemy.orm import selectinload
 
 from src.db.base import get_session
+from src.db.models.auto import Auto
 from src.db.models.casa import Casa
 from src.db.models.mantenimiento import ItemMantenimiento, MaterialMantenimiento
 from src.services.exceptions import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
@@ -52,13 +53,21 @@ class ItemMantenimientoAlerta:
     """Un ítem de mantenimiento pendiente cuya `fecha_estimada` está a
     `UMBRAL_ALERTA_DIAS` días o menos (o ya venció) — lo que
     `dashboard_service` consume para armar el banner de Inicio
-    (REQ-005)."""
+    (REQ-005).
+
+    `auto_id`/`auto_nombre` (spec `mantenimiento-autos`, REQ-004):
+    `None` para un ítem de la casa; poblados cuando el ítem pertenece a
+    un auto, para que el frontend arme el texto de la alerta
+    mencionándolo — sin una sección separada, mismo banner combinado
+    (decisión explícita del usuario, ver `00-overview.md`'s Tradeoffs)."""
 
     id: UUID
     nombre: str
     fecha_estimada: date
     dias_para_vencimiento: int
     vencido: bool
+    auto_id: Optional[UUID] = None
+    auto_nombre: Optional[str] = None
 
 
 def _obtener_item_o_none(session, casa_id: UUID, item_id: UUID):
@@ -89,6 +98,7 @@ def crear_item(
     periodicidad: Optional[str],
     actor: UUID,
     materiales: Optional[List[dict]] = None,
+    auto_id: Optional[UUID] = None,
 ) -> ItemMantenimiento:
     """Crea un ItemMantenimiento en estado "pendiente" (REQ-001, TC-001).
 
@@ -98,6 +108,11 @@ def crear_item(
     criterio recién corregido en `tarea_service.crear_tarea`, TC-002).
     `materiales` (opcional): lista de `{nombre, cantidad}` — crea una fila
     `MaterialMantenimiento` por cada uno, `conseguido=False` (TC-003).
+
+    `auto_id` (spec `mantenimiento-autos`, REQ-002): opcional — si se
+    provee, debe corresponder a un `Auto` que exista en `casa_id`
+    (`NotFoundError` si no — cubre también el caso de un auto de otra
+    casa, TC-005, ya que la búsqueda está scopeada por `casa_id`).
     """
     if not nombre or not str(nombre).strip():
         raise ValidationError("El nombre del ítem de mantenimiento no puede estar vacío.")
@@ -117,6 +132,15 @@ def crear_item(
         if session.get(Casa, casa_id) is None:
             raise NotFoundError(f"La casa {casa_id} no existe.")
 
+        if auto_id is not None:
+            auto = (
+                session.query(Auto)
+                .filter(Auto.id == auto_id, Auto.casa_id == casa_id)
+                .one_or_none()
+            )
+            if auto is None:
+                raise NotFoundError(f"El auto {auto_id} no existe en la casa {casa_id}.")
+
         item = ItemMantenimiento(
             id=uuid.uuid4(),
             casa_id=casa_id,
@@ -126,6 +150,7 @@ def crear_item(
             recurrente=bool(recurrente),
             periodicidad=periodicidad if recurrente else None,
             estado="pendiente",
+            auto_id=auto_id,
         )
         for material in materiales or []:
             item.materiales.append(
@@ -215,19 +240,33 @@ def actualizar_material(
         session.close()
 
 
-def listar_items(casa_id: UUID) -> List[ItemMantenimiento]:
-    """Lista todos los ítems de mantenimiento de una casa."""
+def listar_items(casa_id: UUID, auto_id: Optional[UUID] = None) -> List[ItemMantenimiento]:
+    """Lista los ítems de mantenimiento de una casa (spec
+    `mantenimiento-autos`, REQ-003, TC-003).
+
+    Sin `auto_id`: solo los ítems de la casa (`auto_id IS NULL`) — cambio
+    deliberado de comportamiento respecto a `mantenimiento-casa` (donde
+    la columna no existía y todo ítem era implícitamente de la casa):
+    ahora que `auto_id` existe, "sin auto_id" debe significar "solo los
+    de la casa", no "todos sin importar auto_id", para que la pantalla
+    "Mantenimiento" siga mostrando exclusivamente sus propios ítems una
+    vez que empiecen a existir ítems de auto. Con `auto_id`: solo los de
+    ese auto.
+    """
     session = get_session()
     try:
         if session.get(Casa, casa_id) is None:
             raise NotFoundError(f"La casa {casa_id} no existe.")
-        return (
+        query = (
             session.query(ItemMantenimiento)
             .options(selectinload(ItemMantenimiento.materiales))
             .filter(ItemMantenimiento.casa_id == casa_id)
-            .order_by(ItemMantenimiento.creado_en)
-            .all()
         )
+        if auto_id is None:
+            query = query.filter(ItemMantenimiento.auto_id.is_(None))
+        else:
+            query = query.filter(ItemMantenimiento.auto_id == auto_id)
+        return query.order_by(ItemMantenimiento.creado_en).all()
     finally:
         session.close()
 
@@ -303,6 +342,13 @@ def obtener_items_con_alerta(casa_id: UUID) -> List[ItemMantenimientoAlerta]:
     No valida que `casa_id` exista: si no existe, simplemente no hay
     ningún ítem que iterar (no-op), mismo criterio que
     `tarjeta_service.obtener_tarjetas_con_alerta`.
+
+    Spec `mantenimiento-autos` (REQ-004): sin cambios en el filtro — ya
+    incluye ítems de la casa Y de autos, sin distinguir origen (el
+    banner de Inicio es uno solo, combinado). Solo se le agrega
+    `auto_id`/`auto_nombre` (nullable) al resultado, resolviendo el
+    nombre del auto con una única consulta batched (evita N+1) para que
+    el frontend arme el texto correcto de cada alerta.
     """
     hoy = date.today()
 
@@ -318,6 +364,12 @@ def obtener_items_con_alerta(casa_id: UUID) -> List[ItemMantenimientoAlerta]:
             .all()
         )
 
+        auto_ids = {item.auto_id for item in items if item.auto_id is not None}
+        nombres_por_auto_id = {}
+        if auto_ids:
+            for auto in session.query(Auto).filter(Auto.id.in_(auto_ids)).all():
+                nombres_por_auto_id[auto.id] = f"{auto.marca} {auto.modelo}"
+
         alertas: List[ItemMantenimientoAlerta] = []
         for item in items:
             dias_para_vencimiento = (item.fecha_estimada - hoy).days
@@ -329,6 +381,8 @@ def obtener_items_con_alerta(casa_id: UUID) -> List[ItemMantenimientoAlerta]:
                         fecha_estimada=item.fecha_estimada,
                         dias_para_vencimiento=dias_para_vencimiento,
                         vencido=dias_para_vencimiento < 0,
+                        auto_id=item.auto_id,
+                        auto_nombre=nombres_por_auto_id.get(item.auto_id),
                     )
                 )
         return alertas

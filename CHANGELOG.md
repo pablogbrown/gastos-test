@@ -86,3 +86,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - feat(mantenimiento-casa): nueva pantalla "Mantenimiento" (agrupada con "Tareas") para cargar cuestiones de mantenimiento de la casa — fecha estimada, periodicidad (semanal a anual), lista de materiales necesarios con cantidad y estado conseguido/pendiente, y una alerta visual en Inicio cuando se acerca la fecha; un ítem recurrente no se puede completar antes de su fecha estimada.
+
+- feat(mantenimiento-autos): nueva pantalla "Mantenimiento Autos" para registrar los autos de la casa y cargarles sus services/mantenimientos, con la misma mecánica (fecha estimada, periodicidad, materiales, alerta) ya construida para mantenimiento de la casa — agrupados por auto y separados de "Mantenimiento".

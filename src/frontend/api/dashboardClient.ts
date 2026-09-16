@@ -52,13 +52,17 @@ export interface TarjetaAlerta {
  * venció. Mismo shape que `ItemMantenimientoAlertaOut` (backend) —
  * snake_case, sin alias, mismo criterio que `TarjetaAlerta` arriba: solo
  * el campo contenedor `mantenimientoConAlerta` se camelCasea, no los
- * objetos que contiene. */
+ * objetos que contiene. Spec `mantenimiento-autos`, REQ-004:
+ * `auto_id`/`auto_nombre` (aditivo) — `null`/`undefined` para un ítem de
+ * la casa, poblados cuando pertenece a un auto puntual. */
 export interface ItemMantenimientoAlerta {
   id: string;
   nombre: string;
   fecha_estimada: string;
   dias_para_vencimiento: number;
   vencido: boolean;
+  auto_id?: string | null;
+  auto_nombre?: string | null;
 }
 
 /** Spec `gastos-sin-reparto`: mismo contrato que `BalanceResponse`

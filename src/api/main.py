@@ -9,6 +9,7 @@ motivo (es la última de las cuatro sub-specs de la feature).
 from fastapi import FastAPI
 
 from src.api.routes.auth import auth_router
+from src.api.routes.autos import autos_router
 from src.api.routes.casas import casas_router
 from src.api.routes.dashboard import dashboard_router
 from src.api.routes.gastos import gastos_router
@@ -30,6 +31,7 @@ app.include_router(dashboard_router)
 app.include_router(tarjetas_router)
 app.include_router(prestamos_router)
 app.include_router(mantenimiento_router)
+app.include_router(autos_router)
 
 
 @app.on_event("startup")

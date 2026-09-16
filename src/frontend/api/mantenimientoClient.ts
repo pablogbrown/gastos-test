@@ -28,6 +28,10 @@ export interface ItemMantenimiento {
   estado: EstadoItemMantenimiento;
   creado_en: string;
   materiales: Material[];
+  // Spec `mantenimiento-autos`, REQ-002/REQ-003: `null`/`undefined` para
+  // un ítem de la casa; poblado cuando pertenece a un auto puntual.
+  auto_id?: string | null;
+  auto_nombre?: string | null;
 }
 
 export interface NuevoMaterial {
@@ -42,6 +46,9 @@ export interface NuevoItemMantenimiento {
   recurrente?: boolean;
   periodicidad?: string;
   materiales?: NuevoMaterial[];
+  // Spec `mantenimiento-autos`, REQ-002: opcional — asocia el ítem a un
+  // auto puntual en vez de a la casa.
+  autoId?: string;
 }
 
 const API_BASE = "/casas";
@@ -75,13 +82,23 @@ export async function crearItem(
       recurrente: item.recurrente ?? false,
       periodicidad: item.recurrente ? item.periodicidad : undefined,
       materiales: item.materiales && item.materiales.length > 0 ? item.materiales : undefined,
+      auto_id: item.autoId || undefined,
     }),
   });
   return parseJsonOrThrow<ItemMantenimiento>(resp);
 }
 
-export async function listarItems(casaId: string): Promise<ItemMantenimiento[]> {
-  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/mantenimiento`);
+// Spec `mantenimiento-autos`, REQ-003: `autoId` opcional — sin él, el
+// backend devuelve solo los ítems de la casa (`auto_id IS NULL`); con
+// él, solo los de ese auto.
+export async function listarItems(
+  casaId: string,
+  autoId?: string
+): Promise<ItemMantenimiento[]> {
+  const url = autoId
+    ? `${API_BASE}/${casaId}/mantenimiento?autoId=${encodeURIComponent(autoId)}`
+    : `${API_BASE}/${casaId}/mantenimiento`;
+  const resp = await fetchAutenticado(url);
   return parseJsonOrThrow<ItemMantenimiento[]>(resp);
 }
 

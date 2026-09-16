@@ -86,9 +86,14 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
 
   /** Spec `mantenimiento-casa`, REQ-005: mismo criterio de texto que
    * `textoAlerta` arriba, aplicado a un ítem de mantenimiento en vez de
-   * una tarjeta. */
+   * una tarjeta. Spec `mantenimiento-autos`, REQ-004: cuando el ítem
+   * pertenece a un auto (`auto_nombre` presente), el nombre del auto se
+   * menciona entre paréntesis junto al nombre del ítem — mismo banner
+   * combinado, sin una sección separada (decisión explícita del usuario,
+   * ver `00-overview.md`'s Tradeoffs), solo cambia el texto armado acá. */
   function textoAlertaMantenimiento(item: ItemMantenimientoAlerta): string {
-    const base = `${item.nombre} — fecha estimada ${item.fecha_estimada}`;
+    const nombreConAuto = item.auto_nombre ? `${item.nombre} (${item.auto_nombre})` : item.nombre;
+    const base = `${nombreConAuto} — fecha estimada ${item.fecha_estimada}`;
     if (item.vencido) {
       return `${base} — ya venció hace ${Math.abs(item.dias_para_vencimiento)} días`;
     }

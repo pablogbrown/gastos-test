@@ -1,0 +1,116 @@
+{
+  "$schema_version": "2",
+  "feature_id": "mantenimiento-autos",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/mantenimiento-autos/feat/01-plan-01-modelo-auto.md",
+      "files_touched": [
+        "src/db/models/auto.py",
+        "src/db/models/mantenimiento.py",
+        "src/db/migrations/0018_mantenimiento_autos.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "Auto", "signature": "model", "kind": "export" },
+        { "name": "ItemMantenimiento.auto_id", "signature": "Optional[UUID]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Auto existe como tabla propia y ItemMantenimiento.auto_id referencia autos.id con FK real, y la migracion corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepcion; autos existe y items_mantenimiento.auto_id referencia correctamente.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "Usar el mecanismo de base temporal existente — nunca DATABASE_URL directo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/mantenimiento-autos/feat/01-plan-02-auto-service.md",
+      "files_touched": [
+        "src/services/auto_service.py",
+        "src/services/mantenimiento_service.py",
+        "tests/integration/services/auto_service.test.py",
+        "tests/integration/services/mantenimiento_auto.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        { "name": "crear_auto", "signature": "(casa_id, marca, modelo, actor, patente=None, anio=None) -> Auto", "kind": "export" },
+        { "name": "listar_autos", "signature": "(casa_id) -> List[Auto]", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "Auto" },
+        { "from": "T1", "name": "ItemMantenimiento.auto_id" }
+      ],
+      "contract": {
+        "statement": "auto_service ofrece alta/listado; mantenimiento_service filtra correctamente por auto_id, defaulteando a solo items de la casa (auto_id NULL) cuando no se especifica.",
+        "postcondition": "listar_items(casa_id) sin auto_id devuelve solo items con auto_id NULL; con auto_id devuelve solo los de ese auto; crear_item con un auto_id de otra casa lanza NotFoundError; obtener_items_con_alerta incluye items de auto.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/mantenimiento_auto.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/mantenimiento-autos/feat/01-plan-03-api-autos.md",
+      "files_touched": [
+        "src/api/routes/autos.py",
+        "src/api/main.py",
+        "src/api/routes/mantenimiento.py",
+        "tests/integration/api/autos_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "AutoOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "crear_auto" },
+        { "from": "T2", "name": "listar_autos" }
+      ],
+      "contract": {
+        "statement": "Los endpoints CRUD de autos funcionan sobre HTTP y mantenimiento acepta/filtra por auto_id.",
+        "postcondition": "POST/GET .../autos responden correctamente; POST .../mantenimiento acepta auto_id; GET .../mantenimiento?autoId= filtra correctamente.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/autos_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/mantenimiento-autos/feat/01-plan-04-frontend-autos.md",
+      "files_touched": [
+        "src/frontend/api/autosClient.ts",
+        "src/frontend/api/mantenimientoClient.ts",
+        "src/frontend/pages/MantenimientoAutos.tsx",
+        "src/frontend/pages/InicioCasa.tsx",
+        "src/frontend/AppNav.tsx",
+        "src/frontend/App.tsx",
+        "tests/unit/frontend/MantenimientoAutos.test.tsx",
+        "tests/unit/frontend/Mantenimiento.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 45,
+      "test_cases": ["TC-006", "TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "AutoOut" },
+        { "from": "T3", "name": "ItemMantenimientoOut" }
+      ],
+      "contract": {
+        "statement": "La pantalla Mantenimiento Autos permite registrar autos y sus items, agrupados; Mantenimiento (de la casa) sigue sin regresion.",
+        "postcondition": "Registrar un auto y cargarle un item los muestra agrupados correctamente; Mantenimiento.tsx sigue mostrando solo items de la casa.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/MantenimientoAutos.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
