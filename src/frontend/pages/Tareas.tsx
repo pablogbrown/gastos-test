@@ -52,12 +52,25 @@ const ESTADO_COLOR: Record<EstadoTarea, "default" | "warning" | "success"> = {
   completada: "success",
 };
 
+/** Fix (reportado en vivo): una tarea recurrente no se puede completar
+ * más seguido que su frecuencia — cada instancia nueva recién se puede
+ * completar a partir de su propia `fechaPrevista` (hoy inclusive).
+ * Comparación de strings "YYYY-MM-DD" (mismo formato que ya devuelve el
+ * backend), válida para orden cronológico sin parsear a `Date`. */
+function yaLlegoLaFechaPrevista(tarea: Tarea): boolean {
+  if (!tarea.recurrente || !tarea.fechaPrevista) return true;
+  const hoy = new Date().toISOString().slice(0, 10);
+  return tarea.fechaPrevista <= hoy;
+}
+
 /** Visible solo para quien puede completar `tarea` (REQ-003, TC-004):
  * cualquiera si no tiene responsable, el propio responsable, o un
- * Administrador. Defensa en profundidad — la API vuelve a validar el
- * mismo criterio en `completar_tarea`. */
+ * Administrador — y, si es recurrente, solo a partir de su fecha
+ * prevista. Defensa en profundidad — la API vuelve a validar el mismo
+ * criterio en `completar_tarea`. */
 function puedeCompletar(tarea: Tarea, miembroIdActual: string, rol: Rol): boolean {
   if (tarea.estado === "completada") return false;
+  if (!yaLlegoLaFechaPrevista(tarea)) return false;
   if (rol === "admin") return true;
   if (!tarea.responsableId) return true;
   return tarea.responsableId === miembroIdActual;
@@ -203,7 +216,7 @@ export function Tareas({ casaId, miembroIdActual, rolUsuarioActual }: TareasProp
 
             <TextField
               id="fecha-tarea"
-              label="Fecha prevista"
+              label={recurrente ? "Fecha prevista (obligatoria si es recurrente)" : "Fecha prevista"}
               type="date"
               value={fechaPrevista}
               onChange={(e) => setFechaPrevista(e.target.value)}

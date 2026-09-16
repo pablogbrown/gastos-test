@@ -50,6 +50,35 @@ function tareaConResponsable(responsableId: string) {
   };
 }
 
+/** Regresión (reportado en vivo): una tarea diaria no se debía poder
+ * completar más seguido que su frecuencia. `fechaPrevista` en el futuro
+ * ("mañana") reproduce la instancia recién generada por
+ * `procesar_recurrencia` tras la primera finalización del día. */
+function tareaRecurrenteConFecha(fechaPrevista: string) {
+  return {
+    id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    casa_id: CASA_ID,
+    nombre: "Lavar los platos",
+    descripcion: null,
+    puntos: 1,
+    responsableId: null,
+    fechaPrevista,
+    estado: "pendiente",
+    recurrente: true,
+    frecuencia: "diaria",
+  };
+}
+
+function fechaManana(): string {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() + 1);
+  return fecha.toISOString().slice(0, 10);
+}
+
+function fechaHoy(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function mockFetch(tareas: unknown[], historial: unknown[] = [], miembros: unknown[] = []) {
   return vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -103,6 +132,28 @@ describe("Tareas", () => {
     vi.stubGlobal("fetch", mockFetch([tareaConResponsable(ANA_ID)], []));
 
     render(<Tareas casaId={CASA_ID} miembroIdActual={ANA_ID} rolUsuarioActual="member" />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Marcar completada" })).toBeInTheDocument()
+    );
+  });
+
+  it("oculta 'Marcar completada' en una tarea recurrente antes de su fecha prevista (regresión)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockFetch([tareaRecurrenteConFecha(fechaManana())], [])
+    );
+
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ANA_ID} rolUsuarioActual="admin" />);
+
+    await screen.findByText("Lavar los platos");
+    expect(screen.queryByRole("button", { name: "Marcar completada" })).not.toBeInTheDocument();
+  });
+
+  it("muestra 'Marcar completada' en una tarea recurrente en su fecha prevista", async () => {
+    vi.stubGlobal("fetch", mockFetch([tareaRecurrenteConFecha(fechaHoy())], []));
+
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ANA_ID} rolUsuarioActual="admin" />);
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Marcar completada" })).toBeInTheDocument()
