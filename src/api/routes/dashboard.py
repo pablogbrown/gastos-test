@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 
 from src.api.dependencies import resolver_actor_en_casa
 from src.api.routes.gastos import AporteOut, GastoOut, TotalCasaOut
+from src.api.routes.mantenimiento import ItemMantenimientoAlertaOut
 from src.api.routes.tarjetas import TarjetaAlertaOut
 from src.api.schemas import HistorialTareaOut, MiembroOut, RankingEntryOut, TareaOut
 from src.services.actividad_service import obtener_actividad
@@ -60,6 +61,13 @@ class DashboardOut(BaseModel):
     tarjetas_con_alerta: List[TarjetaAlertaOut] = Field(
         default_factory=list, alias="tarjetasConAlerta"
     )
+    # Spec `mantenimiento-casa`, REQ-005 (aditivo) — [API-01]: el campo
+    # contenedor de nivel superior lleva alias camelCase, igual que
+    # `tarjetasConAlerta`; `ItemMantenimientoAlertaOut` en sí queda
+    # snake_case sin alias, igual que `TarjetaAlertaOut`.
+    mantenimiento_con_alerta: List[ItemMantenimientoAlertaOut] = Field(
+        default_factory=list, alias="mantenimientoConAlerta"
+    )
 
     class Config:
         allow_population_by_field_name = True
@@ -93,6 +101,7 @@ def obtener_inicio_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_
         tareas_completadas_recientes=dashboard.tareas_completadas_recientes,
         ranking=dashboard.ranking,
         tarjetas_con_alerta=dashboard.tarjetas_con_alerta,
+        mantenimiento_con_alerta=dashboard.mantenimiento_con_alerta,
     )
 
 

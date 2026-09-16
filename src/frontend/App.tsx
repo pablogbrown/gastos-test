@@ -16,6 +16,7 @@ import { Gastos } from "./pages/Gastos";
 import { HistorialActividad } from "./pages/HistorialActividad";
 import { InicioCasa } from "./pages/InicioCasa";
 import { Login } from "./pages/Login";
+import { Mantenimiento } from "./pages/Mantenimiento";
 import { Miembros } from "./pages/Miembros";
 import { Prestamos } from "./pages/Prestamos";
 import { Ranking } from "./pages/Ranking";
@@ -125,6 +126,7 @@ export function App() {
             rolUsuarioActual={rolUsuarioActual}
           />
         )}
+        {pantalla === "mantenimiento" && <Mantenimiento casaId={casaActual.id} />}
         {pantalla === "ranking" && <Ranking casaId={casaActual.id} miembros={miembros} />}
         {pantalla === "actividad" && <HistorialActividad casaId={casaActual.id} />}
         {pantalla === "suscripciones" && (
