@@ -51,18 +51,17 @@ def _construir_pdf_resumen_bbva() -> bytes:
 
     y = 800
     c.drawString(40, y, "BBVA Visa Platinum")
-    y -= 20
-    c.drawString(40, y, "CIERRE ACTUAL")
-    c.drawString(200, y, "27-Ago-26")
+    y -= 30
+    # Encabezado real: las 5 etiquetas van en una línea y sus 5 valores
+    # en la línea SIGUIENTE — nunca etiqueta y valor en la misma línea
+    # (bug real encontrado al importar un resumen real por primera vez,
+    # ver `.nybo/plans/importar-resumen-tarjeta/evidence/decisions.yaml`).
+    c.drawString(
+        40, y, "CIERRE ACTUAL     VENCIMIENTO ACTUAL     SALDO ACTUAL $     "
+        "SALDO ACTUAL U$S     PAGO MÍNIMO $"
+    )
     y -= 16
-    c.drawString(40, y, "VENCIMIENTO ACTUAL")
-    c.drawString(200, y, "07-Sep-26")
-    y -= 16
-    c.drawString(40, y, "SALDO ACTUAL $")
-    c.drawString(200, y, "125.430,50")
-    y -= 16
-    c.drawString(40, y, "SALDO ACTUAL U$S")
-    c.drawString(200, y, "340,00")
+    c.drawString(40, y, "27-Ago-26     07-Sep-26     125.430,50     340,00     50.000,00")
     y -= 30
     c.drawString(40, y, "Consumos")
     y -= 20
