@@ -11,6 +11,7 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
+import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -68,6 +69,12 @@ export function Gastos({ casaId }: GastosProps) {
   // Spec `gastos-vista-mensual` (REQ-002): mes preseleccionado = mes
   // actual, mismo componente y criterio que el selector de `Balance.tsx`.
   const [mes, setMes] = useState<string>(() => new Date().toISOString().slice(0, 7));
+  // Paginación del historial (REQ: mostrar los resultados de a 50) — el
+  // tamaño de página es fijo, sin selector, y la página vuelve a la
+  // primera cada vez que cambia el listado subyacente (mes distinto,
+  // alta/edición de un gasto) para no quedar en una página vacía.
+  const FILAS_POR_PAGINA = 50;
+  const [pagina, setPagina] = useState(0);
 
   const cargar = useCallback(async () => {
     try {
@@ -77,6 +84,7 @@ export function Gastos({ casaId }: GastosProps) {
       ]);
       setCategorias(listaCategorias);
       setGastos(historial);
+      setPagina(0);
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar los gastos.");
     }
@@ -364,24 +372,34 @@ export function Gastos({ casaId }: GastosProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {gastos.map((gasto) => (
-              <TableRow key={gasto.id}>
-                <TableCell>{gasto.fecha}</TableCell>
-                <TableCell>{gasto.descripcion}</TableCell>
-                <TableCell>{importeConPrefijo(gasto)}</TableCell>
-                <TableCell>{nombreCategoria(gasto.categoria_id)}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={gasto.estado === "pagado" ? "Pagado" : "A pagar"}
-                    color={gasto.estado === "pagado" ? "success" : "warning"}
-                    size="small"
-                    onClick={() => void handleToggleEstado(gasto)}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+            {gastos
+              .slice(pagina * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA + FILAS_POR_PAGINA)
+              .map((gasto) => (
+                <TableRow key={gasto.id}>
+                  <TableCell>{gasto.fecha}</TableCell>
+                  <TableCell>{gasto.descripcion}</TableCell>
+                  <TableCell>{importeConPrefijo(gasto)}</TableCell>
+                  <TableCell>{nombreCategoria(gasto.categoria_id)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={gasto.estado === "pagado" ? "Pagado" : "A pagar"}
+                      color={gasto.estado === "pagado" ? "success" : "warning"}
+                      size="small"
+                      onClick={() => void handleToggleEstado(gasto)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={gastos.length}
+          page={pagina}
+          onPageChange={(_event, nuevaPagina) => setPagina(nuevaPagina)}
+          rowsPerPage={FILAS_POR_PAGINA}
+          rowsPerPageOptions={[]}
+        />
       </TableContainer>
     </Box>
   );
