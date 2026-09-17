@@ -1,9 +1,11 @@
+import { ThemeProvider } from "@mui/material/styles";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Gastos } from "../../../src/frontend/pages/Gastos";
 import * as suscripcionesClient from "../../../src/frontend/api/suscripcionesClient";
+import { theme } from "../../../src/frontend/theme";
 
 const CASA_ID = "11111111-1111-1111-1111-111111111111";
 const ADMIN_ID = "22222222-2222-2222-2222-222222222222";
@@ -607,5 +609,45 @@ describe("Gastos", () => {
 
     expect(await screen.findByText("$100.00")).toBeInTheDocument();
     expect(await screen.findByText("US$20.00")).toBeInTheDocument();
+  });
+
+  it("pagina el historial de a 50 resultados", async () => {
+    const user = userEvent.setup();
+    const gastos = Array.from({ length: 60 }, (_, i) => ({
+      id: `gasto-${i}`,
+      casa_id: CASA_ID,
+      descripcion: `Gasto ${i}`,
+      importe: "10.00",
+      fecha: "2026-01-01",
+      pagado_por: ADMIN_ID,
+      categoria_id: CATEGORIA_ID,
+    }));
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.split("?")[0].endsWith("/gastos")) {
+        return { ok: true, json: async () => gastos };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <Gastos casaId={CASA_ID} />
+      </ThemeProvider>
+    );
+
+    await screen.findByText("Gasto 0");
+    expect(screen.getByText("Gasto 49")).toBeInTheDocument();
+    expect(screen.queryByText("Gasto 50")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /página siguiente/i }));
+
+    expect(await screen.findByText("Gasto 50")).toBeInTheDocument();
+    expect(screen.getByText("Gasto 59")).toBeInTheDocument();
+    expect(screen.queryByText("Gasto 0")).not.toBeInTheDocument();
   });
 });
