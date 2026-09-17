@@ -340,16 +340,22 @@ def registrar_gasto_cuotas_restantes(
         gastos_creados: List[Gasto] = []
 
         for i in range(cantidad_restantes):
+            numero_cuota = cuota_actual + i
             gasto = Gasto(
                 id=uuid.uuid4(),
                 casa_id=casa_id,
-                descripcion=descripcion.strip(),
+                # Fix (reportado en vivo): sin el sufijo "(N/M)", las
+                # cuotas restantes importadas de un resumen quedaban con
+                # la misma descripción repetida, sin forma de distinguir
+                # cuál es cuál en el listado — mismo criterio que
+                # `_crear_gastos_en_cuotas` ya usa para una serie nueva.
+                descripcion=f"{descripcion.strip()} ({numero_cuota}/{cuota_total})",
                 importe=importe_decimal,
                 fecha=_sumar_meses(fecha_inicio, i),
                 pagado_por=pagado_por,
                 categoria_id=categoria_id,
                 cuota_grupo_id=cuota_grupo_id,
-                cuota_numero=cuota_actual + i,
+                cuota_numero=numero_cuota,
                 cuota_total=cuota_total,
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,

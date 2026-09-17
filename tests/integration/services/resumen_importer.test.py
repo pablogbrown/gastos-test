@@ -217,6 +217,13 @@ def test_tc004_linea_en_cuotas_crea_solo_las_cuotas_restantes(db_session):
     assert [c.cuota_numero for c in cuotas] == [4, 5, 6]
     assert all(c.cuota_total == 6 for c in cuotas)
     assert all(str(c.importe) == "22000.00" for c in cuotas)
+    # Regresión (reportado en vivo): sin el sufijo "(N/M)" en la
+    # descripción, las 3 cuotas quedaban indistinguibles en el listado.
+    assert [c.descripcion for c in cuotas] == [
+        "ELECTRODOMESTICOS SA (4/6)",
+        "ELECTRODOMESTICOS SA (5/6)",
+        "ELECTRODOMESTICOS SA (6/6)",
+    ]
     assert [c.fecha.isoformat() for c in cuotas] == ["2026-08-04", "2026-09-04", "2026-10-04"]
     grupos = {c.cuota_grupo_id for c in cuotas}
     assert len(grupos) == 1
