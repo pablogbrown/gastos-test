@@ -9,7 +9,7 @@
 //     agregan `Authorization: Bearer <jwt>` desde acá, un único lugar
 //     que cambia si mañana se reemplaza `localStorage` por otro
 //     mecanismo (Design Rationale, T2).
-import { ApiError, formatErrorDetail } from "./httpError";
+import { parseJsonOrThrow } from "./httpError";
 
 export const TOKEN_STORAGE_KEY = "taskia_jwt";
 
@@ -24,21 +24,6 @@ export interface RegistroResponse {
 }
 
 let listenersCierreSesion: Array<() => void> = [];
-
-async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
-  if (!resp.ok) {
-    let detail = resp.statusText;
-    try {
-      const body = await resp.json();
-      detail = formatErrorDetail(body.detail) ?? detail;
-    } catch {
-      // cuerpo no-JSON o vacío: se mantiene resp.statusText
-    }
-    const error: ApiError = { status: resp.status, detail };
-    throw error;
-  }
-  return (await resp.json()) as T;
-}
 
 /** REQ-002/TC-002: registra un Usuario nuevo. No auto-loguea — el
  * llamador (`Registro.tsx`) navega a `Login` con el registro exitoso. */

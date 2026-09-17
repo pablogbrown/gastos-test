@@ -2,7 +2,7 @@
 // lógica de negocio: solo arma requests y tipa las respuestas — mismo
 // patrón delgado que `tarjetasClient.ts`.
 import { fetchAutenticado } from "./authClient";
-import { ApiError, esApiError, formatErrorDetail } from "./httpError";
+import { ApiError, esApiError, parseJsonOrThrowNullable } from "./httpError";
 
 export type { ApiError };
 export { esApiError };
@@ -35,22 +35,6 @@ export interface NuevoPrestamo {
 
 const API_BASE = "/casas";
 
-async function parseJsonOrThrow<T>(resp: Response): Promise<T | null> {
-  if (!resp.ok) {
-    let detail = resp.statusText;
-    try {
-      const body = await resp.json();
-      detail = formatErrorDetail(body.detail) ?? detail;
-    } catch {
-      // cuerpo no-JSON o vacío: se mantiene resp.statusText
-    }
-    const error: ApiError = { status: resp.status, detail };
-    throw error;
-  }
-  if (resp.status === 204) return null;
-  return (await resp.json()) as T;
-}
-
 export async function crearPrestamo(casaId: string, prestamo: NuevoPrestamo): Promise<Prestamo> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/prestamos`, {
     method: "POST",
@@ -64,12 +48,12 @@ export async function crearPrestamo(casaId: string, prestamo: NuevoPrestamo): Pr
       descripcion: prestamo.descripcion || undefined,
     }),
   });
-  return (await parseJsonOrThrow<Prestamo>(resp))!;
+  return (await parseJsonOrThrowNullable<Prestamo>(resp))!;
 }
 
 export async function listarPrestamos(casaId: string): Promise<Prestamo[]> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/prestamos`);
-  return (await parseJsonOrThrow<Prestamo[]>(resp))!;
+  return (await parseJsonOrThrowNullable<Prestamo[]>(resp))!;
 }
 
 export async function actualizarEstadoPrestamo(
@@ -82,7 +66,7 @@ export async function actualizarEstadoPrestamo(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ estado }),
   });
-  return (await parseJsonOrThrow<Prestamo>(resp))!;
+  return (await parseJsonOrThrowNullable<Prestamo>(resp))!;
 }
 
 /** Confirma o rechaza el propio rol en un préstamo pendiente de
@@ -99,5 +83,5 @@ export async function confirmarPrestamo(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ confirma }),
   });
-  return (await parseJsonOrThrow<Prestamo>(resp))!;
+  return (await parseJsonOrThrowNullable<Prestamo>(resp))!;
 }
