@@ -21,12 +21,13 @@ from pydantic import BaseModel
 
 from src.api.dependencies import resolver_actor_en_casa
 from src.services.exceptions import (
+    ConflictError,
     NotFoundError,
     PdfFormatoNoReconocidoError,
     PermissionDeniedError,
     ValidationError,
 )
-from src.services.resumen_importer_service import importar_resumen
+from src.services.resumen_importer_service import importar_resumen, listar_resumenes, pagar_resumen
 from src.services.tarjeta_service import (
     actualizar_tarjeta,
     crear_tarjeta,
@@ -80,6 +81,28 @@ class ResumenImportadoOut(BaseModel):
     cuotas_creadas: int
     suscripciones_vinculadas: int
     tarjeta: TarjetaOut
+    # Spec `resumen-tarjeta-pago`, REQ-001/REQ-003: id del `ResumenTarjeta`
+    # recién creado, para que el frontend pueda referenciarlo (p. ej.
+    # refrescar la lista de resúmenes de esa tarjeta).
+    resumen_id: UUID
+
+    class Config:
+        orm_mode = True
+
+
+class ResumenTarjetaOut(BaseModel):
+    """Un resumen ya importado (spec `resumen-tarjeta-pago`, REQ-001/
+    REQ-005)."""
+
+    id: UUID
+    tarjeta_id: UUID
+    fecha_cierre: date
+    fecha_vencimiento: date
+    saldo_ars: Optional[Decimal] = None
+    saldo_usd: Optional[Decimal] = None
+    gastos_creados: int
+    estado: str
+    importado_en: datetime
 
     class Config:
         orm_mode = True
@@ -190,6 +213,10 @@ async def importar_resumen_endpoint(
     `PdfFormatoNoReconocidoError` -> 422 (documento no reconocible, no un
     dato con forma inválida — distinto criterio de `ValidationError`,
     ver Design Rationale de `01-plan-03-api-importar.md`).
+
+    `ConflictError` -> 409 (spec `resumen-tarjeta-pago`, REQ-002): ya se
+    importó un resumen con la misma tarjeta y fecha de cierre — mismo
+    criterio ya usado en `tareas.py`/`mantenimiento.py`.
     """
     contenido = await archivo.read()
     try:
@@ -203,9 +230,53 @@ async def importar_resumen_endpoint(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except PermissionDeniedError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@tarjetas_router.get(
+    "/{casa_id}/tarjetas/{tarjeta_id}/resumenes",
+    response_model=list[ResumenTarjetaOut],
+)
+def listar_resumenes_endpoint(
+    casa_id: UUID,
+    tarjeta_id: UUID,
+    actor: UUID = Depends(resolver_actor_en_casa),
+):
+    """Resúmenes ya importados de una tarjeta (spec `resumen-tarjeta-
+    pago`, REQ-005) — control y auditoría."""
+    try:
+        return listar_resumenes(casa_id, tarjeta_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@tarjetas_router.patch(
+    "/{casa_id}/tarjetas/{tarjeta_id}/resumenes/{resumen_id}/pagar",
+    response_model=ResumenTarjetaOut,
+)
+def pagar_resumen_endpoint(
+    casa_id: UUID,
+    tarjeta_id: UUID,
+    resumen_id: UUID,
+    actor: UUID = Depends(resolver_actor_en_casa),
+):
+    """Marca un resumen y todos sus gastos vinculados como pagados, en
+    una sola acción (spec `resumen-tarjeta-pago`, REQ-004).
+
+    `tarjeta_id` no se usa para filtrar (`pagar_resumen` ya valida el
+    resumen por `casa_id`/`resumen_id`) — se mantiene en la URL solo por
+    consistencia con el resto de las rutas anidadas bajo una tarjeta.
+    """
+    try:
+        return pagar_resumen(casa_id, resumen_id, actor)
+    except ConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
