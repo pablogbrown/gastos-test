@@ -138,6 +138,13 @@ def importar_resumen(
     for consumo in resumen.consumos:
         moneda, importe = _moneda_y_monto(consumo)
 
+        # Spec `gastos-estado-pago`, REQ-004: un resumen recien importado
+        # nunca se asume pagado — todas las rutas de creación de gasto de
+        # esta importación comparten este mismo `GastoMetadata`.
+        metadata = gasto_service.GastoMetadata(
+            moneda=moneda, tarjeta_id=tarjeta_id, estado="a_pagar", resumen_id=resumen_id
+        )
+
         if _es_suscripcion_reconocida(consumo.descripcion):
             _suscripcion, degradado = suscripcion_service.registrar_suscripcion_detectada(
                 casa_id,
@@ -148,8 +155,7 @@ def importar_resumen(
                 actor,
                 moneda,
                 consumo.fecha,
-                tarjeta_id=tarjeta_id,
-                resumen_id=resumen_id,
+                metadata=metadata,
             )
             if degradado:
                 gasto_service.registrar_gasto(
@@ -160,12 +166,7 @@ def importar_resumen(
                     categoria.id,
                     tarjeta.miembro_id,
                     actor,
-                    moneda=moneda,
-                    tarjeta_id=tarjeta_id,
-                    # Spec `gastos-estado-pago`, REQ-004: un resumen recien
-                    # importado nunca se asume pagado.
-                    estado="a_pagar",
-                    resumen_id=resumen_id,
+                    metadata=metadata,
                 )
                 gastos_creados += 1
             else:
@@ -182,12 +183,7 @@ def importar_resumen(
                 categoria.id,
                 tarjeta.miembro_id,
                 actor,
-                moneda=moneda,
-                tarjeta_id=tarjeta_id,
-                # Spec `gastos-estado-pago`, REQ-004: idem el resto de las
-                # rutas de creacion de gasto de esta importacion.
-                estado="a_pagar",
-                resumen_id=resumen_id,
+                metadata=metadata,
             )
             gastos_creados += len(nuevos)
             cuotas_creadas += len(nuevos)
@@ -200,12 +196,7 @@ def importar_resumen(
                 categoria.id,
                 tarjeta.miembro_id,
                 actor,
-                moneda=moneda,
-                tarjeta_id=tarjeta_id,
-                # Spec `gastos-estado-pago`, REQ-004: idem el resto de las
-                # rutas de creacion de gasto de esta importacion.
-                estado="a_pagar",
-                resumen_id=resumen_id,
+                metadata=metadata,
             )
             gastos_creados += 1
 

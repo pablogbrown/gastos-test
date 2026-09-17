@@ -25,6 +25,7 @@ perezosa del mes actual sin necesitar un scheduler nuevo.
 """
 import calendar
 import uuid
+from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from typing import List, Optional, Tuple
@@ -53,6 +54,32 @@ MONEDAS_VALIDAS = {"ARS", "USD"}
 ESTADOS_VALIDOS = {"pagado", "a_pagar"}
 
 
+@dataclass
+class GastoMetadata:
+    """Atributos opcionales de un Gasto, agrupados en un solo objeto en
+    vez de ser parámetros sueltos de `registrar_gasto`/`registrar_gasto_
+    cuotas_restantes`/`_crear_gastos_en_cuotas` (hallazgo de
+    `/nybo-quality-solid`: cada spec nueva — cuotas, suscripción, multi-
+    moneda, tarjetas, estado-pago, resumen — le sumó un parámetro más a
+    esa firma; agruparlos evita que la próxima lo haga de nuevo).
+
+    No todos los campos aplican a todo caller: `cuotas`/`suscripcion_id`
+    son mutuamente excluyentes y solo los usa `registrar_gasto` (nunca
+    `_crear_gastos_en_cuotas`, que ya recibe la cantidad de cuotas como
+    su propio parámetro `cuotas: int` requerido, ni `registrar_gasto_
+    cuotas_restantes`, que arma cuotas restantes de una serie ya en
+    curso). Cada función usa solo los campos que le corresponden — ver
+    su propio docstring.
+    """
+
+    cuotas: Optional[int] = None
+    suscripcion_id: Optional[UUID] = None
+    moneda: str = "ARS"
+    tarjeta_id: Optional[UUID] = None
+    estado: str = "pagado"
+    resumen_id: Optional[UUID] = None
+
+
 def registrar_gasto(
     casa_id: UUID,
     descripcion: str,
@@ -61,12 +88,7 @@ def registrar_gasto(
     categoria_id: Optional[UUID],
     pagado_por: UUID,
     actor: UUID,
-    cuotas: Optional[int] = None,
-    suscripcion_id: Optional[UUID] = None,
-    moneda: str = "ARS",
-    tarjeta_id: Optional[UUID] = None,
-    estado: str = "pagado",
-    resumen_id: Optional[UUID] = None,
+    metadata: Optional[GastoMetadata] = None,
 ) -> Gasto:
     """Registra un Gasto — una salida de fondos de la casa (spec
     `gastos-sin-reparto`, REQ-001).
@@ -78,41 +100,54 @@ def registrar_gasto(
     entre personas es un préstamo explícito (spec separada
     `prestamos-entre-miembros`), nunca un gasto de la casa.
 
-    `cuotas` (spec `gastos-en-cuotas`, REQ-001 a REQ-004): un entero
-    ≥ 2 crea esa cantidad de gastos consecutivos, uno por mes, cada uno
-    por el importe total dividido en partes iguales (ajuste de redondeo
-    en la última cuota) y compartiendo un `cuota_grupo_id`. `cuotas`
-    ausente, `None`, o
-    explícitamente `1` se comporta exactamente igual que hoy (REQ-003):
-    un único Gasto, sin ningún dato de cuota poblado. Solo `0` o un
-    valor negativo, enviados explícitamente, son rechazados (REQ-004).
+    `metadata` (ver `GastoMetadata`, default: todos los campos en su
+    valor por defecto):
 
-    `suscripcion_id` (spec `gastos-suscripcion-mensual`): puramente de
-    etiquetado — un gasto generado por una suscripción nunca combina con
-    `cuotas` (`suscripcion_service` nunca los pasa juntos).
+    `metadata.cuotas` (spec `gastos-en-cuotas`, REQ-001 a REQ-004): un
+    entero ≥ 2 crea esa cantidad de gastos consecutivos, uno por mes,
+    cada uno por el importe total dividido en partes iguales (ajuste de
+    redondeo en la última cuota) y compartiendo un `cuota_grupo_id`.
+    Ausente, `None`, o explícitamente `1` se comporta exactamente igual
+    que hoy (REQ-003): un único Gasto, sin ningún dato de cuota poblado.
+    Solo `0` o un valor negativo, enviados explícitamente, son
+    rechazados (REQ-004).
 
-    `moneda` (spec `gastos-multi-moneda`, REQ-001/REQ-006): `"ARS"`
-    (default) o `"USD"` — cualquier otro valor es rechazado. Todas las
-    cuotas de una misma compra comparten la `moneda` del gasto original
-    (REQ-005/TC-007).
+    `metadata.suscripcion_id` (spec `gastos-suscripcion-mensual`):
+    puramente de etiquetado — un gasto generado por una suscripción
+    nunca combina con `cuotas` (`suscripcion_service` nunca los pasa
+    juntos).
 
-    `tarjeta_id` (spec `importar-resumen-tarjeta`): puramente de
-    etiquetado, sin validación adicional — `None` (default) es un gasto
-    no originado en una importación de resumen; identifica de qué
+    `metadata.moneda` (spec `gastos-multi-moneda`, REQ-001/REQ-006):
+    `"ARS"` (default) o `"USD"` — cualquier otro valor es rechazado.
+    Todas las cuotas de una misma compra comparten la `moneda` del gasto
+    original (REQ-005/TC-007).
+
+    `metadata.tarjeta_id` (spec `importar-resumen-tarjeta`): puramente
+    de etiquetado, sin validación adicional — `None` (default) es un
+    gasto no originado en una importación de resumen; identifica de qué
     `TarjetaCredito` vino el consumo cuando sí lo es.
 
-    `estado` (spec `gastos-estado-pago`, REQ-001/REQ-007): `"pagado"`
-    (default) o `"a_pagar"` — cualquier otro valor es rechazado. Todas
-    las cuotas de una misma compra comparten el `estado` del gasto
-    original (REQ-002/TC-003), mismo criterio que `moneda`.
+    `metadata.estado` (spec `gastos-estado-pago`, REQ-001/REQ-007):
+    `"pagado"` (default) o `"a_pagar"` — cualquier otro valor es
+    rechazado. Todas las cuotas de una misma compra comparten el
+    `estado` del gasto original (REQ-002/TC-003), mismo criterio que
+    `moneda`.
 
-    `resumen_id` (spec `resumen-tarjeta-pago`): puramente de etiquetado,
-    sin validación adicional — `None` (default) es un gasto no originado
-    en la importación de un resumen; identifica a qué `ResumenTarjeta`
-    pertenece un consumo importado, mismo patrón que `tarjeta_id`. Todas
-    las cuotas de una misma compra comparten el `resumen_id` del gasto
-    original.
+    `metadata.resumen_id` (spec `resumen-tarjeta-pago`): puramente de
+    etiquetado, sin validación adicional — `None` (default) es un gasto
+    no originado en la importación de un resumen; identifica a qué
+    `ResumenTarjeta` pertenece un consumo importado, mismo patrón que
+    `tarjeta_id`. Todas las cuotas de una misma compra comparten el
+    `resumen_id` del gasto original.
     """
+    metadata = metadata or GastoMetadata()
+    cuotas = metadata.cuotas
+    suscripcion_id = metadata.suscripcion_id
+    moneda = metadata.moneda
+    tarjeta_id = metadata.tarjeta_id
+    estado = metadata.estado
+    resumen_id = metadata.resumen_id
+
     if cuotas is not None and cuotas <= 0:
         raise ValidationError("La cantidad de cuotas debe ser 2 o mayor.")
     generar_en_cuotas = cuotas is not None and cuotas >= 2
@@ -164,10 +199,7 @@ def registrar_gasto(
                 pagado_por,
                 categoria_id,
                 cuotas,
-                moneda,
-                tarjeta_id,
-                estado,
-                resumen_id,
+                metadata,
             )
         else:
             gasto = Gasto(
@@ -224,10 +256,7 @@ def _crear_gastos_en_cuotas(
     pagado_por: UUID,
     categoria_id: UUID,
     cuotas: int,
-    moneda: str = "ARS",
-    tarjeta_id: Optional[UUID] = None,
-    estado: str = "pagado",
-    resumen_id: Optional[UUID] = None,
+    metadata: Optional[GastoMetadata] = None,
 ) -> List[Gasto]:
     """Crea `cuotas` filas `Gasto`, una por mes consecutivo a partir de
     `fecha`, compartiendo un `cuota_grupo_id` (spec `gastos-en-cuotas`,
@@ -236,19 +265,19 @@ def _crear_gastos_en_cuotas(
     (spec `gastos-sin-reparto`): cada cuota queda con su importe
     completo, sin ninguna subdivisión adicional.
 
-    `moneda` (spec `gastos-multi-moneda`, REQ-005/TC-007): se propaga sin
-    cambios a las N cuotas generadas — ninguna parte de una misma compra
-    puede tener una moneda distinta de las demás.
-
-    `tarjeta_id` (spec `importar-resumen-tarjeta`): se propaga sin
-    cambios a las N cuotas generadas, igual que `moneda`.
-
-    `estado` (spec `gastos-estado-pago`, REQ-002/TC-003): se propaga sin
-    cambios a las N cuotas generadas, igual que `moneda`.
-
-    `resumen_id` (spec `resumen-tarjeta-pago`): se propaga sin cambios a
-    las N cuotas generadas, igual que `moneda`.
+    `metadata.moneda`/`metadata.tarjeta_id`/`metadata.estado`/
+    `metadata.resumen_id` (`GastoMetadata` — `metadata.cuotas`/
+    `metadata.suscripcion_id` no aplican acá, se ignoran) se propagan
+    sin cambios a las N cuotas generadas — ninguna parte de una misma
+    compra puede tener una moneda/tarjeta/estado/resumen distinto de las
+    demás.
     """
+    metadata = metadata or GastoMetadata()
+    moneda = metadata.moneda
+    tarjeta_id = metadata.tarjeta_id
+    estado = metadata.estado
+    resumen_id = metadata.resumen_id
+
     partes_cuotas = _dividir_importe(importe_decimal, cuotas)
     cuota_grupo_id = uuid.uuid4()
     gastos_creados: List[Gasto] = []
@@ -287,10 +316,7 @@ def registrar_gasto_cuotas_restantes(
     categoria_id: UUID,
     pagado_por: UUID,
     actor: UUID,
-    moneda: str = "ARS",
-    tarjeta_id: Optional[UUID] = None,
-    estado: str = "pagado",
-    resumen_id: Optional[UUID] = None,
+    metadata: Optional[GastoMetadata] = None,
 ) -> List[Gasto]:
     """Registra solo las cuotas RESTANTES de una compra en curso —
     `cuota_actual` (inclusive) hasta `cuota_total`, una por mes
@@ -306,11 +332,22 @@ def registrar_gasto_cuotas_restantes(
     cualquier grupo que ya existiera para las cuotas anteriores, que esta
     spec no tiene forma de conocer ni necesita reconciliar).
 
+    `metadata` (`GastoMetadata` — `metadata.cuotas`/`metadata.
+    suscripcion_id` no aplican acá, se ignoran): `metadata.moneda`/
+    `metadata.tarjeta_id`/`metadata.estado`/`metadata.resumen_id` se
+    propagan sin cambios a las N cuotas generadas.
+
     Reutiliza `_sumar_meses` — nunca reimplementa la aritmética de
     fechas, mismo criterio que el resto de `gasto_service`. Sin reparto
     entre participantes (spec `gastos-sin-reparto`): cada cuota queda
     con su `importe_por_cuota` completo.
     """
+    metadata = metadata or GastoMetadata()
+    moneda = metadata.moneda
+    tarjeta_id = metadata.tarjeta_id
+    estado = metadata.estado
+    resumen_id = metadata.resumen_id
+
     if cuota_actual is None or cuota_total is None or cuota_actual < 1 or cuota_total < cuota_actual:
         raise ValidationError(
             "cuota_actual/cuota_total inválidos: se requiere 1 <= cuota_actual <= cuota_total."

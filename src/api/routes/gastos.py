@@ -41,7 +41,12 @@ from src.api.dependencies import resolver_actor_en_casa
 from src.services.balance_service import calcular_balance
 from src.services.categoria_service import crear_categoria, listar_categorias
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
-from src.services.gasto_service import actualizar_estado_gasto, listar_gastos, registrar_gasto
+from src.services.gasto_service import (
+    GastoMetadata,
+    actualizar_estado_gasto,
+    listar_gastos,
+    registrar_gasto,
+)
 
 gastos_router = APIRouter(prefix="/casas", tags=["gastos"])
 
@@ -188,9 +193,11 @@ def registrar_gasto_endpoint(
             payload.categoria_id,
             payload.pagado_por or actor,
             actor,
-            cuotas=payload.cuotas,
-            moneda=payload.moneda or "ARS",
-            estado=payload.estado or "pagado",
+            metadata=GastoMetadata(
+                cuotas=payload.cuotas,
+                moneda=payload.moneda or "ARS",
+                estado=payload.estado or "pagado",
+            ),
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

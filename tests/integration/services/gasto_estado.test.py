@@ -23,6 +23,7 @@ from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.exceptions import NotFoundError, ValidationError
 from src.services.gasto_service import (
+    GastoMetadata,
     actualizar_estado_gasto,
     listar_gastos,
     registrar_gasto,
@@ -122,7 +123,7 @@ def test_tc002_gasto_con_estado_a_pagar_persiste_asi(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        estado="a_pagar",
+        metadata=GastoMetadata(estado="a_pagar"),
     )
 
     assert gasto.estado == "a_pagar"
@@ -141,8 +142,7 @@ def test_tc003_las_3_cuotas_heredan_el_mismo_estado_a_pagar(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=3,
-        estado="a_pagar",
+        metadata=GastoMetadata(cuotas=3, estado="a_pagar"),
     )
 
     gastos = sorted(listar_gastos(casa.id), key=lambda g: g.cuota_numero)
@@ -191,7 +191,7 @@ def test_tc006_actualizar_estado_gasto_cambia_en_ambos_sentidos(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        estado="a_pagar",
+        metadata=GastoMetadata(estado="a_pagar"),
     )
 
     actualizado = actualizar_estado_gasto(casa.id, gasto.id, "pagado", admin_id)
@@ -230,7 +230,7 @@ def test_estado_invalido_en_registrar_gasto_es_rechazado_con_validation_error(db
             categoria.id,
             admin_id,
             admin_id,
-            estado="otro",
+            metadata=GastoMetadata(estado="otro"),
         )
 
     assert listar_gastos(casa.id) == []
@@ -334,7 +334,7 @@ def test_tc008_cambiar_estado_no_afecta_calcular_balance(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        estado="pagado",
+        metadata=GastoMetadata(estado="pagado"),
     )
     gasto_a_pagar = registrar_gasto(
         casa.id,
@@ -344,7 +344,7 @@ def test_tc008_cambiar_estado_no_afecta_calcular_balance(db_session):
         categoria.id,
         ana.id,
         admin_id,
-        estado="a_pagar",
+        metadata=GastoMetadata(estado="a_pagar"),
     )
 
     balance_antes = calcular_balance(casa.id, "2026-01")

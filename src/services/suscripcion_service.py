@@ -57,7 +57,7 @@ def crear_suscripcion(
     """
     # Import diferido: evita el ciclo `gasto_service` -> `suscripcion_service`
     # (`listar_gastos` importa este módulo dentro de la función, ver ahí).
-    from src.services.gasto_service import registrar_gasto
+    from src.services.gasto_service import GastoMetadata, registrar_gasto
 
     if not descripcion or not str(descripcion).strip():
         raise ValidationError("La descripción de la suscripción no puede estar vacía.")
@@ -117,12 +117,14 @@ def crear_suscripcion(
         suscripcion.categoria_id,
         suscripcion.pagado_por,
         actor,
-        suscripcion_id=suscripcion.id,
-        moneda=suscripcion.moneda,
-        # Spec `gastos-estado-pago`, REQ-003: un cargo automatico de
-        # suscripcion nunca nace "pagado" -- nadie confirmo todavia que
-        # esta saldado.
-        estado="a_pagar",
+        metadata=GastoMetadata(
+            suscripcion_id=suscripcion.id,
+            moneda=suscripcion.moneda,
+            # Spec `gastos-estado-pago`, REQ-003: un cargo automatico de
+            # suscripcion nunca nace "pagado" -- nadie confirmo todavia
+            # que esta saldado.
+            estado="a_pagar",
+        ),
     )
 
     session = get_session()
@@ -149,8 +151,7 @@ def registrar_suscripcion_detectada(
     actor: UUID,
     moneda: str,
     fecha: date,
-    tarjeta_id: Optional[UUID] = None,
-    resumen_id: Optional[UUID] = None,
+    metadata=None,
 ) -> Tuple[Optional[Suscripcion], bool]:
     """Vincula una línea de consumo de un comercio reconocido (Netflix,
     Spotify, Disney+) a una Suscripcion de la casa — spec `importar-
@@ -172,10 +173,21 @@ def registrar_suscripcion_detectada(
     registra ningún gasto acá — el `bool=True` le indica al caller
     (`resumen_importer_service`) que esa línea debe importarse como un
     gasto suelto en su lugar, sin abortar el resto de la importación.
+
+    `metadata` (opcional): instancia de `gasto_service.GastoMetadata` —
+    sin tipar en la firma para no forzar un import de `gasto_service` a
+    nivel de módulo acá (ver el import diferido de abajo). Solo se leen
+    `metadata.tarjeta_id`/`metadata.resumen_id`; el resto de sus campos
+    (`cuotas`, `suscripcion_id`, `moneda`, `estado`) no aplica a esta
+    función y se ignora — `suscripcion_id`/`moneda`/`estado` los arma
+    esta misma función para su propia llamada interna a `registrar_gasto`
+    más abajo.
     """
     # Import diferido: mismo motivo que `crear_suscripcion` (evita el
     # ciclo `gasto_service` -> `suscripcion_service`).
-    from src.services.gasto_service import registrar_gasto
+    from src.services.gasto_service import GastoMetadata, registrar_gasto
+
+    metadata = metadata or GastoMetadata()
 
     session = get_session()
     try:
@@ -231,13 +243,15 @@ def registrar_suscripcion_detectada(
         categoria_id,
         pagado_por,
         actor,
-        suscripcion_id=suscripcion_id,
-        moneda=moneda,
-        tarjeta_id=tarjeta_id,
-        # Spec `gastos-estado-pago`, REQ-004: el resumen recien se
-        # importo -- el usuario todavia no pago esa tarjeta.
-        estado="a_pagar",
-        resumen_id=resumen_id,
+        metadata=GastoMetadata(
+            suscripcion_id=suscripcion_id,
+            moneda=moneda,
+            tarjeta_id=metadata.tarjeta_id,
+            # Spec `gastos-estado-pago`, REQ-004: el resumen recien se
+            # importo -- el usuario todavia no pago esa tarjeta.
+            estado="a_pagar",
+            resumen_id=metadata.resumen_id,
+        ),
     )
 
     session = get_session()
@@ -316,7 +330,7 @@ def generar_gastos_pendientes(casa_id: UUID) -> None:
     `moneda` (spec `gastos-multi-moneda`, REQ-004): cada gasto generado
     hereda la `moneda` de su Suscripcion — nunca la de otra.
     """
-    from src.services.gasto_service import registrar_gasto
+    from src.services.gasto_service import GastoMetadata, registrar_gasto
 
     mes_actual = _mes_actual()
 
@@ -350,10 +364,12 @@ def generar_gastos_pendientes(casa_id: UUID) -> None:
             categoria_id,
             pagado_por,
             pagado_por,
-            suscripcion_id=suscripcion_id,
-            moneda=moneda,
-            # Spec `gastos-estado-pago`, REQ-003: idem `crear_suscripcion`.
-            estado="a_pagar",
+            metadata=GastoMetadata(
+                suscripcion_id=suscripcion_id,
+                moneda=moneda,
+                # Spec `gastos-estado-pago`, REQ-003: idem `crear_suscripcion`.
+                estado="a_pagar",
+            ),
         )
 
         session = get_session()
