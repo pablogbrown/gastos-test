@@ -1,0 +1,108 @@
+{
+  "$schema_version": "2",
+  "feature_id": "resumen-tarjeta-pago",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/resumen-tarjeta-pago/feat/01-plan-01-modelo-resumen.md",
+      "files_touched": [
+        "src/db/models/resumen_tarjeta.py",
+        "src/db/models/gasto.py",
+        "src/db/migrations/0019_resumen_tarjeta.py",
+        "src/db/migrate.py"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "ResumenTarjeta", "signature": "model", "kind": "export" },
+        { "name": "Gasto.resumen_id", "signature": "Optional[UUID]", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "ResumenTarjeta existe como tabla propia con FK real a tarjetas_credito, y gastos.resumen_id referencia resumenes_tarjeta.id con FK real via SQL crudo; la migracion corre limpia e idempotente contra Postgres real.",
+        "postcondition": "run_migrations(engine) corrido dos veces seguidas no lanza excepcion; resumenes_tarjeta existe y gastos.resumen_id referencia correctamente.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/db/postgres_migrations.test.py",
+        "caution": "gastos se crea en 0002, resumenes_tarjeta en 0019 — resumen_id en el modelo Gasto debe ser columna plana, sin ForeignKey() a nivel de modelo.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/resumen-tarjeta-pago/feat/01-plan-02-service-tracking.md",
+      "files_touched": [
+        "src/services/gasto_service.py",
+        "src/services/suscripcion_service.py",
+        "src/services/resumen_importer_service.py",
+        "tests/integration/services/resumen_tarjeta.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 50,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004", "TC-005", "TC-006"],
+      "interfaces_produced": [
+        { "name": "pagar_resumen", "signature": "(casa_id, resumen_id, actor) -> ResumenTarjeta", "kind": "export" },
+        { "name": "listar_resumenes", "signature": "(casa_id, tarjeta_id) -> List[ResumenTarjeta]", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "ResumenTarjeta" },
+        { "from": "T1", "name": "Gasto.resumen_id" }
+      ],
+      "contract": {
+        "statement": "importar_resumen rechaza un duplicado (misma tarjeta+cierre) antes de escribir nada, vincula cada gasto creado al ResumenTarjeta de esa importacion, y pagar_resumen marca todo como pagado atomicamente.",
+        "postcondition": "una segunda importacion con la misma tarjeta y fecha de cierre lanza ConflictError sin crear gastos ni tocar la tarjeta; cada Gasto creado tiene resumen_id poblado; pagar_resumen actualiza todos los gastos vinculados y el resumen mismo a estado=pagado.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/resumen_tarjeta.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/resumen-tarjeta-pago/feat/01-plan-03-api-resumenes.md",
+      "files_touched": [
+        "src/api/routes/tarjetas.py",
+        "tests/integration/api/tarjetas_routes.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [
+        { "name": "ResumenTarjetaOut", "signature": "schema", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "pagar_resumen" },
+        { "from": "T2", "name": "listar_resumenes" }
+      ],
+      "contract": {
+        "statement": "Los endpoints de resumenes funcionan sobre HTTP y una importacion duplicada responde 409.",
+        "postcondition": "GET .../resumenes lista correctamente; PATCH .../resumenes/{id}/pagar marca todo como pagado y responde 409 sobre un resumen ya pagado; POST .../resumen duplicado responde 409.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/tarjetas_routes.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/resumen-tarjeta-pago/feat/01-plan-04-frontend-resumenes.md",
+      "files_touched": [
+        "src/frontend/api/tarjetasClient.ts",
+        "src/frontend/pages/Tarjetas.tsx",
+        "tests/unit/frontend/Tarjetas.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 35,
+      "test_cases": ["TC-007", "TC-008"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "ResumenTarjetaOut" }
+      ],
+      "contract": {
+        "statement": "La pantalla Tarjetas lista los resumenes importados por tarjeta y permite pagarlos; un error de importacion duplicada se muestra legible.",
+        "postcondition": "cada card de tarjeta muestra sus resumenes con estado y boton Pagar resumen solo si esta pendiente; un 409 de importacion duplicada muestra el mensaje de la API en pantalla.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tarjetas.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

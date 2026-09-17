@@ -1,0 +1,18 @@
+feature: resumen-tarjeta-pago
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-17'
+approved_at: '2026-09-17'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+kind: single_spec
+notes: |
+  Reportado en vivo sobre importar-resumen-tarjeta (ya shippeada).
+  Rationale: spec.md. Depende de tarjetas-credito e
+  importar-resumen-tarjeta (ambas ya mergeadas a main).
