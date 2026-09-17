@@ -21,7 +21,7 @@ from src.services.balance_service import calcular_balance
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.exceptions import ValidationError
-from src.services.gasto_service import _sumar_meses, listar_gastos, registrar_gasto
+from src.services.gasto_service import GastoMetadata, _sumar_meses, listar_gastos, registrar_gasto
 
 
 def _crear_usuario_de_prueba(session_factory, email):
@@ -92,7 +92,7 @@ def test_tc001_tres_cuotas_con_fechas_consecutivas_mes_a_mes(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=3,
+        metadata=GastoMetadata(cuotas=3),
     )
 
     gastos = sorted(listar_gastos(casa.id), key=lambda g: g.fecha)
@@ -113,7 +113,7 @@ def test_tc002_redondeo_ajustado_en_la_ultima_cuota(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=3,
+        metadata=GastoMetadata(cuotas=3),
     )
 
     gastos = sorted(listar_gastos(casa.id), key=lambda g: g.cuota_numero)
@@ -135,7 +135,7 @@ def test_tc003_las_cuotas_comparten_grupo_y_tienen_numero_total_correctos(db_ses
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=3,
+        metadata=GastoMetadata(cuotas=3),
     )
 
     gastos = sorted(listar_gastos(casa.id), key=lambda g: g.cuota_numero)
@@ -187,7 +187,7 @@ def test_cuotas_1_se_comporta_igual_que_ausente(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=1,
+        metadata=GastoMetadata(cuotas=1),
     )
 
     gastos = listar_gastos(casa.id)
@@ -210,7 +210,7 @@ def test_tc005_cuotas_cero_es_rechazado(db_session):
             categoria.id,
             admin_id,
             admin_id,
-            cuotas=0,
+            metadata=GastoMetadata(cuotas=0),
         )
 
     assert listar_gastos(casa.id) == []
@@ -228,7 +228,7 @@ def test_cuotas_negativo_es_rechazado(db_session):
             categoria.id,
             admin_id,
             admin_id,
-            cuotas=-1,
+            metadata=GastoMetadata(cuotas=-1),
         )
 
 
@@ -244,7 +244,7 @@ def test_tc006_una_cuota_futura_no_infla_el_balance_del_mes_actual(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=3,
+        metadata=GastoMetadata(cuotas=3),
     )
 
     mes_actual = f"{hoy.year:04d}-{hoy.month:02d}"

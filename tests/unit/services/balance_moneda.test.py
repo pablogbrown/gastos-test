@@ -18,7 +18,7 @@ from src.db.models.usuario import Usuario
 from src.services.balance_service import calcular_balance
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
-from src.services.gasto_service import registrar_gasto
+from src.services.gasto_service import GastoMetadata, registrar_gasto
 from src.services.miembro_service import agregar_miembro
 
 
@@ -90,7 +90,7 @@ def test_tc003_totales_separados_por_moneda_con_actividad_en_ambas(db_session):
         categoria.id,
         pablo_id,
         pablo_id,
-        moneda="USD",
+        metadata=GastoMetadata(moneda="USD"),
     )
 
     balance = calcular_balance(casa.id, mes="2026-01")
@@ -122,7 +122,7 @@ def test_tc004_aportes_separados_por_moneda_con_actividad_en_ambas(db_session):
         categoria.id,
         ana_id,
         ana_id,
-        moneda="USD",
+        metadata=GastoMetadata(moneda="USD"),
     )
 
     balance = calcular_balance(casa.id, mes="2026-01")

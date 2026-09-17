@@ -19,7 +19,7 @@ from src.db.models.usuario import Usuario
 from src.services.balance_service import BalanceCasa, calcular_balance
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
-from src.services.gasto_service import registrar_gasto
+from src.services.gasto_service import GastoMetadata, registrar_gasto
 from src.services.miembro_service import agregar_miembro
 
 
@@ -91,7 +91,7 @@ def test_tc003_total_gastado_de_la_casa_por_moneda(db_session):
     )
     registrar_gasto(
         casa.id, "Compra en dólares", Decimal("20.00"), date(2026, 1, 3), categoria.id,
-        pablo_id, pablo_id, moneda="USD",
+        pablo_id, pablo_id, metadata=GastoMetadata(moneda="USD"),
     )
 
     balance = calcular_balance(casa.id, mes="2026-01")

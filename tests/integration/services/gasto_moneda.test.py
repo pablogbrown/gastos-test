@@ -17,7 +17,7 @@ from src.db.models.usuario import Usuario
 from src.services.casa_service import crear_casa
 from src.services.categoria_service import crear_categoria
 from src.services.exceptions import ValidationError
-from src.services.gasto_service import listar_gastos, registrar_gasto
+from src.services.gasto_service import GastoMetadata, listar_gastos, registrar_gasto
 
 
 def _crear_usuario_de_prueba(session_factory, email):
@@ -79,7 +79,7 @@ def test_tc001_gasto_con_moneda_usd_persiste_usd(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        moneda="USD",
+        metadata=GastoMetadata(moneda="USD"),
     )
 
     assert gasto.moneda == "USD"
@@ -114,8 +114,7 @@ def test_tc007_las_3_cuotas_mantienen_la_misma_moneda_usd(db_session):
         categoria.id,
         admin_id,
         admin_id,
-        cuotas=3,
-        moneda="USD",
+        metadata=GastoMetadata(cuotas=3, moneda="USD"),
     )
 
     gastos = sorted(listar_gastos(casa.id), key=lambda g: g.cuota_numero)
@@ -135,7 +134,7 @@ def test_moneda_invalida_es_rechazada_con_validation_error(db_session):
             categoria.id,
             admin_id,
             admin_id,
-            moneda="EUR",
+            metadata=GastoMetadata(moneda="EUR"),
         )
 
     assert listar_gastos(casa.id) == []
