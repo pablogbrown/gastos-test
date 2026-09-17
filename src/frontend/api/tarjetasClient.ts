@@ -43,6 +43,23 @@ export interface ResumenImportado {
   cuotas_creadas: number;
   suscripciones_vinculadas: number;
   tarjeta: Tarjeta;
+  // spec `resumen-tarjeta-pago`, T4.
+  resumen_id: string;
+}
+
+// spec `resumen-tarjeta-pago`, T4: un resumen ya importado — mismos
+// campos que `ResumenTarjetaOut`, sin alias camelCase (mismo criterio ya
+// usado en `Tarjeta` de arriba).
+export interface Resumen {
+  id: string;
+  tarjeta_id: string;
+  fecha_cierre: string;
+  fecha_vencimiento: string;
+  saldo_ars: string | null;
+  saldo_usd: string | null;
+  gastos_creados: number;
+  estado: string;
+  importado_en: string;
 }
 
 const API_BASE = "/casas";
@@ -126,4 +143,25 @@ export async function importarResumen(
     body: formData,
   });
   return (await parseJsonOrThrow<ResumenImportado>(resp))!;
+}
+
+/** Resúmenes ya importados de una tarjeta (spec `resumen-tarjeta-pago`,
+ * REQ-005), más recientes primero. */
+export async function listarResumenes(casaId: string, tarjetaId: string): Promise<Resumen[]> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/tarjetas/${tarjetaId}/resumenes`);
+  return (await parseJsonOrThrow<Resumen[]>(resp))!;
+}
+
+/** Marca un resumen y todos sus gastos vinculados como pagados, en una
+ * sola acción (spec `resumen-tarjeta-pago`, REQ-004). */
+export async function pagarResumen(
+  casaId: string,
+  tarjetaId: string,
+  resumenId: string
+): Promise<Resumen> {
+  const resp = await fetchAutenticado(
+    `${API_BASE}/${casaId}/tarjetas/${tarjetaId}/resumenes/${resumenId}/pagar`,
+    { method: "PATCH" }
+  );
+  return (await parseJsonOrThrow<Resumen>(resp))!;
 }
