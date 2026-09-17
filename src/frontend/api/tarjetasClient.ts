@@ -2,7 +2,7 @@
 // lógica de negocio: solo arma requests y tipa las respuestas — mismo
 // patrón delgado que `suscripcionesClient.ts`.
 import { fetchAutenticado } from "./authClient";
-import { ApiError, esApiError, formatErrorDetail } from "./httpError";
+import { ApiError, esApiError, parseJsonOrThrowNullable } from "./httpError";
 
 export type { ApiError };
 export { esApiError };
@@ -64,22 +64,6 @@ export interface Resumen {
 
 const API_BASE = "/casas";
 
-async function parseJsonOrThrow<T>(resp: Response): Promise<T | null> {
-  if (!resp.ok) {
-    let detail = resp.statusText;
-    try {
-      const body = await resp.json();
-      detail = formatErrorDetail(body.detail) ?? detail;
-    } catch {
-      // cuerpo no-JSON o vacío: se mantiene resp.statusText
-    }
-    const error: ApiError = { status: resp.status, detail };
-    throw error;
-  }
-  if (resp.status === 204) return null;
-  return (await resp.json()) as T;
-}
-
 export async function crearTarjeta(casaId: string, tarjeta: NuevaTarjeta): Promise<Tarjeta> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/tarjetas`, {
     method: "POST",
@@ -92,12 +76,12 @@ export async function crearTarjeta(casaId: string, tarjeta: NuevaTarjeta): Promi
       fecha_vencimiento_actual: tarjeta.fechaVencimientoActual,
     }),
   });
-  return (await parseJsonOrThrow<Tarjeta>(resp))!;
+  return (await parseJsonOrThrowNullable<Tarjeta>(resp))!;
 }
 
 export async function listarTarjetas(casaId: string): Promise<Tarjeta[]> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/tarjetas`);
-  return (await parseJsonOrThrow<Tarjeta[]>(resp))!;
+  return (await parseJsonOrThrowNullable<Tarjeta[]>(resp))!;
 }
 
 export async function actualizarTarjeta(
@@ -115,14 +99,14 @@ export async function actualizarTarjeta(
       saldo_actual_usd: cambios.saldoActualUsd,
     }),
   });
-  return (await parseJsonOrThrow<Tarjeta>(resp))!;
+  return (await parseJsonOrThrowNullable<Tarjeta>(resp))!;
 }
 
 export async function eliminarTarjeta(casaId: string, tarjetaId: string): Promise<void> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/tarjetas/${tarjetaId}`, {
     method: "DELETE",
   });
-  await parseJsonOrThrow<null>(resp);
+  await parseJsonOrThrowNullable<null>(resp);
 }
 
 /** Sube el PDF de un resumen (spec `importar-resumen-tarjeta`, REQ-001 a
@@ -142,14 +126,14 @@ export async function importarResumen(
     method: "POST",
     body: formData,
   });
-  return (await parseJsonOrThrow<ResumenImportado>(resp))!;
+  return (await parseJsonOrThrowNullable<ResumenImportado>(resp))!;
 }
 
 /** Resúmenes ya importados de una tarjeta (spec `resumen-tarjeta-pago`,
  * REQ-005), más recientes primero. */
 export async function listarResumenes(casaId: string, tarjetaId: string): Promise<Resumen[]> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/tarjetas/${tarjetaId}/resumenes`);
-  return (await parseJsonOrThrow<Resumen[]>(resp))!;
+  return (await parseJsonOrThrowNullable<Resumen[]>(resp))!;
 }
 
 /** Marca un resumen y todos sus gastos vinculados como pagados, en una
@@ -163,5 +147,5 @@ export async function pagarResumen(
     `${API_BASE}/${casaId}/tarjetas/${tarjetaId}/resumenes/${resumenId}/pagar`,
     { method: "PATCH" }
   );
-  return (await parseJsonOrThrow<Resumen>(resp))!;
+  return (await parseJsonOrThrowNullable<Resumen>(resp))!;
 }

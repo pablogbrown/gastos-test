@@ -2,7 +2,7 @@
 // negocio: solo arma requests y tipa las respuestas — mismo patrón
 // delgado que `tarjetasClient.ts`/`mantenimientoClient.ts`.
 import { fetchAutenticado } from "./authClient";
-import { ApiError, esApiError, formatErrorDetail } from "./httpError";
+import { ApiError, esApiError, parseJsonOrThrow } from "./httpError";
 
 export type { ApiError };
 export { esApiError };
@@ -25,21 +25,6 @@ export interface NuevoAuto {
 }
 
 const API_BASE = "/casas";
-
-async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
-  if (!resp.ok) {
-    let detail = resp.statusText;
-    try {
-      const body = await resp.json();
-      detail = formatErrorDetail(body.detail) ?? detail;
-    } catch {
-      // cuerpo no-JSON o vacío: se mantiene resp.statusText
-    }
-    const error: ApiError = { status: resp.status, detail };
-    throw error;
-  }
-  return (await resp.json()) as T;
-}
 
 export async function crearAuto(casaId: string, auto: NuevoAuto): Promise<Auto> {
   const resp = await fetchAutenticado(`${API_BASE}/${casaId}/autos`, {

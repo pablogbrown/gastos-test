@@ -1,14 +1,14 @@
-// Tipos y helpers de error HTTP compartidos por todos los clientes de API
-// (casasClient/gastosClient/tareasClient/dashboardClient/authClient).
+// Tipos y helpers de error HTTP compartidos por los ~10 clientes de API
+// del frontend (casasClient/gastosClient/tareasClient/dashboardClient/
+// authClient/mantenimientoClient/suscripcionesClient/autosClient/
+// tarjetasClient/prestamosClient). Módulo propio (no dentro de
+// `casasClient.ts`) para que `authClient.ts` pueda importar
+// `formatErrorDetail` sin crear un ciclo: `casasClient` necesita
+// `fetchAutenticado` de `authClient`, así que si estos helpers vivieran
+// en `casasClient.ts`, `authClient` no podría importarlos de vuelta.
 //
-// Extraído de `casasClient.ts` (spec `usuarios-auth`) a su propio módulo
-// para que `authClient.ts` pueda reusar `formatErrorDetail` sin crear un
-// import circular: antes, `authClient` habría tenido que importar desde
-// `casasClient`, que a su vez necesita importar `fetchAutenticado` desde
-// `authClient`. `casasClient.ts` re-exporta estos símbolos para no romper
-// los imports existentes (`gastosClient.ts`, `tareasClient.ts`,
-// `dashboardClient.ts` siguen importando `formatErrorDetail` desde
-// `./casasClient`).
+// `parseJsonOrThrow`/`parseJsonOrThrowNullable` (más abajo) también
+// vivían duplicados, uno por cliente, hasta que se extrajeron acá.
 
 export interface ApiError {
   status: number;
@@ -40,4 +40,43 @@ export function formatErrorDetail(raw: unknown): string | undefined {
 
 export function esApiError(err: unknown): err is ApiError {
   return typeof err === "object" && err !== null && "status" in err && "detail" in err;
+}
+
+/** Parsea el body JSON de una respuesta exitosa, o arma y lanza un
+ * `ApiError` legible a partir de una respuesta no-ok — mismo criterio de
+ * error en los ~10 clientes de API de este proyecto (extraído acá para
+ * no duplicarlo en cada uno). Usar esta variante cuando el endpoint
+ * nunca responde 204 (todo GET/POST/PATCH con body). */
+export async function parseJsonOrThrow<T>(resp: Response): Promise<T> {
+  if (!resp.ok) {
+    let detail = resp.statusText;
+    try {
+      const body = await resp.json();
+      detail = formatErrorDetail(body.detail) ?? detail;
+    } catch {
+      // cuerpo no-JSON o vacío: se mantiene resp.statusText
+    }
+    const error: ApiError = { status: resp.status, detail };
+    throw error;
+  }
+  return (await resp.json()) as T;
+}
+
+/** Igual que `parseJsonOrThrow`, pero para un endpoint que puede
+ * responder 204 (ej. un DELETE) — devuelve `null` en ese caso en vez de
+ * intentar parsear un body vacío como JSON. */
+export async function parseJsonOrThrowNullable<T>(resp: Response): Promise<T | null> {
+  if (!resp.ok) {
+    let detail = resp.statusText;
+    try {
+      const body = await resp.json();
+      detail = formatErrorDetail(body.detail) ?? detail;
+    } catch {
+      // cuerpo no-JSON o vacío: se mantiene resp.statusText
+    }
+    const error: ApiError = { status: resp.status, detail };
+    throw error;
+  }
+  if (resp.status === 204) return null;
+  return (await resp.json()) as T;
 }
