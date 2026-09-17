@@ -98,3 +98,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - feat(resumen-tarjeta-pago): cada resumen de tarjeta importado queda registrado (tarjeta, fechas, saldos, cantidad de gastos, estado) y vinculado a los gastos que generó; volver a importar el mismo resumen (misma tarjeta y fecha de cierre) se rechaza para evitar gastos duplicados. Nueva acción "Pagar resumen" en la pantalla Tarjetas que marca el resumen y todos sus gastos vinculados como pagados en un solo paso.
 - feat(gastos): el historial de gastos ahora pagina de a 50 resultados en vez de mostrar todo el mes de una sola vez.
+
+### Changed
+
+- refactor(frontend): se elimina la duplicación de `parseJsonOrThrow` en los 10 clientes de API del frontend, ahora compartida desde `httpError.ts` — sin cambio de comportamiento (hallazgo de auditoría de código).
+- refactor(services): `registrar_gasto`/`registrar_gasto_cuotas_restantes`/`registrar_suscripcion_detectada` agrupan sus atributos opcionales (cuotas, moneda, tarjeta, estado, resumen) en un único objeto `GastoMetadata` en vez de parámetros sueltos — sin cambio de comportamiento (hallazgo de auditoría de código).
