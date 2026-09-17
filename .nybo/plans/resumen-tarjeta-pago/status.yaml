@@ -1,5 +1,8 @@
 feature: resumen-tarjeta-pago
-status: verified
+status: shipped
+shipped_at: '2026-09-17T16:35:00Z'
+pr_url: https://github.com/pablogbrown/gastos-test/pull/38
+pr_number: 38
 profile: code
 action_type: ADD
 created_at: '2026-09-17'
