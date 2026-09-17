@@ -48,6 +48,20 @@ class Gasto(Base):
     generado automaticamente (cuota futura, suscripcion mensual, consumo
     importado de un resumen) nace `"a_pagar"`. Columna `String` simple,
     sin enum nativo de Postgres -- mismo criterio que `moneda`.
+
+    `resumen_id` (spec `resumen-tarjeta-pago`): `NULL` para un gasto no
+    originado en la importación de un resumen; identifica de qué
+    `ResumenTarjeta` vino un consumo importado, para que `pagar_resumen`
+    pueda marcar de una sola vez todos los gastos de ese resumen como
+    pagados. Sin `ForeignKey()` a nivel de modelo, mismo criterio que
+    `tarjeta_id`/`suscripcion_id` de arriba: `gastos` se crea en la
+    migración `0002`, mucho antes que `resumenes_tarjeta` (`0019`), y una
+    `ForeignKey` de SQLAlchemy exige que la tabla referenciada ya esté
+    registrada en `Base.metadata` en ese momento — no lo está. La
+    integridad referencial real en Postgres la agrega `0019_resumen_
+    tarjeta.py` vía `ALTER TABLE ... REFERENCES resumenes_tarjeta(id)`
+    (SQL crudo, no metadata de SQLAlchemy), después de crear esa tabla en
+    esa misma migración.
     """
 
     __tablename__ = "gastos"
@@ -78,6 +92,7 @@ class Gasto(Base):
     moneda = Column(String(3), nullable=False, default="ARS")
     tarjeta_id = Column(GUID(), nullable=True)
     estado = Column(String, nullable=False, default="pagado")
+    resumen_id = Column(GUID(), nullable=True)
 
     def __repr__(self):  # pragma: no cover - solo para debugging
         return f"<Gasto id={self.id} descripcion={self.descripcion!r} importe={self.importe}>"

@@ -150,6 +150,7 @@ def registrar_suscripcion_detectada(
     moneda: str,
     fecha: date,
     tarjeta_id: Optional[UUID] = None,
+    resumen_id: Optional[UUID] = None,
 ) -> Tuple[Optional[Suscripcion], bool]:
     """Vincula una línea de consumo de un comercio reconocido (Netflix,
     Spotify, Disney+) a una Suscripcion de la casa — spec `importar-
@@ -236,6 +237,7 @@ def registrar_suscripcion_detectada(
         # Spec `gastos-estado-pago`, REQ-004: el resumen recien se
         # importo -- el usuario todavia no pago esa tarjeta.
         estado="a_pagar",
+        resumen_id=resumen_id,
     )
 
     session = get_session()
