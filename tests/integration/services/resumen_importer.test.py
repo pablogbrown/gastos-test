@@ -46,7 +46,7 @@ def _fila(c, y, fecha="", desc="", cupon="", ars="", usd=""):
         c.drawString(_X_USD, y, usd)
 
 
-def _construir_pdf_resumen_bbva() -> bytes:
+def _construir_pdf_resumen_bbva(cierre="27-Ago-26", vencimiento="07-Sep-26") -> bytes:
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer)
 
@@ -62,7 +62,12 @@ def _construir_pdf_resumen_bbva() -> bytes:
         "SALDO ACTUAL U$S     PAGO MÍNIMO $"
     )
     y -= 16
-    c.drawString(40, y, "27-Ago-26     07-Sep-26     125.430,50     340,00     50.000,00")
+    # `cierre`/`vencimiento` parametrizables (spec `resumen-tarjeta-pago`):
+    # REQ-002 ahora rechaza una segunda importación con el mismo
+    # (tarjeta_id, fecha_cierre) — algunos tests de ESTA spec necesitan
+    # variar el cierre entre dos importaciones para no chocar con ese
+    # guard nuevo (ver test_tc006 más abajo).
+    c.drawString(40, y, f"{cierre}     {vencimiento}     125.430,50     340,00     50.000,00")
     y -= 30
     c.drawString(40, y, "Consumos")
     y -= 20
@@ -105,6 +110,10 @@ def db_session(monkeypatch):
         "0010_gasto_suscripcion_moneda",
         "0011_tarjetas_credito",
         "0012_gasto_tarjeta_id",
+        # Spec `resumen-tarjeta-pago`: `resumen_importer_service` ahora
+        # persiste su propio `ResumenTarjeta` (chequeo de duplicado +
+        # registro), así que necesita la tabla `resumenes_tarjeta`.
+        "0019_resumen_tarjeta",
     ):
         importlib.import_module(f"src.db.migrations.{nombre}").upgrade(engine)
 
@@ -117,6 +126,9 @@ def db_session(monkeypatch):
         "src.services.actividad_service",
         "src.services.suscripcion_service",
         "src.services.tarjeta_service",
+        # Spec `resumen-tarjeta-pago`: idem arriba — `resumen_importer_
+        # service` ahora abre su propia sesión.
+        "src.services.resumen_importer_service",
     ):
         monkeypatch.setattr(f"{modulo}.get_session", lambda: TestSession())
 
@@ -269,7 +281,17 @@ def test_tc006_comercio_reconocido_con_suscripcion_activa_existente_la_reutiliza
     finally:
         session.close()
 
-    segunda = importar_resumen(casa.id, tarjeta.id, _construir_pdf_resumen_bbva(), admin_id)
+    # Cierre distinto en la segunda importación (spec `resumen-tarjeta-
+    # pago`, REQ-002): reimportar EXACTAMENTE el mismo resumen (mismo
+    # cierre) ahora se rechaza — este test ejercita "reutiliza la
+    # suscripción activa existente" con un ciclo de facturación nuevo,
+    # no con un resumen duplicado.
+    segunda = importar_resumen(
+        casa.id,
+        tarjeta.id,
+        _construir_pdf_resumen_bbva(cierre="27-Sep-26", vencimiento="07-Oct-26"),
+        admin_id,
+    )
 
     session = db_session()
     try:

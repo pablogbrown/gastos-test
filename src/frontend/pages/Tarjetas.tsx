@@ -11,15 +11,18 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { Fragment, FormEvent, useCallback, useEffect, useState } from "react";
 
 import {
+  Resumen,
   Tarjeta,
   crearTarjeta,
   eliminarTarjeta,
   esApiError,
   importarResumen,
+  listarResumenes,
   listarTarjetas,
+  pagarResumen,
   actualizarTarjeta,
 } from "../api/tarjetasClient";
 
@@ -57,6 +60,8 @@ export function Tarjetas({ casaId }: TarjetasProps) {
   const [error, setError] = useState<string | null>(null);
   const [mensajeImportacion, setMensajeImportacion] = useState<string | null>(null);
   const [ediciones, setEdiciones] = useState<Record<string, EdicionFila>>({});
+  // spec `resumen-tarjeta-pago`, T4: resúmenes importados por tarjeta.
+  const [resumenesPorTarjeta, setResumenesPorTarjeta] = useState<Record<string, Resumen[]>>({});
 
   const cargar = useCallback(async () => {
     try {
@@ -65,6 +70,15 @@ export function Tarjetas({ casaId }: TarjetasProps) {
       setEdiciones(
         Object.fromEntries(lista.map((tarjeta) => [tarjeta.id, edicionInicial(tarjeta)]))
       );
+      // Se recarga junto con la tarjeta (tras crear/editar/eliminar una
+      // tarjeta, importar un resumen, o pagarlo) — un único punto de
+      // refresco, mismo criterio que el resto de esta pantalla.
+      const entradas = await Promise.all(
+        lista.map(
+          async (tarjeta) => [tarjeta.id, await listarResumenes(casaId, tarjeta.id)] as const
+        )
+      );
+      setResumenesPorTarjeta(Object.fromEntries(entradas));
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo cargar las tarjetas.");
     }
@@ -130,6 +144,18 @@ export function Tarjetas({ casaId }: TarjetasProps) {
       await cargar();
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo eliminar la tarjeta.");
+    }
+  }
+
+  /** Marca un resumen y todos sus gastos vinculados como pagados, en
+   * una sola acción (spec `resumen-tarjeta-pago`, REQ-004). */
+  async function handlePagarResumen(tarjetaId: string, resumenId: string) {
+    setError(null);
+    try {
+      await pagarResumen(casaId, tarjetaId, resumenId);
+      await cargar();
+    } catch (err) {
+      setError(esApiError(err) ? err.detail : "No se pudo pagar el resumen.");
     }
   }
 
@@ -236,8 +262,10 @@ export function Tarjetas({ casaId }: TarjetasProps) {
           <TableBody>
             {tarjetas.map((tarjeta) => {
               const edicion = ediciones[tarjeta.id] ?? edicionInicial(tarjeta);
+              const resumenes = resumenesPorTarjeta[tarjeta.id] ?? [];
               return (
-                <TableRow key={tarjeta.id}>
+                <Fragment key={tarjeta.id}>
+                <TableRow>
                   <TableCell>{tarjeta.nombre}</TableCell>
                   <TableCell>{tarjeta.banco}</TableCell>
                   <TableCell>•••• {tarjeta.ultimos_digitos}</TableCell>
@@ -327,6 +355,41 @@ export function Tarjetas({ casaId }: TarjetasProps) {
                     </Box>
                   </TableCell>
                 </TableRow>
+                <TableRow>
+                  <TableCell colSpan={9} sx={{ pt: 0, borderTop: "none" }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <Typography variant="subtitle2">Resúmenes importados</Typography>
+                      {resumenes.length === 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                          Todavía no se importó ningún resumen.
+                        </Typography>
+                      )}
+                      {resumenes.map((resumen) => (
+                        <Box
+                          key={resumen.id}
+                          sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+                        >
+                          <Typography variant="body2">{resumen.fecha_cierre}</Typography>
+                          <Chip
+                            label={resumen.estado === "pendiente" ? "Pendiente" : "Pagado"}
+                            color={resumen.estado === "pendiente" ? "warning" : "success"}
+                            size="small"
+                          />
+                          {resumen.estado === "pendiente" && (
+                            <Button
+                              type="button"
+                              size="small"
+                              onClick={() => handlePagarResumen(tarjeta.id, resumen.id)}
+                            >
+                              Pagar resumen
+                            </Button>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+                </Fragment>
               );
             })}
           </TableBody>

@@ -7,7 +7,7 @@ Project memory domains. Each loads as a path-scoped rule only when you touch its
 
 - **api** — src/**/api/**/*.ts, src/routes/**/*.ts — [API-01, APIP-01]
 - **auth** — src/**/auth/** — [—]
-- **db** — (always) — [DBP-01, DBG-01..04, DB-01]
-- **frontend** — src/**/*.tsx, src/components/**/*.tsx — [FRON-01, FRONP-01]
+- **db** — (always) — [DBP-01..02, DBG-01..05, DB-01]
+- **frontend** — src/**/*.tsx, src/components/**/*.tsx — [FRON-01, FRONP-01..02]
 - **infra** — (always) — [—]
-- **services** — (always) — [SERV-01..03, SERVP-01..05, SERVG-01..02]
+- **services** — (always) — [SERV-01..03, SERVP-01..08, SERVG-01..02]

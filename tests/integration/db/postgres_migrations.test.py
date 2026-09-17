@@ -373,6 +373,39 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert "auto_id" in columnas_item
         assert columnas_item["auto_id"]["nullable"] is True
 
+        # T1 (spec `resumen-tarjeta-pago`): `resumenes_tarjeta` existe con
+        # sus columnas tras la migración 0019, con FK real a
+        # `tarjetas_credito` (a nivel de modelo, ver docstring de
+        # `ResumenTarjeta.tarjeta_id`); `gastos.resumen_id` existe como
+        # columna nullable. Sin asserción de FK acá para `resumen_id`
+        # (mismo criterio ya documentado que `tarjeta_id`/`suscripcion_id`/
+        # `auto_id`, ver [DBG-04]): `0002_gastos.py` crea `gastos` (con
+        # `resumen_id` ya incluido, por ser parte del modelo vigente) muy
+        # ANTES de que `0019` cree `resumenes_tarjeta` — en una base
+        # creada desde cero por este mismo `run_migrations`, el `ALTER
+        # TABLE ... ADD COLUMN IF NOT EXISTS` de `0019` es un no-op y su
+        # `REFERENCES` nunca llega a ejecutarse. La REFERENCES sigue
+        # siendo correcta para el path real de producción: una base
+        # existente donde `gastos` ya existía SIN `resumen_id` antes de
+        # este deploy.
+        assert "resumenes_tarjeta" in tablas
+        columnas_resumen = {c["name"]: c for c in inspector.get_columns("resumenes_tarjeta")}
+        assert "casa_id" in columnas_resumen
+        assert "tarjeta_id" in columnas_resumen
+        assert columnas_resumen["fecha_cierre"]["nullable"] is False
+        assert columnas_resumen["fecha_vencimiento"]["nullable"] is False
+        assert columnas_resumen["saldo_ars"]["nullable"] is True
+        assert columnas_resumen["saldo_usd"]["nullable"] is True
+        assert columnas_resumen["gastos_creados"]["nullable"] is False
+        assert columnas_resumen["estado"]["nullable"] is False
+        nombres_fk_resumen = {
+            fk["referred_table"] for fk in inspector.get_foreign_keys("resumenes_tarjeta")
+        }
+        assert {"casas", "tarjetas_credito"} <= nombres_fk_resumen
+
+        assert "resumen_id" in columnas_gasto
+        assert columnas_gasto["resumen_id"]["nullable"] is True
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada

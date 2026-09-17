@@ -30,6 +30,7 @@ _MIGRACIONES = (
     "0016_prestamo_confirmacion",
     "0017_mantenimiento",
     "0018_mantenimiento_autos",
+    "0019_resumen_tarjeta",
 )
 
 

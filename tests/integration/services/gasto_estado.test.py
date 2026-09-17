@@ -60,6 +60,10 @@ def db_session(monkeypatch):
         "0010_gasto_suscripcion_moneda",
         "0011_tarjetas_credito",
         "0012_gasto_tarjeta_id",
+        # Spec `resumen-tarjeta-pago`: `resumen_importer_service` ahora
+        # persiste su propio `ResumenTarjeta` (chequeo de duplicado +
+        # registro), así que necesita la tabla `resumenes_tarjeta`.
+        "0019_resumen_tarjeta",
     ):
         importlib.import_module(f"src.db.migrations.{nombre}").upgrade(engine)
 
@@ -73,6 +77,9 @@ def db_session(monkeypatch):
         "src.services.suscripcion_service",
         "src.services.balance_service",
         "src.services.tarjeta_service",
+        # Spec `resumen-tarjeta-pago`: idem arriba — `resumen_importer_
+        # service` ahora abre su propia sesión.
+        "src.services.resumen_importer_service",
     ):
         monkeypatch.setattr(f"{modulo}.get_session", lambda: TestSession())
     yield TestSession

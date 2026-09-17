@@ -66,6 +66,7 @@ def registrar_gasto(
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
     estado: str = "pagado",
+    resumen_id: Optional[UUID] = None,
 ) -> Gasto:
     """Registra un Gasto — una salida de fondos de la casa (spec
     `gastos-sin-reparto`, REQ-001).
@@ -104,6 +105,13 @@ def registrar_gasto(
     (default) o `"a_pagar"` — cualquier otro valor es rechazado. Todas
     las cuotas de una misma compra comparten el `estado` del gasto
     original (REQ-002/TC-003), mismo criterio que `moneda`.
+
+    `resumen_id` (spec `resumen-tarjeta-pago`): puramente de etiquetado,
+    sin validación adicional — `None` (default) es un gasto no originado
+    en la importación de un resumen; identifica a qué `ResumenTarjeta`
+    pertenece un consumo importado, mismo patrón que `tarjeta_id`. Todas
+    las cuotas de una misma compra comparten el `resumen_id` del gasto
+    original.
     """
     if cuotas is not None and cuotas <= 0:
         raise ValidationError("La cantidad de cuotas debe ser 2 o mayor.")
@@ -159,6 +167,7 @@ def registrar_gasto(
                 moneda,
                 tarjeta_id,
                 estado,
+                resumen_id,
             )
         else:
             gasto = Gasto(
@@ -173,6 +182,7 @@ def registrar_gasto(
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,
                 estado=estado,
+                resumen_id=resumen_id,
             )
             session.add(gasto)
             session.flush()
@@ -217,6 +227,7 @@ def _crear_gastos_en_cuotas(
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
     estado: str = "pagado",
+    resumen_id: Optional[UUID] = None,
 ) -> List[Gasto]:
     """Crea `cuotas` filas `Gasto`, una por mes consecutivo a partir de
     `fecha`, compartiendo un `cuota_grupo_id` (spec `gastos-en-cuotas`,
@@ -234,6 +245,9 @@ def _crear_gastos_en_cuotas(
 
     `estado` (spec `gastos-estado-pago`, REQ-002/TC-003): se propaga sin
     cambios a las N cuotas generadas, igual que `moneda`.
+
+    `resumen_id` (spec `resumen-tarjeta-pago`): se propaga sin cambios a
+    las N cuotas generadas, igual que `moneda`.
     """
     partes_cuotas = _dividir_importe(importe_decimal, cuotas)
     cuota_grupo_id = uuid.uuid4()
@@ -254,6 +268,7 @@ def _crear_gastos_en_cuotas(
             moneda=moneda,
             tarjeta_id=tarjeta_id,
             estado=estado,
+            resumen_id=resumen_id,
         )
         session.add(gasto)
         session.flush()
@@ -275,6 +290,7 @@ def registrar_gasto_cuotas_restantes(
     moneda: str = "ARS",
     tarjeta_id: Optional[UUID] = None,
     estado: str = "pagado",
+    resumen_id: Optional[UUID] = None,
 ) -> List[Gasto]:
     """Registra solo las cuotas RESTANTES de una compra en curso —
     `cuota_actual` (inclusive) hasta `cuota_total`, una por mes
@@ -360,6 +376,7 @@ def registrar_gasto_cuotas_restantes(
                 moneda=moneda,
                 tarjeta_id=tarjeta_id,
                 estado=estado,
+                resumen_id=resumen_id,
             )
             session.add(gasto)
             session.flush()

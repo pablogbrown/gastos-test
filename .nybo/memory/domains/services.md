@@ -35,6 +35,25 @@ services domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-17 | feature: resumen-tarjeta-pago | confidence: medium | verified: 2026-09-17 -->
+- [SERVP-08] An orchestrator service that previously delegated 100% of
+  persistence to the sub-services it calls (e.g. `resumen_importer_
+  service.importar_resumen`, which only ever called `tarjeta_service`/
+  `categoria_service`/`gasto_service`/`suscripcion_service` and never
+  touched `get_session()` itself) CAN legitimately open its own session
+  directly once it needs to persist an entity that is conceptually its
+  own, not owned by any sub-service it calls (here: creating/updating
+  the new `ResumenTarjeta` row, and a duplicate-check query against it,
+  both before any sub-service call). This is a real, non-obvious shift
+  for that file's tests: a preexisting test that mocked/monkeypatched
+  only the sub-services' own sessions now needs the caller's own
+  `get_session()` covered too (real DB via the migration fixture, or its
+  own monkeypatch) — 3 preexisting test files needed exactly this
+  update. Do the duplicate/uniqueness check in its own short-lived
+  session BEFORE calling any sub-service, same atomicity reasoning as
+  [SERVP-07]'s guard-ordering: reject before any write happens, not
+  after.
+
 <!-- added: 2026-09-16 | feature: prestamos-confirmacion-mutua | confidence: high | verified: 2026-09-16 -->
 - [SERVP-07] Adding a new GUARD to an EXISTING service action (e.g.
   `actualizar_estado_prestamo` now requiring `estado_confirmacion ==
