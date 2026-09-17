@@ -15,6 +15,8 @@ kind: single_spec
 run_at: '2026-09-17T15:00:00Z'
 run_completed_at: '2026-09-17T16:20:00Z'
 verified_at: '2026-09-17T16:25:00Z'
+curated_at: '2026-09-17T16:22:00Z'
+curated_duration: 180
 notes: |
   Rationale: spec.md. Build narrative: feat/99-progress.md History
   #2-#6. 363 backend tests (Postgres real) + 126 frontend, build/lint

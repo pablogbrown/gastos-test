@@ -88,3 +88,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - feat(mantenimiento-casa): nueva pantalla "Mantenimiento" (agrupada con "Tareas") para cargar cuestiones de mantenimiento de la casa — fecha estimada, periodicidad (semanal a anual), lista de materiales necesarios con cantidad y estado conseguido/pendiente, y una alerta visual en Inicio cuando se acerca la fecha; un ítem recurrente no se puede completar antes de su fecha estimada.
 
 - feat(mantenimiento-autos): nueva pantalla "Mantenimiento Autos" para registrar los autos de la casa y cargarles sus services/mantenimientos, con la misma mecánica (fecha estimada, periodicidad, materiales, alerta) ya construida para mantenimiento de la casa — agrupados por auto y separados de "Mantenimiento".
+
+### Fixed
+
+- fix(services): las cuotas restantes importadas de un resumen ahora muestran el número de cuota en su descripción (ej. "(4/6)"), igual que una serie de cuotas nueva — antes quedaban indistinguibles entre sí en el listado de Gastos.
+- fix(mantenimiento): presionar Enter en el campo "Material" (al cargar un ítem de mantenimiento, de la casa o de un auto) ya no envía el formulario completo — antes creaba el ítem sin ningún material, sin ningún error, perdiendo silenciosamente lo que se acababa de tipear.
+
+### Added
+
+- feat(resumen-tarjeta-pago): cada resumen de tarjeta importado queda registrado (tarjeta, fechas, saldos, cantidad de gastos, estado) y vinculado a los gastos que generó; volver a importar el mismo resumen (misma tarjeta y fecha de cierre) se rechaza para evitar gastos duplicados. Nueva acción "Pagar resumen" en la pantalla Tarjetas que marca el resumen y todos sus gastos vinculados como pagados en un solo paso.
