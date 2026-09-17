@@ -97,3 +97,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - feat(resumen-tarjeta-pago): cada resumen de tarjeta importado queda registrado (tarjeta, fechas, saldos, cantidad de gastos, estado) y vinculado a los gastos que generó; volver a importar el mismo resumen (misma tarjeta y fecha de cierre) se rechaza para evitar gastos duplicados. Nueva acción "Pagar resumen" en la pantalla Tarjetas que marca el resumen y todos sus gastos vinculados como pagados en un solo paso.
+- feat(gastos): el historial de gastos ahora pagina de a 50 resultados en vez de mostrar todo el mes de una sola vez.
