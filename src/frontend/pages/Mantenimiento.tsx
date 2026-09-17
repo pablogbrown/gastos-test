@@ -23,7 +23,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useState } from "react";
 
 import {
   ItemMantenimiento,
@@ -86,6 +86,17 @@ export function Mantenimiento({ casaId }: MantenimientoProps) {
 
   function quitarMaterialDeLista(index: number) {
     setMateriales((actuales) => actuales.filter((_, i) => i !== index));
+  }
+
+  // Reportado en vivo: sin esto, Enter en el campo de material dispara el
+  // submit nativo del <form> (handleCrear) en vez de agregar el material a
+  // la lista pendiente — el ítem se crea sin materiales, sin ningún error,
+  // perdiendo silenciosamente lo que el usuario acababa de tipear.
+  function handleKeyDownMaterial(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      agregarMaterialALista();
+    }
   }
 
   async function handleCrear(event: FormEvent<HTMLFormElement>) {
@@ -218,6 +229,7 @@ export function Mantenimiento({ casaId }: MantenimientoProps) {
                 label="Material"
                 value={nombreMaterial}
                 onChange={(e) => setNombreMaterial(e.target.value)}
+                onKeyDown={handleKeyDownMaterial}
                 size="small"
               />
               <TextField
@@ -226,6 +238,7 @@ export function Mantenimiento({ casaId }: MantenimientoProps) {
                 type="number"
                 value={cantidadMaterial}
                 onChange={(e) => setCantidadMaterial(e.target.value)}
+                onKeyDown={handleKeyDownMaterial}
                 size="small"
                 sx={{ width: 120 }}
               />
