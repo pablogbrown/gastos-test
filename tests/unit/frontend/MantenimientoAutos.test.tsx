@@ -112,6 +112,51 @@ describe("MantenimientoAutos", () => {
     );
   });
 
+  it("presionar Enter en el campo Material lo agrega a la lista en vez de enviar el formulario (regresión)", async () => {
+    const user = userEvent.setup();
+    const itemConMaterial = itemDeAuto({
+      materiales: [
+        {
+          id: "m1",
+          item_mantenimiento_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          nombre: "Filtro de aire",
+          cantidad: 1,
+          conseguido: false,
+        },
+      ],
+    });
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [auto()] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => itemConMaterial })
+      .mockResolvedValueOnce({ ok: true, json: async () => [auto()] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [itemConMaterial] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<MantenimientoAutos casaId={CASA_ID} />);
+
+    await screen.findByText("Toyota Corolla — AB123CD");
+
+    await user.type(
+      screen.getByLabelText("Nombre", { selector: `#nombre-item-${AUTO_ID}` }),
+      "Cambio de filtro"
+    );
+    await user.type(screen.getByLabelText("Material"), "Filtro de aire{Enter}");
+
+    // El material queda en la lista pendiente sin haber enviado el
+    // formulario todavía (sigue en 2 fetches: autos + items iniciales).
+    expect(screen.getByText("Filtro de aire (1)")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await user.click(screen.getByRole("button", { name: "Crear ítem" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(5));
+
+    const [, crearItemRequest] = fetchMock.mock.calls[2];
+    const cuerpoItem = JSON.parse(crearItemRequest.body as string);
+    expect(cuerpoItem.materiales).toEqual([{ nombre: "Filtro de aire", cantidad: 1 }]);
+  });
+
   it("no muestra el mensaje de 'sin autos' mientras carga", () => {
     const fetchMock = vi.fn(() => new Promise(() => {}));
     vi.stubGlobal("fetch", fetchMock);

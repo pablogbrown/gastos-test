@@ -84,6 +84,36 @@ describe("Mantenimiento", () => {
     expect(screen.getByLabelText(/Silicona \(1\)/)).toBeInTheDocument();
   });
 
+  it("TC-010: presionar Enter en el campo Material lo agrega a la lista en vez de enviar el formulario (regresión)", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => itemPendiente() })
+      .mockResolvedValueOnce({ ok: true, json: async () => [itemPendiente()] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Mantenimiento casaId={CASA_ID} />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    await user.type(screen.getByLabelText("Nombre"), "Poner membrana al techo");
+    await user.type(screen.getByLabelText("Material"), "Membrana asfáltica{Enter}");
+
+    // El material debe quedar en la lista pendiente, y el formulario NO
+    // debe haberse enviado todavía (sigue habiendo solo 1 fetch: el
+    // listado inicial).
+    expect(screen.getByText("Membrana asfáltica (1)")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: "Crear ítem" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+
+    const [, crearRequest] = fetchMock.mock.calls[1];
+    const body = JSON.parse(crearRequest.body as string);
+    expect(body.materiales).toEqual([{ nombre: "Membrana asfáltica", cantidad: 1 }]);
+  });
+
   it("completar un ítem pendiente dispara el PATCH y recarga el listado", async () => {
     const user = userEvent.setup();
     const item = itemPendiente();

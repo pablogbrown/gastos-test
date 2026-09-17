@@ -23,7 +23,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useState } from "react";
 
 import { Auto, NuevoAuto, crearAuto, esApiError, listarAutos } from "../api/autosClient";
 import {
@@ -215,6 +215,17 @@ function AutoConItems({ casaId, auto, items, onCambio, onError }: AutoConItemsPr
     setMateriales((actuales) => actuales.filter((_, i) => i !== index));
   }
 
+  // Reportado en vivo sobre Mantenimiento.tsx (mismo bug, re-implementación
+  // independiente): sin esto, Enter en el campo de material dispara el
+  // submit nativo del <form> en vez de agregar el material a la lista
+  // pendiente — el ítem se crea sin materiales, sin ningún error.
+  function handleKeyDownMaterial(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      agregarMaterialALista();
+    }
+  }
+
   async function handleCrear(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
@@ -342,6 +353,7 @@ function AutoConItems({ casaId, auto, items, onCambio, onError }: AutoConItemsPr
                 label="Material"
                 value={nombreMaterial}
                 onChange={(e) => setNombreMaterial(e.target.value)}
+                onKeyDown={handleKeyDownMaterial}
                 size="small"
               />
               <TextField
@@ -350,6 +362,7 @@ function AutoConItems({ casaId, auto, items, onCambio, onError }: AutoConItemsPr
                 type="number"
                 value={cantidadMaterial}
                 onChange={(e) => setCantidadMaterial(e.target.value)}
+                onKeyDown={handleKeyDownMaterial}
                 size="small"
                 sx={{ width: 120 }}
               />
