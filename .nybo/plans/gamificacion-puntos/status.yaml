@@ -1,0 +1,20 @@
+feature: gamificacion-puntos
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-18'
+approved_at: '2026-09-18'
+task_count: 4
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+kind: single_spec
+notes: |
+  Pedido por el usuario tras explorar opciones de gamificación
+  (niveles, rachas, ranking por mes, logros, meta de la casa).
+  Rationale: spec.md. Todo derivado de HistorialTarea ya existente;
+  única persistencia nueva: LogroObtenido + Casa.meta_puntos_mensual
+  (migración 0020_gamificacion).

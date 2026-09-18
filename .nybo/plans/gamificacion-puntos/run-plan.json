@@ -1,0 +1,124 @@
+{
+  "$schema_version": "2",
+  "feature_id": "gamificacion-puntos",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/gamificacion-puntos/feat/01-plan-01-niveles-rachas-ranking-mes.md",
+      "files_touched": [
+        "src/services/ranking_service.py",
+        "src/api/routes/tareas.py",
+        "src/frontend/api/tareasClient.ts",
+        "tests/integration/services/gamificacion_ranking.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-003", "TC-004"],
+      "interfaces_produced": [
+        { "name": "calcular_racha", "signature": "(casa_id, miembro_id) -> int", "kind": "export" },
+        { "name": "calcular_ranking", "signature": "(casa_id, mes: Optional[str] = None) -> list", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El ranking expone nivel y racha por miembro, y se puede filtrar por mes sin cambiar el comportamiento de ningun caller que no pase mes.",
+        "postcondition": "cruzar cada umbral de puntos sube de nivel; dias consecutivos con tareas completadas acumulan racha, un dia sin actividad la corta; calcular_ranking(casa_id) sin mes es identico a hoy.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/gamificacion_ranking.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/gamificacion-puntos/feat/01-plan-02-logros.md",
+      "files_touched": [
+        "src/db/models/logro_obtenido.py",
+        "src/db/migrations/0020_gamificacion.py",
+        "src/db/migrate.py",
+        "src/services/logro_service.py",
+        "src/services/tarea_service.py",
+        "src/api/routes/tareas.py",
+        "src/frontend/api/tareasClient.ts",
+        "tests/integration/services/logros.test.py",
+        "tests/integration/db/postgres_migrations.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-005"],
+      "interfaces_produced": [
+        { "name": "evaluar_logros", "signature": "(casa_id, miembro_id) -> List[LogroObtenido]", "kind": "export" },
+        { "name": "listar_logros_obtenidos", "signature": "(casa_id) -> List[LogroObtenido]", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "calcular_racha" }
+      ],
+      "contract": {
+        "statement": "Completar una tarea evalua el catalogo fijo de logros y desbloquea los que corresponden, una sola vez por miembro y logro.",
+        "postcondition": "completar la primera tarea desbloquea el logro correspondiente; cruzar un umbral de puntos/racha desbloquea el logro asociado exactamente una vez; completar_tarea sin logros nuevos no crea ninguna fila.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/logros.test.py",
+        "caution": "Chequear duplicado en el service layer antes del insert, nunca via constraint de DB (SERV-01).",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/gamificacion-puntos/feat/01-plan-03-meta-casa.md",
+      "files_touched": [
+        "src/db/models/casa.py",
+        "src/services/casa_service.py",
+        "src/services/ranking_service.py",
+        "src/services/dashboard_service.py",
+        "src/api/routes/casas.py",
+        "src/api/routes/dashboard.py",
+        "src/frontend/api/casasClient.ts",
+        "src/frontend/api/dashboardClient.ts",
+        "tests/integration/services/meta_casa.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 35,
+      "test_cases": ["TC-006"],
+      "interfaces_produced": [
+        { "name": "actualizar_meta_puntos", "signature": "(casa_id, meta, actor) -> Casa", "kind": "export" },
+        { "name": "calcular_progreso_meta", "signature": "(casa_id, mes) -> Optional[dict]", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "calcular_ranking" }
+      ],
+      "contract": {
+        "statement": "Un Administrador puede configurar una meta de puntos mensual para la casa; el dashboard muestra el progreso acumulado de todos los miembros contra esa meta cuando existe.",
+        "postcondition": "un no-admin no puede configurar la meta; sin meta configurada, dashboard.meta_casa es None sin romper ningun test existente; con meta, el progreso suma los puntos de todos los miembros del mes.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/meta_casa.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/gamificacion-puntos/feat/01-plan-04-frontend.md",
+      "files_touched": [
+        "src/frontend/pages/Ranking.tsx",
+        "src/frontend/pages/Miembros.tsx",
+        "src/frontend/pages/InicioCasa.tsx",
+        "tests/unit/frontend/Ranking.test.tsx",
+        "tests/unit/frontend/Miembros.test.tsx",
+        "tests/unit/frontend/InicioCasa.test.tsx"
+      ],
+      "deps": ["T1", "T2", "T3"],
+      "est_minutes": 45,
+      "test_cases": ["TC-007", "TC-008"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "calcular_ranking" },
+        { "from": "T2", "name": "listar_logros_obtenidos" },
+        { "from": "T3", "name": "calcular_progreso_meta" }
+      ],
+      "contract": {
+        "statement": "Ranking muestra mes/nivel/racha/logros; Miembros permite a un admin editar la meta; Inicio muestra el progreso de la casa.",
+        "postcondition": "las pantallas reflejan correctamente los datos de las 3 APIs nuevas; suite frontend completa sin regresion.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Ranking.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
