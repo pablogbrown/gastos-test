@@ -101,6 +101,13 @@ class HistorialTareaOut(BaseModel):
 class RankingEntryOut(BaseModel):
     miembro_id: UUID = Field(alias="miembroId")
     puntos: int
+    # Spec `gamificacion-puntos`, REQ-001/REQ-002: nivel (total histórico)
+    # y racha (días consecutivos) de cada miembro — [API-01]'s exception
+    # ya establecida para este schema (`RankingEntryOut.miembro_id ->
+    # miembroId`) no se extiende: `nivel`/`racha` van sin alias, iguales a
+    # `puntos`.
+    nivel: str
+    racha: int
 
     class Config:
         allow_population_by_field_name = True
