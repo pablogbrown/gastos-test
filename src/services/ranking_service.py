@@ -166,3 +166,33 @@ def calcular_ranking(casa_id: UUID, mes: Optional[str] = None) -> list:
         return resultado
     finally:
         session.close()
+
+
+def calcular_progreso_meta(casa_id: UUID, mes: str) -> Optional[dict]:
+    """Progreso de la casa contra su meta de puntos mensual (spec
+    `gamificacion-puntos`, REQ-005). `None` si `Casa.meta_puntos_mensual`
+    no está configurada; si lo está, suma los puntos de TODOS los
+    miembros de `casa_id` en `mes` (reusando `calcular_ranking(casa_id,
+    mes)`, nunca la de un solo miembro) y devuelve
+    `{puntos_acumulados, meta, porcentaje}`.
+
+    Vive en `ranking_service.py` (no en `casa_service.py`): reusa
+    `calcular_ranking` del mismo archivo sin agregar un import cruzado
+    nuevo (`casa_service` no importaba `ranking_service` hasta ahora, y
+    esta función solo necesita agregar/leer `Casa.meta_puntos_mensual`,
+    ya accesible acá vía el modelo `Casa` que este archivo ya importa)."""
+    session = get_session()
+    try:
+        casa = session.get(Casa, casa_id)
+        if casa is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+        meta = casa.meta_puntos_mensual
+    finally:
+        session.close()
+
+    if meta is None:
+        return None
+
+    puntos_acumulados = sum(fila["puntos"] for fila in calcular_ranking(casa_id, mes=mes))
+    porcentaje = round((puntos_acumulados / meta) * 100, 2) if meta > 0 else 0.0
+    return {"puntos_acumulados": puntos_acumulados, "meta": meta, "porcentaje": porcentaje}

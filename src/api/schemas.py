@@ -43,9 +43,20 @@ class CasaOut(BaseModel):
     nombre: str
     creado_en: datetime
     miembros: List[MiembroOut] = Field(default_factory=list)
+    # Spec `gamificacion-puntos`, REQ-005 — sin alias (`CasaOut` no sigue
+    # el criterio de `DashboardOut`, [API-01]: cada campo de este schema
+    # ya era snake_case desde antes).
+    meta_puntos_mensual: Optional[int] = None
 
     class Config:
         orm_mode = True
+
+
+class MetaPuntosUpdate(BaseModel):
+    """Spec `gamificacion-puntos`, REQ-005 — `meta=None` desactiva la
+    meta (vuelve a no mostrarse en Inicio)."""
+
+    meta: Optional[int] = None
 
 
 class TareaCreate(BaseModel):

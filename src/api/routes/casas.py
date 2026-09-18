@@ -18,8 +18,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.dependencies import get_current_usuario, resolver_actor_en_casa
-from src.api.schemas import CasaCreate, CasaOut, MiembroActivoUpdate, MiembroCreate, MiembroOut
-from src.services.casa_service import crear_casa, listar_casas_de_usuario
+from src.api.schemas import (
+    CasaCreate,
+    CasaOut,
+    MetaPuntosUpdate,
+    MiembroActivoUpdate,
+    MiembroCreate,
+    MiembroOut,
+)
+from src.services.casa_service import actualizar_meta_puntos, crear_casa, listar_casas_de_usuario
 from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
 from src.services.miembro_service import agregar_miembro, desactivar_miembro, listar_miembros
 
@@ -86,5 +93,23 @@ def actualizar_miembro_endpoint(
 def listar_miembros_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
     try:
         return listar_miembros(casa_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@casas_router.patch("/{casa_id}/meta", response_model=CasaOut)
+def actualizar_meta_puntos_endpoint(
+    casa_id: UUID,
+    payload: MetaPuntosUpdate,
+    actor: UUID = Depends(resolver_actor_en_casa),
+):
+    """Spec `gamificacion-puntos`, REQ-005: solo un Administrador puede
+    configurar la meta de puntos mensual de la casa."""
+    try:
+        return actualizar_meta_puntos(casa_id, payload.meta, actor)
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

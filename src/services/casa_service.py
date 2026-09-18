@@ -1,13 +1,15 @@
-"""Servicio de Casa: creación de casas (REQ-001) y descubrimiento de casas
-por Usuario (`listar_casas_de_usuario`, spec `usuarios-auth`)."""
+"""Servicio de Casa: creación de casas (REQ-001), descubrimiento de casas
+por Usuario (`listar_casas_de_usuario`, spec `usuarios-auth`) y meta de
+puntos mensual de la casa (spec `gamificacion-puntos`, REQ-005)."""
 import uuid
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from src.db.base import get_session
 from src.db.models.casa import Casa
 from src.db.models.miembro import Miembro, RolEnum
-from src.services.exceptions import ValidationError
+from src.services.exceptions import NotFoundError, PermissionDeniedError, ValidationError
+from src.services.miembro_service import _validar_actor_admin
 
 
 def crear_casa(nombre: str, usuario_id: UUID) -> Casa:
@@ -77,5 +79,35 @@ def listar_casas_de_usuario(usuario_id: UUID) -> List[Casa]:
             # Fuerza la carga de la relación antes de cerrar la sesión.
             _ = casa.miembros
         return casas
+    finally:
+        session.close()
+
+
+def actualizar_meta_puntos(casa_id: UUID, meta: Optional[int], actor: UUID) -> Casa:
+    """Configura (o desactiva, con `meta=None`) la meta de puntos mensual
+    de `casa_id` (REQ-005, TC-006) — requiere que `actor` sea
+    Administrador activo de esa casa, mismo guard que otras acciones de
+    casa (`_validar_actor_admin`, `[SERV-03]`)."""
+    if meta is not None and (isinstance(meta, bool) or not isinstance(meta, int) or meta < 0):
+        raise ValidationError("La meta de puntos debe ser un entero no negativo, o None.")
+
+    session = get_session()
+    try:
+        casa = session.get(Casa, casa_id)
+        if casa is None:
+            raise NotFoundError(f"La casa {casa_id} no existe.")
+        _validar_actor_admin(session, casa_id, actor)
+
+        casa.meta_puntos_mensual = meta
+        session.commit()
+        session.refresh(casa)
+        # Fuerza la carga de la relación antes de cerrar la sesión — mismo
+        # criterio que `crear_casa` (`CasaOut.miembros` la necesita
+        # serializada, y la sesión ya está cerrada para cuando eso pasa).
+        _ = casa.miembros
+        return casa
+    except (ValidationError, PermissionDeniedError, NotFoundError):
+        session.rollback()
+        raise
     finally:
         session.close()

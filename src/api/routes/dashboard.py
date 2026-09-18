@@ -68,6 +68,10 @@ class DashboardOut(BaseModel):
     mantenimiento_con_alerta: List[ItemMantenimientoAlertaOut] = Field(
         default_factory=list, alias="mantenimientoConAlerta"
     )
+    # Spec `gamificacion-puntos`, REQ-005 ([API-01]: solo el campo
+    # contenedor de nivel superior lleva alias camelCase, no sus claves
+    # internas — `puntos_acumulados`/`meta`/`porcentaje` quedan tal cual).
+    meta_casa: Optional[dict] = Field(default=None, alias="metaCasa")
 
     class Config:
         allow_population_by_field_name = True
@@ -102,6 +106,7 @@ def obtener_inicio_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_
         ranking=dashboard.ranking,
         tarjetas_con_alerta=dashboard.tarjetas_con_alerta,
         mantenimiento_con_alerta=dashboard.mantenimiento_con_alerta,
+        meta_casa=dashboard.meta_casa,
     )
 
 

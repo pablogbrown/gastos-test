@@ -49,6 +49,9 @@ def client(monkeypatch):
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email) para vincular al nuevo Miembro.
     importlib.import_module("src.db.migrations.0005_usuarios").upgrade(engine)
+    # 0020 (spec `gamificacion-puntos`): `actualizar_meta_puntos` escribe
+    # `casas.meta_puntos_mensual`.
+    importlib.import_module("src.db.migrations.0020_gamificacion").upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
@@ -227,3 +230,32 @@ def test_listar_casas_mias_devuelve_solo_las_casas_con_miembro_activo(client):
 def test_listar_casas_mias_sin_jwt_devuelve_401(client):
     resp = client.get("/casas/mias")
     assert resp.status_code == 401
+
+
+def test_admin_puede_configurar_la_meta_de_puntos(client):
+    """TC-006 (spec `gamificacion-puntos`), a nivel HTTP: un Administrador
+    puede configurar `PATCH /casas/{id}/meta`."""
+    body, usuario_id, _ = _crear_casa(client)
+    casa_id = body["id"]
+
+    resp = client.patch(
+        f"/casas/{casa_id}/meta", json={"meta": 200}, headers=_bearer(usuario_id)
+    )
+    assert resp.status_code == 200
+    assert resp.json()["meta_puntos_mensual"] == 200
+
+
+def test_no_admin_no_puede_configurar_la_meta_de_puntos(client):
+    body, usuario_id, admin_id = _crear_casa(client)
+    casa_id = body["id"]
+    ana_usuario = _crear_usuario_de_prueba(client._session_factory, "ana@example.com")
+    client.post(
+        f"/casas/{casa_id}/miembros",
+        json={"nombre": "Ana", "identificacion": "ANA1", "email": ana_usuario.email},
+        headers=_bearer(usuario_id),
+    )
+
+    resp = client.patch(
+        f"/casas/{casa_id}/meta", json={"meta": 200}, headers=_bearer(ana_usuario.id)
+    )
+    assert resp.status_code == 403

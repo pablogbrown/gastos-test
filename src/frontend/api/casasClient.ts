@@ -32,6 +32,7 @@ export interface Casa {
   nombre: string;
   creado_en: string;
   miembros: Miembro[];
+  meta_puntos_mensual?: number | null;
 }
 
 const API_BASE = "/casas";
@@ -78,4 +79,16 @@ export async function desactivarMiembro(casaId: string, miembroId: string): Prom
     body: JSON.stringify({ activo: false }),
   });
   return parseJsonOrThrow<Miembro>(resp);
+}
+
+/** Spec `gamificacion-puntos`, REQ-005: configura (o desactiva, con
+ * `meta=null`) la meta de puntos mensual de la casa — requiere
+ * Administrador (la API rechaza con 403 si no lo es). */
+export async function actualizarMetaPuntos(casaId: string, meta: number | null): Promise<Casa> {
+  const resp = await fetchAutenticado(`${API_BASE}/${casaId}/meta`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ meta }),
+  });
+  return parseJsonOrThrow<Casa>(resp);
 }
