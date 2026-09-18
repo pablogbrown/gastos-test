@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  T3 (android-capacitor-app): permite trafico HTTP plano (cleartext)
+  para poder hablar con el backend dockerizado local/LAN sin TLS durante
+  desarrollo y pruebas. `allowMixedContent` en capacitor.config.ts solo
+  cubre contenido mixto dentro de una pagina HTTPS -- no cubre una app
+  que arranca en `capacitor://` y llama a un backend `http://` plano,
+  que es exactamente este caso.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

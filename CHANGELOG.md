@@ -107,3 +107,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - fix(tareas): la tabla "Historial de tareas" mostraba el UUID crudo de miembro y tarea en vez de sus nombres.
+
+### Added
+
+- feat(android-capacitor-app): la app ahora se puede empaquetar como una app Android instalable vía Capacitor, reusando el mismo frontend sin duplicar pantallas — URL base de API configurable (`VITE_API_BASE_URL`) y CORS en el backend para que el WebView pueda hablar con él; ver `docs/android.md` para compilar y correr en Android Studio.

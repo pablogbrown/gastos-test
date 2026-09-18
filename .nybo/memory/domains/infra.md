@@ -60,3 +60,14 @@ not the production deploy path (see `.nybo/foundation/stack.yaml`).
   silently intercept requests meant for the container and produce very
   confusing, hard-to-diagnose failures (e.g. a POST that looks
   successful but never reaches the real dockerized database).
+
+<!-- added: 2026-09-18 | feature: android-capacitor-app | confidence: high | verified: 2026-09-18 -->
+- The `backend` service in `docker-compose.yml` only mounts `./src` and
+  `./tests` — not the repo root. A test that asserts on root-level
+  files (e.g. `capacitor.config.ts`, `android/`, `.gitignore`,
+  `package.json`) passes on the host (`.venv/bin/python3 -m pytest`)
+  but fails with `FileNotFoundError` when run via `docker compose exec
+  backend python -m pytest tests/` — not a real regression, just those
+  paths not existing inside that container's mounted view. Run any test
+  that touches root-level files on the host, not via `docker compose
+  exec backend`.

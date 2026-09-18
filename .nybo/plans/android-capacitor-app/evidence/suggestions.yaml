@@ -1,0 +1,45 @@
+feature: android-capacitor-app
+suggestions:
+  - id: S001
+    category: quick-win
+    title: Correr `tests/integration/infra/capacitor_config.test.py` desde el host, no desde docker
+    detail: >-
+      El servicio `backend` de docker-compose solo monta `./src` y
+      `./tests` — no la raíz del repo, así que `capacitor.config.ts`,
+      `android/`, `.gitignore` no son visibles dentro del contenedor.
+      Este test ya lo documenta en su propio docstring y corre bien vía
+      `.venv/bin/python3 -m pytest tests/integration/infra/
+      capacitor_config.test.py`, pero cualquier corrida futura de "la
+      suite completa" vía `docker compose exec backend` reportará estos
+      5 tests como fallidos por diseño del volumen — vale la pena
+      documentarlo explícitamente en `.nybo/memory/domains/infra.md`
+      (o en un `conftest.py`/skip condicional) para que no se lea como
+      una regresión real la próxima vez.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: enhancement
+    title: Considerar montar la raíz del repo en el servicio backend de docker-compose
+    detail: >-
+      Si en el futuro se agregan más tests estructurales de archivos de
+      raíz (fuera de `src/`/`tests/`), sería más simple montar todo el
+      repo (`.: /app`) en vez de mantener volúmenes selectivos —
+      tradeoff: monta también `node_modules/`, `android/`,
+      `.git/`, etc. dentro del contenedor, lo cual puede no valer la
+      pena solo por esto. Dejado como pregunta abierta, no una
+      recomendación firme.
+    scope: out-of-spec
+    status: open
+  - id: Q001
+    category: question
+    title: ¿Se quiere firmar un keystore de release ahora o cuando se publique?
+    detail: >-
+      T3 excluye `*.keystore`/`*.jks` de git (correcto — nunca
+      commitear una clave de firma), pero no genera ninguna. Generar un
+      release firmado (`Build > Generate Signed Bundle/APK` en Android
+      Studio, paso manual de T4/T5) requiere crear uno la primera vez.
+      Fuera de alcance de esta spec (que explícitamente no compila el
+      APK), pero vale la pena que el usuario sepa que ese paso todavía
+      no existe en ningún lado del repo.
+    scope: follow-up
+    status: open
