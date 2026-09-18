@@ -231,6 +231,30 @@ describe("InicioCasa", () => {
     expect(screen.queryAllByRole("alert")).toHaveLength(0);
   });
 
+  it("no muestra la card Meta de la casa cuando metaCasa es null (TC-008)", async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardVacio()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    await screen.findByText("Todavía no hay gastos registrados.");
+    expect(screen.queryByText("Meta de la casa")).not.toBeInTheDocument();
+  });
+
+  it("muestra la card Meta de la casa con la barra de progreso cuando metaCasa está configurada (TC-008)", async () => {
+    const dashboard = {
+      ...dashboardVacio(),
+      metaCasa: { puntos_acumulados: 30, meta: 100, porcentaje: 30 },
+    };
+    vi.stubGlobal("fetch", mockFetch(dashboard));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    expect(await screen.findByText("Meta de la casa")).toBeInTheDocument();
+    expect(screen.getByText("30 / 100 puntos")).toBeInTheDocument();
+    const barra = screen.getByRole("progressbar");
+    expect(barra).toHaveAttribute("aria-valuenow", "30");
+  });
+
   it("muestra un error devuelto por la API al fallar la carga del dashboard", async () => {
     vi.stubGlobal(
       "fetch",

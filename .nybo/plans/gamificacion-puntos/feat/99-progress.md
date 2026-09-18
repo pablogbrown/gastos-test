@@ -6,7 +6,7 @@
 - [x] T1 — Niveles, rachas y ranking por mes
 - [x] T2 — Logros
 - [x] T3 — Meta de puntos mensual de la casa
-- [ ] T4 — Frontend (Ranking, Miembros, Inicio)
+- [x] T4 — Frontend (Ranking, Miembros, Inicio)
 
 ### Verify
 - [ ] Verificación end-to-end de la spec

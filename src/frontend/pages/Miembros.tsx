@@ -14,7 +14,15 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
-import { agregarMiembro, desactivarMiembro, esApiError, listarMiembros, Miembro, Rol } from "../api/casasClient";
+import {
+  actualizarMetaPuntos,
+  agregarMiembro,
+  desactivarMiembro,
+  esApiError,
+  listarMiembros,
+  Miembro,
+  Rol,
+} from "../api/casasClient";
 import { puedeGestionarMiembros } from "../api/permisos";
 
 export interface MiembrosProps {
@@ -35,6 +43,11 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  // Spec `gamificacion-puntos`, REQ-005: campo "Meta de puntos mensual",
+  // gateado por el mismo guard ya usado para alta/desactivación de
+  // miembros.
+  const [metaPuntos, setMetaPuntos] = useState("");
+  const [metaExito, setMetaExito] = useState<string | null>(null);
 
   const puedeGestionar = puedeGestionarMiembros(rolUsuarioActual);
 
@@ -75,6 +88,18 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
       await cargarMiembros();
     } catch (err) {
       setError(esApiError(err) ? err.detail : "No se pudo desactivar el miembro.");
+    }
+  }
+
+  async function handleGuardarMeta() {
+    setError(null);
+    setMetaExito(null);
+    try {
+      const meta = metaPuntos.trim() === "" ? null : Number(metaPuntos);
+      await actualizarMetaPuntos(casaId, meta);
+      setMetaExito("Meta actualizada.");
+    } catch (err) {
+      setError(esApiError(err) ? err.detail : "No se pudo actualizar la meta de puntos.");
     }
   }
 
@@ -120,6 +145,26 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
             <Button type="submit" variant="contained">
               Agregar miembro
             </Button>
+          </Box>
+        </Paper>
+      )}
+
+      {puedeGestionar && (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-start" }}>
+            <TextField
+              id="meta-puntos-mensual"
+              label="Meta de puntos mensual"
+              type="number"
+              value={metaPuntos}
+              onChange={(event) => setMetaPuntos(event.target.value)}
+              size="small"
+              helperText="Dejar vacío para desactivar la meta de la casa"
+            />
+            <Button type="button" variant="contained" onClick={handleGuardarMeta}>
+              Guardar meta
+            </Button>
+            {metaExito && <Alert severity="success">{metaExito}</Alert>}
           </Box>
         </Paper>
       )}

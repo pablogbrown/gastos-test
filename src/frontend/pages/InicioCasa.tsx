@@ -2,6 +2,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import LinearProgress from "@mui/material/LinearProgress";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -132,6 +133,23 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
             </Alert>
           ))}
         </Box>
+      )}
+
+      {dashboard.metaCasa != null && (
+        <Card component="section" aria-label="Meta de la casa" variant="outlined">
+          <CardContent>
+            <Typography variant="h6" component="h3" gutterBottom>
+              Meta de la casa
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {dashboard.metaCasa.puntos_acumulados} / {dashboard.metaCasa.meta} puntos
+            </Typography>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(dashboard.metaCasa.porcentaje, 100)}
+            />
+          </CardContent>
+        </Card>
       )}
 
       <Box
