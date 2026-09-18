@@ -50,4 +50,10 @@ On successful login, the JWT is persisted in localStorage and sent as `Authoriza
 A user belonging to more than one Casa is shown a Casa selector (fetched from the backend) before entering the existing shell.
 Logging out clears the stored JWT and returns the user to the Login screen.
 **Rationale:** Hoy la app genera un UUID nuevo en cada carga de página y lo usa como identidad — no hay sesión real ni forma de que la misma persona vuelva a entrar a sus casas. Sin esto, el backend de autenticación (`auth-backend`) no tiene ninguna forma de usarse desde la UI.
+### Android app via Capacitor, packaging the existing web frontend (added 2026-09-18, feature: android-capacitor-app)
+The existing React/Vite frontend is packaged as an installable Android app via Capacitor (`capacitor.config.ts`, native `android/` project committed to the repo) — no separate mobile codebase, the same `dist/` build is loaded by the native WebView.
+The API base URL is now configurable at build time via `VITE_API_BASE_URL` (`src/frontend/config/apiBaseUrl.ts`), defaulting to `""` (today's relative-path behavior, unchanged for the web deployment) — the packaged app has no Vite dev-server proxy, so it needs an absolute backend URL.
+The backend gained `CORSMiddleware` (`src/api/main.py`), with allowed origins configurable via `CORS_ALLOWED_ORIGINS` (default covers Capacitor's `capacitor://localhost`/`http(s)://localhost`) — the packaged app's WebView is a distinct origin from the backend, unlike the web deployment's same-origin Vite proxy.
+Android's network security config allows cleartext (plain HTTP) traffic, since the backend has no TLS certificate for local/LAN testing.
+**Rationale:** El usuario quiere probar la app como una instalación Android real, no solo el sitio responsive en el navegador — packaging vía Capacitor reusa el frontend existente sin duplicar pantallas ni lógica.
 <!-- nybo:managed-block:end v1 -->

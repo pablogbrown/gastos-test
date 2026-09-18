@@ -16,6 +16,8 @@ run_completed_at: '2026-09-18T13:31:22.092Z'
 run_duration: 5400
 verified_at: '2026-09-18T13:35:00.000Z'
 verified_duration: 220
+curated_at: '2026-09-18T13:39:16.000Z'
+curated_duration: 240
 latest_cycle: 1
 latest_evidence_path: .nybo/plans/android-capacitor-app/evidence/1/build-results.md
 cycles:
@@ -30,7 +32,8 @@ notes: |
   aprobadas explícitamente por el usuario al pedir esta implementación.
   Compilar/correr el APK final en Android Studio queda fuera de lo que
   este entorno puede automatizar — documentado como paso manual en T4.
-  Curate y ship deliberadamente NO corridos en este ciclo — instrucción
-  explícita del usuario en el pedido de build ("I will independently
-  re-verify and handle shipping myself once you report back"), que
-  prevalece sobre el default `curation.on_build: true`.
+  Curate corrido en un segundo paso, standalone, tras confirmar el
+  build: 1 architecture fact (nueva Key Decision), 1 gotcha (infra.md,
+  volumen de docker-compose sin la raíz del repo), 1 decision candidate
+  diferida (D001, evidence/decisions.yaml) y 1 no-action (pregunta del
+  keystore, informativa).

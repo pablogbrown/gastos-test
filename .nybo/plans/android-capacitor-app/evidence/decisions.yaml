@@ -1,0 +1,25 @@
+feature: android-capacitor-app
+decisions:
+  - id: D001
+    class: execution-observation
+    question: >-
+      ¿Vale la pena montar la raíz del repo completa en el servicio
+      `backend` de docker-compose (en vez de solo `./src`/`./tests`) para
+      que tests estructurales sobre archivos de raíz (como los de T3,
+      `capacitor.config.ts`/`android/`/`.gitignore`) también corran vía
+      `docker compose exec backend`?
+    options:
+      - Mantener los volúmenes selectivos actuales (`./src`, `./tests`)
+        — estos tests corren en el host en su lugar (ya documentado como
+        gotcha en `infra.md`).
+      - Montar la raíz completa (`.: /app`) — simplifica correr "toda la
+        suite" desde un solo lugar, pero también monta `node_modules/`,
+        `android/`, `.git/` dentro del contenedor.
+    recommendation: Mantener los volúmenes selectivos actuales — el costo
+      de montar todo (posible impacto en performance/tamaño, artifacts
+      de git/android dentro del contenedor) no se justifica solo por
+      estos 5 tests estructurales, que ya corren bien en el host.
+    assumed: Sin acción — se documentó el gotcha en `infra.md` en vez de
+      cambiar `docker-compose.yml`.
+    blocking: false
+    status: open
