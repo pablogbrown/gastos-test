@@ -1,0 +1,20 @@
+feature: android-capacitor-app
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-18'
+approved_at: '2026-09-18'
+task_count: 4
+domain: infra
+domains_referenced:
+  - infra.md
+  - frontend.md
+  - api.md
+kind: single_spec
+notes: |
+  Pedido por el usuario: empaquetar el frontend existente como app
+  Android instalable vía Capacitor. Rationale: spec.md. Nuevas
+  dependencias (@capacitor/core, @capacitor/android, @capacitor/cli)
+  aprobadas explícitamente por el usuario al pedir esta implementación.
+  Compilar/correr el APK final en Android Studio queda fuera de lo que
+  este entorno puede automatizar — documentado como paso manual en T4.

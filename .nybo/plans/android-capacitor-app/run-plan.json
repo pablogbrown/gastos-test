@@ -1,0 +1,96 @@
+{
+  "$schema_version": "2",
+  "feature_id": "android-capacitor-app",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/android-capacitor-app/feat/01-plan-01-api-base-url.md",
+      "files_touched": [
+        "src/frontend/config/apiBaseUrl.ts",
+        "src/frontend/api/authClient.ts",
+        "tests/unit/frontend/apiBaseUrl.test.tsx",
+        "tests/unit/frontend/authClient.test.tsx"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [
+        { "name": "getApiBaseUrl", "signature": "(env?) -> string", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "fetchAutenticado y las llamadas directas de authClient anteponen la base URL configurable a toda ruta relativa, sin cambiar el comportamiento cuando la env var no esta seteada.",
+        "postcondition": "sin VITE_API_BASE_URL, las requests son identicas a hoy; con ella seteada, cada ruta relativa queda prefijada.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/authClient.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/android-capacitor-app/feat/01-plan-02-backend-cors.md",
+      "files_touched": [
+        "src/api/main.py",
+        "tests/integration/api/cors.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 25,
+      "test_cases": ["TC-003", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El backend responde con headers CORS correctos a un origen permitido, sin afectar ninguna request existente sin header Origin.",
+        "postcondition": "un origen permitido recibe Access-Control-Allow-Origin; un origen no listado no lo recibe; la suite completa (363+ tests) sigue en verde.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/api/cors.test.py",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/android-capacitor-app/feat/01-plan-03-capacitor-android.md",
+      "files_touched": [
+        "package.json",
+        "capacitor.config.ts",
+        "android/",
+        ".gitignore",
+        "tests/integration/infra/capacitor_config.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-005", "TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El proyecto Android generado por Capacitor existe, referencia el build de produccion, y permite trafico cleartext para el backend local sin TLS.",
+        "postcondition": "capacitor.config.ts y el proyecto android/ tienen la config esperada (appId, webDir, network security config); git status queda limpio tras cap add/cap sync.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/infra/capacitor_config.test.py",
+        "caution": "Este entorno no tiene Android SDK/Gradle — no intentar compilar el APK acá, solo generar/validar archivos.",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/android-capacitor-app/feat/01-plan-04-docs-verificacion.md",
+      "files_touched": [
+        "docs/android.md",
+        ".nybo/foundation/stack.yaml"
+      ],
+      "deps": ["T1", "T2", "T3"],
+      "est_minutes": 25,
+      "test_cases": [],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "getApiBaseUrl" }
+      ],
+      "contract": {
+        "statement": "La documentacion cubre el flujo completo de compilacion/corrida en Android Studio, y un smoke combinado confirma que base URL configurable + CORS funcionan juntos.",
+        "postcondition": "suite completa en verde; smoke de login desde un origen distinto (simulando el WebView) funciona end-to-end.",
+        "verifiability": "INTEGRATION",
+        "test_file": "n/a — smoke manual documentado en 10-verify.md",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}
