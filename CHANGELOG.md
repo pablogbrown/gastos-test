@@ -103,3 +103,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - refactor(frontend): se elimina la duplicación de `parseJsonOrThrow` en los 10 clientes de API del frontend, ahora compartida desde `httpError.ts` — sin cambio de comportamiento (hallazgo de auditoría de código).
 - refactor(services): `registrar_gasto`/`registrar_gasto_cuotas_restantes`/`registrar_suscripcion_detectada` agrupan sus atributos opcionales (cuotas, moneda, tarjeta, estado, resumen) en un único objeto `GastoMetadata` en vez de parámetros sueltos — sin cambio de comportamiento (hallazgo de auditoría de código).
+
+### Fixed
+
+- fix(tareas): la tabla "Historial de tareas" mostraba el UUID crudo de miembro y tarea en vez de sus nombres.
