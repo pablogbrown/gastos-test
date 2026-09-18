@@ -11,6 +11,8 @@ run_completed_at: '2026-09-18T15:56:00.000Z'
 run_duration: 3360
 verified_at: '2026-09-18T16:05:00.000Z'
 verified_duration: 540
+curated_at: '2026-09-18T16:04:02.000Z'
+curated_duration: 200
 latest_cycle: 1
 latest_evidence_path: evidence/1/build-results.md
 pr_url: https://github.com/pablogbrown/gastos-test/pull/45
@@ -27,4 +29,7 @@ notes: |
   (niveles, rachas, ranking por mes, logros, meta de la casa).
   Rationale: spec.md. Todo derivado de HistorialTarea ya existente;
   única persistencia nueva: LogroObtenido + Casa.meta_puntos_mensual
-  (migración 0020_gamificacion).
+  (migración 0020_gamificacion). Smoke de pantalla completo en vivo
+  (nivel/racha/logro/meta) confirmado por el coordinador tras el build
+  (el dispatch del builder no tenía navegador disponible). Curate:
+  2 hallazgos (FRONP-03, APIG-01), sin decisiones diferidas.

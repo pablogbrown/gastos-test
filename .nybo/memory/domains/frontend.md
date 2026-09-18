@@ -50,6 +50,20 @@ frontend domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- added: 2026-09-18 | feature: gamificacion-puntos | confidence: medium | verified: 2026-09-18 -->
+- [FRONP-03] When a backend endpoint returns only an opaque catalog id
+  (e.g. `GET .../logros` returning `logro_id: "primera_tarea"`, not a
+  display name — the catalog itself, `LOGROS_CATALOGO`, is fixed
+  in-code on the backend, not a DB table), the frontend keeps its own
+  small `id -> nombre` display map (`Ranking.tsx`'s `NOMBRES_LOGRO`)
+  rather than asking the API to also return the name. Same "duplicate
+  a small per-layer helper over adding shared surface" criterion
+  already established for backend-to-backend duplication (`[SERVP-02]`
+  et al.), extended here across the frontend/backend boundary — keeps
+  the API contract exactly what the backend task specified, at the
+  cost of the two lists needing to be kept in sync by hand if the
+  catalog ever changes.
+
 <!-- added: 2026-09-16 | feature: prestamos-confirmacion-mutua | confidence: high | verified: 2026-09-16 -->
 - [FRONP-02] Deciding "does this action belong to ME, specifically?"
   against TWO named roles (e.g. a préstamo's `prestamista`/`deudor`,
