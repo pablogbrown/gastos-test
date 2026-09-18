@@ -111,3 +111,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - feat(android-capacitor-app): la app ahora se puede empaquetar como una app Android instalable vía Capacitor, reusando el mismo frontend sin duplicar pantallas — URL base de API configurable (`VITE_API_BASE_URL`) y CORS en el backend para que el WebView pueda hablar con él; ver `docs/android.md` para compilar y correr en Android Studio.
+- feat(gamificacion-puntos): nuevas mecánicas sobre el sistema de puntos — niveles (Novato/Activo/Comprometido/Campeón de la casa), rachas de días consecutivos completando tareas, ranking filtrable por mes, un catálogo de logros desbloqueables, y una meta de puntos mensual configurable por un Administrador con barra de progreso en Inicio.
