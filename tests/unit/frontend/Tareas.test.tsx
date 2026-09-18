@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -107,6 +107,47 @@ describe("Tareas", () => {
 
     expect(await screen.findByText("Sacar la basura")).toBeInTheDocument();
     expect(screen.getByText("Historial de tareas")).toBeInTheDocument();
+  });
+
+  it("el historial muestra el nombre del miembro y de la tarea, no sus UUID (reportado en vivo)", async () => {
+    const tarea = tareaConResponsable(ANA_ID);
+    const registroHistorial = {
+      id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      casa_id: CASA_ID,
+      tarea_id: tarea.id,
+      miembro_id: ANA_ID,
+      completada_en: "2026-09-16T17:55:54.867147",
+      puntos_obtenidos: 8,
+    };
+    vi.stubGlobal(
+      "fetch",
+      mockFetch([tarea], [registroHistorial], [miembroActivo(ANA_ID, "Ana")])
+    );
+
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ADMIN_ID} rolUsuarioActual="admin" />);
+
+    const tablaHistorial = within(await screen.findByRole("table", { name: "Historial de tareas" }));
+    expect(await tablaHistorial.findByText("Ana")).toBeInTheDocument();
+    expect(tablaHistorial.getByText("Pagar servicios")).toBeInTheDocument();
+    expect(tablaHistorial.queryByText(ANA_ID)).not.toBeInTheDocument();
+    expect(tablaHistorial.queryByText(tarea.id)).not.toBeInTheDocument();
+  });
+
+  it("el historial muestra el uuid crudo como fallback si el miembro o la tarea ya no existen", async () => {
+    const registroHistorial = {
+      id: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+      casa_id: CASA_ID,
+      tarea_id: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      miembro_id: "99999999-9999-9999-9999-999999999999",
+      completada_en: "2026-09-16T17:55:54.867147",
+      puntos_obtenidos: 3,
+    };
+    vi.stubGlobal("fetch", mockFetch([], [registroHistorial], []));
+
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ADMIN_ID} rolUsuarioActual="admin" />);
+
+    expect(await screen.findByText("99999999-9999-9999-9999-999999999999")).toBeInTheDocument();
+    expect(screen.getByText("ffffffff-ffff-ffff-ffff-ffffffffffff")).toBeInTheDocument();
   });
 
   it("muestra 'Marcar completada' para una tarea sin responsable a cualquier miembro", async () => {

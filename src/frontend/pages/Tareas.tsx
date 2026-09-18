@@ -324,8 +324,13 @@ export function Tareas({ casaId, miembroIdActual, rolUsuarioActual }: TareasProp
               {historial.map((registro) => (
                 <TableRow key={registro.id}>
                   <TableCell>{registro.completada_en}</TableCell>
-                  <TableCell>{registro.miembro_id}</TableCell>
-                  <TableCell>{registro.tarea_id}</TableCell>
+                  <TableCell>
+                    {miembros.find((m) => m.id === registro.miembro_id)?.nombre ??
+                      registro.miembro_id}
+                  </TableCell>
+                  <TableCell>
+                    {tareas.find((t) => t.id === registro.tarea_id)?.nombre ?? registro.tarea_id}
+                  </TableCell>
                   <TableCell>{registro.puntos_obtenidos}</TableCell>
                 </TableRow>
               ))}
