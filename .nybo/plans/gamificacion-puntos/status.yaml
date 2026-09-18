@@ -13,6 +13,8 @@ verified_at: '2026-09-18T16:05:00.000Z'
 verified_duration: 540
 latest_cycle: 1
 latest_evidence_path: evidence/1/build-results.md
+pr_url: https://github.com/pablogbrown/gastos-test/pull/45
+pr_number: 45
 domain: services
 domains_referenced:
   - services.md
