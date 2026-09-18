@@ -41,6 +41,14 @@ export interface RankingEntry {
   racha: number;
 }
 
+export interface Logro {
+  id: string;
+  casa_id: string;
+  miembro_id: string;
+  logro_id: string;
+  obtenido_en: string;
+}
+
 export interface CrearTareaInput {
   nombre: string;
   puntos: number | undefined;
@@ -88,4 +96,9 @@ export async function obtenerRanking(casaId: string, mes?: string): Promise<Rank
   const query = mes ? `?mes=${mes}` : "";
   const resp = await fetchAutenticado(`${apiBase(casaId)}/ranking${query}`);
   return parseJsonOrThrow<RankingEntry[]>(resp);
+}
+
+export async function listarLogros(casaId: string): Promise<Logro[]> {
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/logros`);
+  return parseJsonOrThrow<Logro[]>(resp);
 }

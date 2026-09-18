@@ -4,7 +4,7 @@
 
 ### Tasks
 - [x] T1 — Niveles, rachas y ranking por mes
-- [ ] T2 — Logros
+- [x] T2 — Logros
 - [ ] T3 — Meta de puntos mensual de la casa
 - [ ] T4 — Frontend (Ranking, Miembros, Inicio)
 

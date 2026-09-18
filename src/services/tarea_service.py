@@ -18,6 +18,7 @@ from src.db.models.miembro import Miembro, RolEnum
 from src.db.models.tarea import EstadoTareaEnum, Tarea
 from src.services.actividad_service import registrar_actividad
 from src.services.exceptions import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
+from src.services.logro_service import evaluar_logros
 from src.services.miembro_service import requiere_membresia_activa
 
 _DIAS_POR_FRECUENCIA = {"diaria": 1, "semanal": 7, "quincenal": 14}
@@ -193,6 +194,14 @@ def completar_tarea(tarea_id: UUID, miembro_id: UUID, actor: UUID) -> HistorialT
             f"{beneficiario.nombre} obtuvo {historial.puntos_obtenidos} puntos "
             f"por '{tarea.nombre}'.",
         )
+
+        # Spec `gamificacion-puntos`, REQ-004: evalúa el catálogo fijo de
+        # logros para el miembro que completó la tarea — también después
+        # del commit, junto a los hooks de `registrar_actividad` de
+        # arriba ([SERV-02]: nunca antes de confirmar la acción
+        # disparadora). Solo LEE el estado resultante (`HistorialTarea`,
+        # `calcular_racha`); nunca cambia el puntaje.
+        evaluar_logros(casa_id, miembro_id)
 
         return historial
     except (ValidationError, PermissionDeniedError, NotFoundError, ConflictError):

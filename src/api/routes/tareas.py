@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from src.api.dependencies import resolver_actor_en_casa
 from src.api.schemas import (
     HistorialTareaOut,
+    LogroObtenidoOut,
     RankingEntryOut,
     TareaCreate,
     TareaEstadoUpdate,
@@ -24,6 +25,7 @@ from src.api.schemas import (
 )
 from src.db.models.tarea import EstadoTareaEnum
 from src.services.exceptions import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
+from src.services.logro_service import listar_logros_obtenidos
 from src.services.ranking_service import calcular_ranking
 from src.services.tarea_service import (
     completar_tarea,
@@ -129,5 +131,13 @@ def obtener_ranking_endpoint(
         return calcular_ranking(casa_id, mes=mes)
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@tareas_router.get("/casas/{casa_id}/logros", response_model=list[LogroObtenidoOut])
+def listar_logros_endpoint(casa_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)):
+    try:
+        return listar_logros_obtenidos(casa_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

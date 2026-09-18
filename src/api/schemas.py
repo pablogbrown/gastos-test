@@ -98,6 +98,20 @@ class HistorialTareaOut(BaseModel):
         orm_mode = True
 
 
+class LogroObtenidoOut(BaseModel):
+    """Spec `gamificacion-puntos`, REQ-004 — sin alias: mismo criterio que
+    `HistorialTareaOut`/`TarjetaAlertaOut`, snake_case plano."""
+
+    id: UUID
+    casa_id: UUID
+    miembro_id: UUID
+    logro_id: str
+    obtenido_en: datetime
+
+    class Config:
+        orm_mode = True
+
+
 class RankingEntryOut(BaseModel):
     miembro_id: UUID = Field(alias="miembroId")
     puntos: int
