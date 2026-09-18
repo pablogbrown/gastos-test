@@ -28,6 +28,14 @@ dev_runbook:
             migrations on a persisted volume). Full recipe (auth,
             seeding, cold start) also in
             .nybo/memory/domains/testing.md [TEST-01].
+        - name: android app (Capacitor)
+          command: npx cap open android
+          notes: >-
+            Packages the existing web frontend as an installable Android
+            app via Capacitor — full build/run/troubleshooting sequence
+            in docs/android.md. Requires Android Studio + JDK 17 +
+            Android SDK on the machine that builds/runs the APK (not
+            installed in this dev sandbox).
       test_commands:
         backend: .venv/bin/python3 -m pytest tests/
         backend_docker: docker compose exec backend python3 -m pytest

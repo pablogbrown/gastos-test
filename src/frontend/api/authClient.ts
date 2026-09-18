@@ -9,7 +9,20 @@
 //     agregan `Authorization: Bearer <jwt>` desde acá, un único lugar
 //     que cambia si mañana se reemplaza `localStorage` por otro
 //     mecanismo (Design Rationale, T2).
+import { getApiBaseUrl } from "../config/apiBaseUrl";
 import { parseJsonOrThrow } from "./httpError";
+
+/** Antepone `getApiBaseUrl()` a una ruta relativa (T1,
+ * android-capacitor-app) — necesario para el WebView de Capacitor, que
+ * no tiene el proxy de Vite. Con la base URL default (`""`), o para un
+ * `input` no-relativo (no-string, o ya absoluto), no hace nada: cero
+ * cambio de comportamiento para la web existente. */
+function conBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
+  if (typeof input === "string" && input.startsWith("/")) {
+    return `${getApiBaseUrl()}${input}`;
+  }
+  return input;
+}
 
 export const TOKEN_STORAGE_KEY = "taskia_jwt";
 
@@ -32,7 +45,7 @@ export async function registrar(
   email: string,
   password: string
 ): Promise<RegistroResponse> {
-  const resp = await fetch("/auth/registro", {
+  const resp = await fetch(conBaseUrl("/auth/registro"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nombre, email, password }),
@@ -43,7 +56,7 @@ export async function registrar(
 /** REQ-001/TC-003: autentica y devuelve el JWT — `Login.tsx` es quien
  * llama a `guardarSesion` con `access_token`, no esta función. */
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const resp = await fetch("/auth/login", {
+  const resp = await fetch(conBaseUrl("/auth/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -109,7 +122,7 @@ export async function fetchAutenticado(
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  const resp = await fetch(input, { ...init, headers });
+  const resp = await fetch(conBaseUrl(input), { ...init, headers });
   if (resp.status === 401) {
     cerrarSesion();
   }

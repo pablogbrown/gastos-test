@@ -5,7 +5,9 @@ import {
   cerrarSesion,
   fetchAutenticado,
   guardarSesion,
+  login,
   obtenerToken,
+  registrar,
   suscribirseACierreSesion,
 } from "../../../src/frontend/api/authClient";
 
@@ -109,5 +111,85 @@ describe("authClient — fetchAutenticado (TC-003, TC-004)", () => {
     await fetchAutenticado("/casas/x/miembros");
 
     expect(obtenerToken()).toBe("mi-jwt");
+  });
+});
+
+describe("authClient — VITE_API_BASE_URL (android-capacitor-app, TC-001/TC-002)", () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("TC-001: sin VITE_API_BASE_URL, fetchAutenticado llama a fetch con la ruta relativa sin cambios", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchAutenticado("/casas/x/miembros");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("/casas/x/miembros");
+  });
+
+  it("TC-002: con VITE_API_BASE_URL seteada, fetchAutenticado antepone la base URL a una ruta relativa", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "http://192.168.1.5:8000");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchAutenticado("/casas/x/miembros");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("http://192.168.1.5:8000/casas/x/miembros");
+  });
+
+  it("no modifica un input que no es string (ej. un Request)", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "http://192.168.1.5:8000");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+    const request = new Request("http://otro-host/x");
+
+    await fetchAutenticado(request);
+
+    expect(fetchMock.mock.calls[0][0]).toBe(request);
+  });
+
+  it("no modifica un input string ya absoluto", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "http://192.168.1.5:8000");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchAutenticado("http://otro-host/x");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("http://otro-host/x");
+  });
+
+  it("TC-001: sin VITE_API_BASE_URL, registrar()/login() llaman a las rutas relativas de siempre", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await registrar("Ana", "ana@x.com", "pw");
+    await login("ana@x.com", "pw");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/auth/registro");
+    expect(fetchMock.mock.calls[1][0]).toBe("/auth/login");
+  });
+
+  it("TC-002: con VITE_API_BASE_URL seteada, registrar()/login() anteponen la base URL", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "http://192.168.1.5:8000");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await registrar("Ana", "ana@x.com", "pw");
+    await login("ana@x.com", "pw");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("http://192.168.1.5:8000/auth/registro");
+    expect(fetchMock.mock.calls[1][0]).toBe("http://192.168.1.5:8000/auth/login");
   });
 });
