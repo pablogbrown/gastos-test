@@ -74,6 +74,16 @@ export interface BalanceCasa {
   aportes: AporteMiembro[];
 }
 
+/** Spec `gamificacion-puntos`, REQ-005: mismo shape que
+ * `calcular_progreso_meta` (backend) — snake_case, sin alias ([API-01]:
+ * solo el campo contenedor `metaCasa` se camelCasea, no sus claves
+ * internas). */
+export interface MetaCasaProgreso {
+  puntos_acumulados: number;
+  meta: number;
+  porcentaje: number;
+}
+
 export interface DashboardCasa {
   miembros: Miembro[];
   gastosRecientes: Gasto[];
@@ -83,6 +93,7 @@ export interface DashboardCasa {
   ranking: RankingEntry[];
   tarjetasConAlerta: TarjetaAlerta[];
   mantenimientoConAlerta: ItemMantenimientoAlerta[];
+  metaCasa?: MetaCasaProgreso | null;
 }
 
 const API_BASE = "/casas";

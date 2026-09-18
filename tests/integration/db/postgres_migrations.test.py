@@ -406,6 +406,27 @@ def test_las_4_migraciones_corren_limpias_contra_postgres_real(postgres_dsn):
         assert "resumen_id" in columnas_gasto
         assert columnas_gasto["resumen_id"]["nullable"] is True
 
+        # T1/T2/T3 (spec `gamificacion-puntos`): `logros_obtenidos` existe
+        # con sus columnas tras la migración 0020, con FKs reales a
+        # `casas`/`miembros` (creadas mucho antes, en la migración 0001 —
+        # sin el riesgo de FK-ordering de `resumen_id`/`tarjeta_id`, ver
+        # [DBG-02]). `casas.meta_puntos_mensual` existe como columna
+        # nullable.
+        assert "logros_obtenidos" in tablas
+        columnas_logro = {c["name"]: c for c in inspector.get_columns("logros_obtenidos")}
+        assert "casa_id" in columnas_logro
+        assert "miembro_id" in columnas_logro
+        assert columnas_logro["logro_id"]["nullable"] is False
+        assert columnas_logro["obtenido_en"]["nullable"] is False
+        nombres_fk_logro = {
+            fk["referred_table"] for fk in inspector.get_foreign_keys("logros_obtenidos")
+        }
+        assert {"casas", "miembros"} <= nombres_fk_logro
+
+        columnas_casa = {c["name"]: c for c in inspector.get_columns("casas")}
+        assert "meta_puntos_mensual" in columnas_casa
+        assert columnas_casa["meta_puntos_mensual"]["nullable"] is True
+
         # Correr las migraciones dos veces debe ser idempotente (create_all
         # con checkfirst=True, y los ALTER TABLE ... ADD COLUMN IF NOT
         # EXISTS de 0008-0010) — relevante porque main.py las corre en cada

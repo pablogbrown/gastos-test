@@ -41,3 +41,15 @@ api domain
 
 ## Gotchas
 <!-- Things that tripped us up -->
+
+<!-- added: 2026-09-18 | feature: gamificacion-puntos | confidence: medium | verified: 2026-09-18 -->
+- [APIG-01] There is no `GET /casas/{casa_id}` single-casa endpoint —
+  only `GET /casas/mias` (list) and `GET /casas/{casa_id}/miembros`
+  (its members). A screen that lets an admin edit one scalar field on
+  `Casa` itself (e.g. `Miembros.tsx`'s "Meta de puntos mensual") has no
+  cheap way to pre-fill the control with the CURRENT value on mount —
+  `actualizar_meta_puntos`'s own PATCH response has it, but only after
+  a save, not before. Accepted as write-only (a field + a save button,
+  no pre-fill) for `gamificacion-puntos` rather than adding a new GET
+  endpoint just for this; revisit if a second casa-level scalar needs
+  the same treatment.

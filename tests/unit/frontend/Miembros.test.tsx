@@ -174,4 +174,113 @@ describe("Miembros", () => {
     const body = JSON.parse((altaRequest as RequestInit).body as string);
     expect(body).toEqual({ nombre: "Pablo", identificacion: "papá", email: "pablo@example.com" });
   });
+
+  it("muestra el campo Meta de puntos mensual solo para un Administrador", async () => {
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
+    await screen.findByText("Ana");
+    expect(screen.getByLabelText("Meta de puntos mensual")).toBeInTheDocument();
+  });
+
+  it("oculta el campo Meta de puntos mensual para un rol Miembro", async () => {
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="member" />);
+    await screen.findByText("Ana");
+    expect(screen.queryByLabelText("Meta de puntos mensual")).not.toBeInTheDocument();
+  });
+
+  it("guardar la meta llama a PATCH /casas/{id}/meta con el valor ingresado", async () => {
+    const fetchMock = mockFetchListaMiembros();
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => [
+        {
+          id: ADMIN_ID,
+          usuario_id: ADMIN_ID,
+          casa_id: CASA_ID,
+          nombre: "Administrador",
+          identificacion: ADMIN_ID,
+          rol: "admin",
+          activo: true,
+        },
+        {
+          id: ANA_ID,
+          usuario_id: ANA_ID,
+          casa_id: CASA_ID,
+          nombre: "Ana",
+          identificacion: "ANA1",
+          rol: "member",
+          activo: true,
+        },
+      ],
+    }));
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => ({
+        id: CASA_ID,
+        nombre: "Casa Brown",
+        creado_en: "2026-01-01T00:00:00",
+        miembros: [],
+        meta_puntos_mensual: 150,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
+    await screen.findByText("Ana");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Meta de puntos mensual"), "150");
+    await user.click(screen.getByRole("button", { name: "Guardar meta" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const [url, request] = fetchMock.mock.calls[1];
+    expect(String(url)).toContain(`/casas/${CASA_ID}/meta`);
+    expect((request as RequestInit).method).toBe("PATCH");
+    const body = JSON.parse((request as RequestInit).body as string);
+    expect(body).toEqual({ meta: 150 });
+
+    expect(await screen.findByText(/Meta actualizada/)).toBeInTheDocument();
+  });
+
+  it("muestra un error devuelto por la API al guardar una meta inválida", async () => {
+    const fetchMock = mockFetchListaMiembros();
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => [
+        {
+          id: ADMIN_ID,
+          usuario_id: ADMIN_ID,
+          casa_id: CASA_ID,
+          nombre: "Administrador",
+          identificacion: ADMIN_ID,
+          rol: "admin",
+          activo: true,
+        },
+        {
+          id: ANA_ID,
+          usuario_id: ANA_ID,
+          casa_id: CASA_ID,
+          nombre: "Ana",
+          identificacion: "ANA1",
+          rol: "member",
+          activo: true,
+        },
+      ],
+    }));
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: async () => ({ detail: "La meta de puntos debe ser un entero no negativo, o None." }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
+    await screen.findByText("Ana");
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Meta de puntos mensual"), "-5");
+    await user.click(screen.getByRole("button", { name: "Guardar meta" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/meta de puntos/i);
+  });
 });

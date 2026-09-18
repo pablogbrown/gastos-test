@@ -37,6 +37,16 @@ export interface HistorialTarea {
 export interface RankingEntry {
   miembroId: string;
   puntos: number;
+  nivel: string;
+  racha: number;
+}
+
+export interface Logro {
+  id: string;
+  casa_id: string;
+  miembro_id: string;
+  logro_id: string;
+  obtenido_en: string;
 }
 
 export interface CrearTareaInput {
@@ -82,7 +92,13 @@ export async function listarHistorial(casaId: string): Promise<HistorialTarea[]>
   return parseJsonOrThrow<HistorialTarea[]>(resp);
 }
 
-export async function obtenerRanking(casaId: string): Promise<RankingEntry[]> {
-  const resp = await fetchAutenticado(`${apiBase(casaId)}/ranking`);
+export async function obtenerRanking(casaId: string, mes?: string): Promise<RankingEntry[]> {
+  const query = mes ? `?mes=${mes}` : "";
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/ranking${query}`);
   return parseJsonOrThrow<RankingEntry[]>(resp);
+}
+
+export async function listarLogros(casaId: string): Promise<Logro[]> {
+  const resp = await fetchAutenticado(`${apiBase(casaId)}/logros`);
+  return parseJsonOrThrow<Logro[]>(resp);
 }

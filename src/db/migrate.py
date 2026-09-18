@@ -31,6 +31,7 @@ _MIGRACIONES = (
     "0017_mantenimiento",
     "0018_mantenimiento_autos",
     "0019_resumen_tarjeta",
+    "0020_gamificacion",
 )
 
 

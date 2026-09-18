@@ -43,9 +43,20 @@ class CasaOut(BaseModel):
     nombre: str
     creado_en: datetime
     miembros: List[MiembroOut] = Field(default_factory=list)
+    # Spec `gamificacion-puntos`, REQ-005 — sin alias (`CasaOut` no sigue
+    # el criterio de `DashboardOut`, [API-01]: cada campo de este schema
+    # ya era snake_case desde antes).
+    meta_puntos_mensual: Optional[int] = None
 
     class Config:
         orm_mode = True
+
+
+class MetaPuntosUpdate(BaseModel):
+    """Spec `gamificacion-puntos`, REQ-005 — `meta=None` desactiva la
+    meta (vuelve a no mostrarse en Inicio)."""
+
+    meta: Optional[int] = None
 
 
 class TareaCreate(BaseModel):
@@ -98,9 +109,30 @@ class HistorialTareaOut(BaseModel):
         orm_mode = True
 
 
+class LogroObtenidoOut(BaseModel):
+    """Spec `gamificacion-puntos`, REQ-004 — sin alias: mismo criterio que
+    `HistorialTareaOut`/`TarjetaAlertaOut`, snake_case plano."""
+
+    id: UUID
+    casa_id: UUID
+    miembro_id: UUID
+    logro_id: str
+    obtenido_en: datetime
+
+    class Config:
+        orm_mode = True
+
+
 class RankingEntryOut(BaseModel):
     miembro_id: UUID = Field(alias="miembroId")
     puntos: int
+    # Spec `gamificacion-puntos`, REQ-001/REQ-002: nivel (total histórico)
+    # y racha (días consecutivos) de cada miembro — [API-01]'s exception
+    # ya establecida para este schema (`RankingEntryOut.miembro_id ->
+    # miembroId`) no se extiende: `nivel`/`racha` van sin alias, iguales a
+    # `puntos`.
+    nivel: str
+    racha: int
 
     class Config:
         allow_population_by_field_name = True

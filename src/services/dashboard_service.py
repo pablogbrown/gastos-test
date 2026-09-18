@@ -7,7 +7,8 @@ tiempo real lo que esos servicios (y `gasto_service`/`tarea_service`) ya
 calculan, evitando una segunda fuente de verdad para esos cálculos.
 """
 from dataclasses import dataclass, field
-from typing import List
+from datetime import date
+from typing import List, Optional
 from uuid import UUID
 
 from src.db.models.gasto import Gasto
@@ -21,7 +22,7 @@ from src.services.mantenimiento_service import (
     obtener_items_con_alerta,
 )
 from src.services.miembro_service import listar_miembros
-from src.services.ranking_service import calcular_ranking
+from src.services.ranking_service import calcular_progreso_meta, calcular_ranking
 from src.services.tarea_service import listar_historial, listar_tareas
 from src.services.tarjeta_service import TarjetaAlerta, obtener_tarjetas_con_alerta
 
@@ -45,6 +46,11 @@ class DashboardCasa:
     # cuya fecha estimada está a `UMBRAL_ALERTA_DIAS` días o menos (o ya
     # vencidos) — mismo criterio que `tarjetas_con_alerta`.
     mantenimiento_con_alerta: List[ItemMantenimientoAlerta] = field(default_factory=list)
+    # Spec `gamificacion-puntos`, REQ-005: progreso de la casa contra su
+    # meta de puntos mensual — `None` cuando no hay meta configurada
+    # (mismo criterio que `tarjetas_con_alerta`: aditivo, no rompe una
+    # casa sin la nueva funcionalidad configurada).
+    meta_casa: Optional[dict] = None
 
 
 def armar_dashboard(casa_id: UUID) -> DashboardCasa:
@@ -65,6 +71,8 @@ def armar_dashboard(casa_id: UUID) -> DashboardCasa:
     ranking = calcular_ranking(casa_id)
     tarjetas_con_alerta = obtener_tarjetas_con_alerta(casa_id)
     mantenimiento_con_alerta = obtener_items_con_alerta(casa_id)
+    mes_actual = date.today().strftime("%Y-%m")
+    meta_casa = calcular_progreso_meta(casa_id, mes_actual)
 
     return DashboardCasa(
         miembros=miembros,
@@ -75,4 +83,5 @@ def armar_dashboard(casa_id: UUID) -> DashboardCasa:
         ranking=ranking,
         tarjetas_con_alerta=tarjetas_con_alerta,
         mantenimiento_con_alerta=mantenimiento_con_alerta,
+        meta_casa=meta_casa,
     )

@@ -1,11 +1,11 @@
 <!-- NYBO: Start -->
-Extends: @AGENTS.md (universal hard rules, approach check, end-to-end checklist).
+Universal agent rules for this project — hard rules, approach check, end-to-end checklist. Harness-specific files (`CLAUDE.md`, Cursor rules) extend this one.
 
 ## CORE.md
 
 @.nybo/memory/CORE.md
 
-This project uses nybo to run its SDLC through specs — `/nybo-plan`, then `/nybo-build`, then `/nybo-ship`. A multi-spec feature is coordinated with `/nybo-orchestrate`. nybo curates its memory under `.nybo/foundation/` and `.nybo/memory/` as features complete. Run `/nybo-explain` for the full lifecycle, trust model, and capability index.
+This project uses nybo to run its SDLC through specs — `/nybo-plan`, then `/nybo-build`, then `/nybo-ship`. `/nybo-orchestrate` builds a feature — one spec or several — through dispatched subagents instead. nybo curates its memory under `.nybo/foundation/` and `.nybo/memory/` as features complete. Run `/nybo-explain` for the full lifecycle, trust model, and capability index.
 <!-- NYBO: End -->
 
 ## Quick Reference
