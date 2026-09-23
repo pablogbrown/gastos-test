@@ -31,6 +31,10 @@ _MIGRACIONES = (
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email) para vincular al nuevo Miembro.
     "0005_usuarios",
+    # 0021 (spec `avatares-economia`): `completar_tarea` ahora también
+    # otorga créditos (`avatar_service.otorgar_creditos`), que requiere la
+    # tabla `credito_transacciones`.
+    "0021_creditos",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -39,6 +43,7 @@ _SERVICIOS_CON_SESSION = (
     "gasto_service",
     "tarea_service",
     "actividad_service",
+    "avatar_service",
 )
 
 

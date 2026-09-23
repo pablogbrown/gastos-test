@@ -1,0 +1,48 @@
+{
+  "$schema_version": "2",
+  "feature_id": "personalizacion-avatares",
+  "tasks": [
+    {
+      "id": "avatares-economia",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/avatares-economia/spec.md",
+      "files_touched": [
+        "src/db/models/credito_transaccion.py",
+        "src/db/models/avatar_personaje.py",
+        "src/db/models/miembro_avatar_seleccionado.py",
+        "src/services/avatar_service.py",
+        "src/api/routes/avatares.py",
+        "src/frontend/components/LottieAvatar.tsx",
+        "src/frontend/api/avatarClient.ts",
+        "package.json"
+      ],
+      "deps": [],
+      "est_minutes": 170
+    },
+    {
+      "id": "tienda-accesorios",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/tienda-accesorios/spec.md",
+      "files_touched": [
+        "src/db/models/accesorio_avatar.py",
+        "src/db/models/miembro_accesorio_comprado.py",
+        "src/db/models/miembro_accesorio_equipado.py",
+        "src/services/tienda_service.py",
+        "src/api/routes/tienda.py"
+      ],
+      "deps": ["avatares-economia"],
+      "est_minutes": 130
+    },
+    {
+      "id": "perfil-avatar-ui",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/perfil-avatar-ui/spec.md",
+      "files_touched": [
+        "src/frontend/pages/Miembros.tsx",
+        "src/frontend/pages/Ranking.tsx",
+        "src/frontend/pages/MiAvatar.tsx",
+        "src/frontend/App.tsx",
+        "src/frontend/AppNav.tsx"
+      ],
+      "deps": ["avatares-economia", "tienda-accesorios"],
+      "est_minutes": 90
+    }
+  ]
+}

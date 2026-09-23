@@ -17,6 +17,7 @@ from src.db.models.historial_tarea import HistorialTarea
 from src.db.models.miembro import Miembro, RolEnum
 from src.db.models.tarea import EstadoTareaEnum, Tarea
 from src.services.actividad_service import registrar_actividad
+from src.services.avatar_service import otorgar_creditos
 from src.services.exceptions import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
 from src.services.logro_service import evaluar_logros
 from src.services.miembro_service import requiere_membresia_activa
@@ -177,6 +178,14 @@ def completar_tarea(tarea_id: UUID, miembro_id: UUID, actor: UUID) -> HistorialT
         tarea.estado = EstadoTareaEnum.COMPLETADA
         session.commit()
         session.refresh(historial)
+
+        # Créditos (spec `avatares-economia`, REQ-001): otorgados al
+        # beneficiario de la tarea (nunca al actor, si un Administrador la
+        # completa en nombre de otro) por el mismo importe que sus
+        # puntos, en una transacción propia SEPARADA del commit de
+        # HistorialTarea de arriba — mismo orden ya establecido para
+        # registrar_actividad ([SERV-02]), nunca antes de confirmarlo.
+        otorgar_creditos(casa_id, miembro_id, historial.puntos_obtenidos, motivo="tarea_completada")
 
         # Hooks de actividad (REQ-002/TC-004, spec `dashboard-actividad`):
         # dos entradas — la finalización de la tarea y los puntos

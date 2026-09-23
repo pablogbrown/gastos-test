@@ -1,0 +1,56 @@
+feature: perfil-avatar-ui
+suggestions:
+  - id: S001
+    category: question
+    title: Consider a project convention for "consumer exposes the missing endpoint" (feature-wide pattern)
+    detail: >-
+      All 3 specs of personalizacion-avatares (avatares-economia,
+      tienda-accesorios, perfil-avatar-ui) hit the same shape of gap: a
+      service function already existed (tienda_service.listar_equipados,
+      avatar_service.listar_catalogo) but nobody had exposed it via a route,
+      because the spec that BUILT it never needed to read it back that way —
+      only the later CONSUMING spec did. This build resolved both gaps
+      itself (GET .../accesorios/equipados, GET .../avatares-catalogo) as
+      real prerequisites of its own test cases, documented in Judgment
+      (build-results.md J001/J002) rather than deferring to a fresh build.
+      Worth confirming this as the project's own default via
+      `/nybo-curate conventions add` (services domain): "a consuming spec
+      exposes a prerequisite endpoint itself, in-cycle, rather than waiting
+      on a separate follow-up build."
+    scope: follow-up
+    status: done
+    resolved_by: curate (build cycle 1) — added api.md's [APIP-03] recording this exact pattern.
+  - id: S002
+    category: tech-debt
+    title: Seed data for avatar/accessory Lottie+overlay assets uses unreachable placeholder URLs
+    detail: >-
+      Confirmed via live browser evidence this cycle (3 screenshots,
+      evidence/1/screenshots/): the *_placeholder.json URLs seeded by
+      avatares-economia (migration 0022) and tienda-accesorios (migration
+      0024) return 403 from lottiefiles.com (or are blocked outright in a
+      sandboxed environment) — the avatar/overlay renders as a broken-image
+      icon instead of the animation/badge. This was already tracked as
+      avatares-economia's S001 and tienda-accesorios's S001 (both still
+      open) from those builds' own inability to fetch real assets; this
+      entry just confirms the same gap is now visually observable end to
+      end (Miembros/Ranking/Mi Avatar all affected) — same remedy applies:
+      curate real LottieFiles Simple License assets and update the
+      avatar_personajes.lottie_url / accesorios_avatar.asset_overlay_url
+      columns before this reaches end users.
+    scope: follow-up
+    status: open
+  - id: S003
+    category: question
+    title: No coverage tool configured for this project (stack.yaml quality_tools.coverage.tool is null)
+    detail: >-
+      This cycle's verify pass could not report a numeric coverage
+      percentage against nybo.config.yaml's testing.coverage_threshold (80)
+      — .nybo/foundation/stack.yaml's quality_tools.coverage.tool is null.
+      Test-case completeness (7/7 TC resolved by a real test) was verified
+      by direct inspection instead. Recommend
+      `/nybo-brownfield-bootstrap --quality` to pick and validate a coverage
+      tool for both the Python (pytest-cov) and TypeScript (vitest
+      --coverage) sides, so future cycles get a real number instead of this
+      workaround.
+    scope: follow-up
+    status: open

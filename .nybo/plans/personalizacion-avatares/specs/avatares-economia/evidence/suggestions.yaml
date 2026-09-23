@@ -1,0 +1,67 @@
+feature: avatares-economia
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: Replace T2's placeholder lottie_url values with real, verified LottieFiles assets
+    detail: >-
+      Migration 0022's seed (10 rows) uses plausible placeholder URLs under
+      the assets.lottiefiles.com domain shape, documented explicitly in the
+      migration's own docstring (source: LottieFiles "Animals Lottie
+      Animations Pack", Simple License) — this build environment had no
+      browser/CDN-file-fetch access to download/verify real .json files, per
+      the human's own anticipation of this constraint. The data model,
+      migration, and level-unlock mechanics are 100% real and verified live;
+      only the catalog's actual animation content is a placeholder. Curate
+      real assets and update the 10 lottie_url values (a plain UPDATE against
+      avatar_personajes, or a small follow-up migration) before this reaches
+      end users.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: question
+    title: lottie-react's real published API differs from spec.md D-01's description
+    detail: >-
+      D-01's rationale describes lottie-react as "un solo componente <Lottie
+      animationData=.../>" — the classic v2 API. The version actually
+      installed (3.1.2, current on npm) is a complete v3 rewrite: named
+      `Lottie` export (no default export), `src` prop (URL/path or parsed
+      object) instead of `animationData`. avatares-economia implemented
+      LottieAvatar against the real, installed API (no functional risk here),
+      but the sibling spec perfil-avatar-ui may read D-01's text at face
+      value when it consumes LottieAvatar/lottie-react directly — worth a
+      one-line note in that spec's own planning pass so it isn't surprised.
+    scope: follow-up
+    status: done
+    resolved_by: personalizacion-avatares/specs/perfil-avatar-ui (build cycle 1) — consumed the real LottieAvatar (Lottie named export, src prop) exactly as built, never spec.md D-01's literal description.
+  - id: S003
+    category: tech-debt
+    title: Several pre-existing test fixtures silently depend on pytest full-suite collection order
+    detail: >-
+      Multiple test files that call completar_tarea (tarea_service,
+      ranking_service, tareas_routes, gamificacion_ranking, dashboard_service,
+      dashboard_routes, actividad_service — all predating this spec) only
+      pass because some earlier-collected file in the full `pytest tests/`
+      run happens to warm up the shared process-global default sqlite engine
+      first; every one of them fails if run as a standalone file. This spec's
+      own new test files (creditos/avatar_seleccion/avatares_routes) were
+      fixed to be fully self-contained (mock every service completar_tarea
+      hooks into, migrate every table those hooks touch) rather than relying
+      on this luck. Consider the same fix for the pre-existing files, or a
+      shared fixture helper, next time a hook is added to completar_tarea.
+    scope: out-of-spec
+    status: open
+  - id: S004
+    category: tech-debt
+    title: Run a scoped `nybo doctor --fix` to regenerate .claude/rules/nybo-services.md and nybo-db.md
+    detail: >-
+      This spec's curate step added [SERVG-03] to services.md and [DBG-06] to
+      db.md, but `nybo doctor --fix` regenerates derived .claude/rules/*
+      summaries repo-wide (it also touched unrelated specs' evidence-folder
+      layout and global config in this attempt) with no scoping flag —
+      reverted that broader change to keep this PR's diff limited to this
+      spec. The derived nybo-services.md/nybo-db.md index files are stale
+      relative to the two new memory entries until a human runs a proper
+      `nybo doctor --fix` pass (ideally reviewed for its full repo-wide diff
+      before committing).
+    scope: follow-up
+    status: open

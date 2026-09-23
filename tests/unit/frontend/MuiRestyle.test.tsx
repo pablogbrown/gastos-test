@@ -4,6 +4,15 @@ import { ThemeProvider } from "@mui/material/styles";
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Spec `perfil-avatar-ui`: Miembros/Ranking ahora renderizan
+// `AvatarConAccesorios` (LottieAvatar) — mismo criterio ya establecido
+// por `LottieAvatar.test.tsx`/`Miembros.test.tsx`: se mockea `lottie-react`
+// para que este smoke test de markup no dependa del efecto de red real
+// de `lottie-web`.
+vi.mock("lottie-react", () => ({
+  Lottie: () => <div data-testid="lottie-mock" />,
+}));
+
 import { Balance } from "../../../src/frontend/pages/Balance";
 import { CrearCasa } from "../../../src/frontend/pages/CrearCasa";
 import { Gastos } from "../../../src/frontend/pages/Gastos";

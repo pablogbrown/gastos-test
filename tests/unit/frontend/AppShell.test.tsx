@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@mui/material/styles";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppNav, GRUPOS_DESKTOP, SECCIONES } from "../../../src/frontend/AppNav";
@@ -285,5 +285,40 @@ describe("AppNav — restyle con el nuevo tema (TC-006, TC-007)", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: /Balance/ }));
     expect(onChange).toHaveBeenCalledWith("balance");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+});
+
+/** Spec `perfil-avatar-ui`, REQ-003/TC-007: "Mi Avatar" vive DENTRO del
+ * grupo "Casa" ya existente — nunca un ítem nuevo de primer nivel. El
+ * bottom nav mobile sigue mostrando exactamente 4 ítems (Inicio, Casa,
+ * Gastos, Tareas), igual que antes de esta spec. */
+describe("AppNav — Mi Avatar dentro del grupo Casa (spec perfil-avatar-ui, TC-007)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("TC-007: el grupo Casa incluye Mi Avatar junto a Miembros/Ranking/Actividad, en desktop y mobile", () => {
+    const grupoCasa = GRUPOS_DESKTOP.find(
+      (entrada) => entrada.tipo === "grupo" && entrada.label === "Casa"
+    );
+    expect(grupoCasa && grupoCasa.tipo === "grupo" && grupoCasa.pantallas).toContain("miAvatar");
+
+    mockMatchMedia(true);
+    renderAppNav();
+    fireEvent.click(screen.getByRole("button", { name: "Casa" }));
+    expect(screen.getByRole("menuitem", { name: /Mi Avatar/ })).toBeInTheDocument();
+  });
+
+  it("TC-007: el bottom nav mobile sigue mostrando exactamente 4 ítems de primer nivel tras agregar Mi Avatar", () => {
+    mockMatchMedia(false);
+    renderAppNav();
+
+    expect(GRUPOS_DESKTOP).toHaveLength(4);
+    const nav = screen.getByRole("navigation", { name: "Navegación" });
+    expect(within(nav).getAllByRole("button").length).toBe(4);
+    expect(screen.queryByRole("button", { name: "Mi Avatar" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Casa" }));
+    expect(screen.getByRole("menuitem", { name: /Mi Avatar/ })).toBeInTheDocument();
   });
 });

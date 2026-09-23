@@ -116,3 +116,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - feat(rediseno-ux-ui): rediseño visual/UX completo de las 16 pantallas de la app — nuevo sistema de diseño ("Cálido minimal": paleta propia, tipografía con jerarquía clara, esquinas redondeadas, sombras suaves) con 3 componentes compartidos (`PageHeader`, `StatCard`, `EmptyState`); Inicio, Gastos, Balance, Tarjetas, Suscripciones, Préstamos, Mantenimiento, Mantenimiento Autos, Miembros, Ranking, Tareas, Actividad, Login, Registro, Selector de casas y Crear casa reconstruidas sobre el nuevo sistema. Ranking ahora muestra el progreso de nivel, racha y logros con jerarquía visual real en vez de texto plano. Cero cambio de comportamiento o de datos — restyle puramente de presentación, con los 4 test suites de la feature (`sistema-visual`, `pantallas-financieras`, `pantallas-casa`, `auth-onboarding`) en verde sin regresión.
+
+### Added
+
+- feat(personalizacion-avatares): personalización de perfiles con avatares animados de perro/gato (Lottie) desbloqueados por nivel, y una tienda de accesorios (rareza, slots equipables cabeza/cuello/cuerpo, disponibilidad por tiempo) comprable con "créditos" — una moneda nueva ganada en paralelo a los puntos al completar tareas, distinta de la moneda ARS/USD ya existente. Miembros y Ranking muestran el avatar con sus accesorios equipados; la nueva pantalla "Mi Avatar" vive dentro del grupo "Casa" de la navegación, sin agregar un ítem nuevo al bottom nav mobile.

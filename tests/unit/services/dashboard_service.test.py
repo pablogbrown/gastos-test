@@ -43,6 +43,10 @@ _MIGRACIONES = (
     # `obtener_items_con_alerta`, que requiere las tablas
     # `items_mantenimiento`/`materiales_mantenimiento`.
     "0017_mantenimiento",
+    # 0021 (spec `avatares-economia`): `completar_tarea` ahora también
+    # otorga créditos (`avatar_service.otorgar_creditos`), que requiere la
+    # tabla `credito_transacciones`.
+    "0021_creditos",
 )
 _SERVICIOS_CON_SESSION = (
     "casa_service",
@@ -56,6 +60,7 @@ _SERVICIOS_CON_SESSION = (
     "suscripcion_service",
     "tarjeta_service",
     "mantenimiento_service",
+    "avatar_service",
 )
 
 

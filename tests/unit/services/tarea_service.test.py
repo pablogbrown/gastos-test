@@ -53,16 +53,22 @@ def db_session(monkeypatch):
     # 0005 (spec `usuarios-auth`): `agregar_miembro` ahora exige un
     # Usuario real (por email) para vincular al nuevo Miembro.
     migracion_usuarios = importlib.import_module("src.db.migrations.0005_usuarios")
+    # 0021 (spec `avatares-economia`): `completar_tarea` ahora también
+    # otorga créditos (`avatar_service.otorgar_creditos`), que requiere la
+    # tabla `credito_transacciones`.
+    migracion_creditos = importlib.import_module("src.db.migrations.0021_creditos")
     migracion_casas.upgrade(engine)
     migracion_tareas.upgrade(engine)
     migracion_actividad.upgrade(engine)
     migracion_usuarios.upgrade(engine)
+    migracion_creditos.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.miembro_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.tarea_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.avatar_service.get_session", lambda: TestSession())
     yield TestSession
 
 

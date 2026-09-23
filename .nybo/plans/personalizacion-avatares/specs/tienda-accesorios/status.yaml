@@ -1,0 +1,37 @@
+feature: tienda-accesorios
+status: shipped
+shipped_at: '2026-09-23T20:28:08Z'
+profile: code
+action_type: ADD
+created_at: '2026-09-23'
+approved_at: '2026-09-23'
+task_count: 3
+run_at: '2026-09-23T20:15:00Z'
+run_completed_at: '2026-09-23T20:15:00Z'
+run_duration: 2700
+verified_at: '2026-09-23T20:20:00Z'
+verified_duration: 300
+curated_at: '2026-09-23T20:22:00Z'
+curated_duration: 120
+latest_cycle: 1
+latest_evidence_path: evidence/1/build-results.md
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+parent:
+  feature: personalizacion-avatares
+  branch: feat/personalizacion-avatares
+notes: |
+  Tienda de accesorios (ropa/objetos) comprables con créditos, con
+  rareza, slots equipables (cabeza/cuello/cuerpo) y disponibilidad por
+  tiempo. Depende de avatares-economia (créditos + avatar
+  seleccionado). Bloquea a perfil-avatar-ui.
+
+  Built off feat/personalizacion-avatares--avatares-economia (PR #53,
+  not yet merged into feat/personalizacion-avatares at build time) —
+  not off the parent branch above, which still lacks the credit ledger
+  and avatar selection this spec consumes. Rebase onto
+  feat/personalizacion-avatares once #53 merges.
+branch: feat/personalizacion-avatares--tienda-accesorios

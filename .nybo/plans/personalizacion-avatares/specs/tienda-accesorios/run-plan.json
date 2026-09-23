@@ -1,0 +1,89 @@
+{
+  "$schema_version": "2",
+  "feature_id": "tienda-accesorios",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/tienda-accesorios/feat/01-plan-01-catalogo-accesorios.md",
+      "files_touched": [
+        "src/db/models/accesorio_avatar.py",
+        "src/db/migrate.py",
+        "src/db/migrations/0024_accesorio_catalogo.py",
+        "src/services/tienda_service.py",
+        "tests/integration/services/tienda_catalogo.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002", "TC-009"],
+      "interfaces_produced": [
+        { "name": "listar_catalogo_accesorios", "signature": "(session, miembro_id) -> list[AccesorioAvatar]", "kind": "function" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El catalogo de accesorios existe y se filtra por especie del avatar actual del miembro y por ventana de disponibilidad.",
+        "postcondition": "un accesorio incompatible de especie o fuera de ventana no aparece para quien no lo compro.",
+        "verifiability": "UNIT",
+        "test_file": "tests/integration/services/tienda_catalogo.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/tienda-accesorios/feat/01-plan-02-compra-accesorios.md",
+      "files_touched": [
+        "src/db/models/miembro_accesorio_comprado.py",
+        "src/db/migrate.py",
+        "src/db/migrations/0025_accesorio_comprado.py",
+        "src/services/tienda_service.py",
+        "tests/integration/services/tienda_compra.test.py"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-003", "TC-004", "TC-005", "TC-010"],
+      "interfaces_produced": [
+        { "name": "comprar_accesorio", "signature": "(session, miembro_id, accesorio_id) -> MiembroAccesorioComprado", "kind": "function" },
+        { "name": "listar_inventario", "signature": "(session, miembro_id) -> list[AccesorioAvatar]", "kind": "function" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "listar_catalogo_accesorios" }
+      ],
+      "contract": {
+        "statement": "Comprar un accesorio descuenta su precio del saldo de creditos y lo agrega al inventario, rechazando saldo insuficiente o compra duplicada.",
+        "postcondition": "una compra exitosa crea una CreditoTransaccion negativa y una fila en MiembroAccesorioComprado; saldo insuficiente o ya comprado no descuenta nada.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/tienda_compra.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/tienda-accesorios/feat/01-plan-03-equipar-accesorios.md",
+      "files_touched": [
+        "src/db/models/miembro_accesorio_equipado.py",
+        "src/db/migrate.py",
+        "src/db/migrations/0026_accesorio_equipado.py",
+        "src/services/tienda_service.py",
+        "src/api/routes/tienda.py",
+        "src/api/main.py",
+        "tests/integration/services/tienda_equipar.test.py"
+      ],
+      "deps": ["T2"],
+      "est_minutes": 45,
+      "test_cases": ["TC-006", "TC-007", "TC-008"],
+      "interfaces_produced": [
+        { "name": "equipar_accesorio", "signature": "(session, miembro_id, accesorio_id) -> MiembroAccesorioEquipado", "kind": "function" },
+        { "name": "desequipar_slot", "signature": "(session, miembro_id, slot) -> None", "kind": "function" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "listar_inventario" }
+      ],
+      "contract": {
+        "statement": "Equipar un accesorio comprado y compatible lo deja como el activo de su slot, reemplazando cualquier otro ya equipado en ese slot; equipar uno no comprado se rechaza.",
+        "postcondition": "como maximo un accesorio activo por slot por miembro en todo momento.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/tienda_equipar.test.py",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

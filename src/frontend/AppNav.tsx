@@ -10,6 +10,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import LogoutIcon from "@mui/icons-material/Logout";
 import BuildIcon from "@mui/icons-material/Build";
 import PeopleIcon from "@mui/icons-material/People";
+import PetsIcon from "@mui/icons-material/Pets";
 import RankingIcon from "@mui/icons-material/EmojiEvents";
 import SuscripcionesIcon from "@mui/icons-material/Subscriptions";
 import TareasIcon from "@mui/icons-material/Checklist";
@@ -41,15 +42,18 @@ export type Pantalla =
   | "actividad"
   | "suscripciones"
   | "tarjetas"
-  | "prestamos";
+  | "prestamos"
+  | "miAvatar";
 
-/** Las 12 secciones de navegación (spec `ui-modernization`, REQ-002;
+/** Las 13 secciones de navegación (spec `ui-modernization`, REQ-002;
  * `gastos-suscripcion-mensual` agrega "Suscripciones"; `tarjetas-credito`
  * agrega "Tarjetas"; `prestamos-entre-miembros` agrega "Préstamos";
  * `mantenimiento-casa` agrega "Mantenimiento"; `mantenimiento-autos`
- * agrega "Mantenimiento Autos"), compartidas entre `BottomNavigation`
- * (mobile) y `AppBar`/`Tabs` (desktop) — mismo orden, mismos íconos,
- * mismo estado `pantalla`. */
+ * agrega "Mantenimiento Autos"; `perfil-avatar-ui` agrega "Mi Avatar",
+ * REQ-003 — dentro del grupo "Casa" existente, nunca como ítem nuevo de
+ * primer nivel), compartidas entre `BottomNavigation` (mobile) y
+ * `AppBar`/`Tabs` (desktop) — mismo orden, mismos íconos, mismo estado
+ * `pantalla`. */
 export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] = [
   { value: "inicio", label: "Inicio", icon: <HomeIcon /> },
   { value: "miembros", label: "Miembros", icon: <PeopleIcon /> },
@@ -63,6 +67,7 @@ export const SECCIONES: { value: Pantalla; label: string; icon: JSX.Element }[] 
   { value: "suscripciones", label: "Suscripciones", icon: <SuscripcionesIcon /> },
   { value: "tarjetas", label: "Tarjetas", icon: <CreditCardIcon /> },
   { value: "prestamos", label: "Préstamos", icon: <HandshakeIcon /> },
+  { value: "miAvatar", label: "Mi Avatar", icon: <PetsIcon /> },
 ];
 
 /** Agrupación del menú superior desktop (spec `nav-agrupada`, REQ-001/002):
@@ -77,13 +82,16 @@ export type GrupoDesktop =
 /** Agrupación fija de las pantallas para el menú superior desktop (spec
  * `nav-agrupada`, REQ-001/REQ-002; `mantenimiento-casa` convierte
  * "Tareas" de suelta a grupo; `mantenimiento-autos` agrega
- * "Mantenimiento Autos" al mismo grupo): "Inicio" suelta, "Casa" agrupa
- * Miembros/Ranking/Actividad, "Gastos" agrupa Gastos/Balance/Tarjetas/
- * Suscripciones/Préstamos, "Tareas" agrupa Tareas/Mantenimiento/
- * Mantenimiento Autos. */
+ * "Mantenimiento Autos" al mismo grupo; `perfil-avatar-ui` agrega "Mi
+ * Avatar" al grupo "Casa", REQ-003 — el bottom nav mobile sigue
+ * mostrando exactamente 4 ítems de primer nivel, sin reintroducir el
+ * overflow ya corregido por `fix nav-mobile-agrupada`): "Inicio" suelta,
+ * "Casa" agrupa Miembros/Ranking/Actividad/Mi Avatar, "Gastos" agrupa
+ * Gastos/Balance/Tarjetas/Suscripciones/Préstamos, "Tareas" agrupa
+ * Tareas/Mantenimiento/Mantenimiento Autos. */
 export const GRUPOS_DESKTOP: GrupoDesktop[] = [
   { tipo: "suelta", pantalla: "inicio" },
-  { tipo: "grupo", label: "Casa", pantallas: ["miembros", "ranking", "actividad"] },
+  { tipo: "grupo", label: "Casa", pantallas: ["miembros", "ranking", "actividad", "miAvatar"] },
   {
     tipo: "grupo",
     label: "Gastos",

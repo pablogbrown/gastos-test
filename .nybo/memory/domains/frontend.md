@@ -136,6 +136,23 @@ frontend domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- [FRONP-07] added: 2026-09-23 | feature: perfil-avatar-ui | confidence: high | verified: 2026-09-23 -->
+- [FRONP-07] When a screen renders multiple rows/cards that each fire
+  their OWN async fetch on mount (e.g. `AvatarConAccesorios` — one per
+  member row in `Miembros.tsx`/`Ranking.tsx`), a test's fetch mock keyed
+  by call ORDER (`fetchMock.mockImplementationOnce` chained, or reading
+  `fetchMock.mock.calls[N]` by a fixed index) breaks the moment more
+  than one row exists — the per-row calls interleave at a
+  non-deterministic position relative to the screen's own primary flow
+  (list load, form submit, etc.), silently shifting which response goes
+  to which call. Route the mock by URL/method instead
+  (`tests/unit/frontend/helpers/mockFetchRouter.ts`'s `crearFetchRouter`
+  + its `handler*` builders), and assert a specific call by finding it
+  (`fetchMock.mock.calls.find(([url, init]) => ...)`) rather than by its
+  position. Established across `Miembros.test.tsx`/`Ranking.test.tsx`/
+  `MiAvatar.test.tsx` — reuse the helper before hand-rolling a new
+  index-based mock for any future per-row-fetch screen.
+
 <!-- [FRONP-05] added: 2026-09-23 | feature: rediseno-ux-ui/auth-onboarding | confidence: medium | verified: 2026-09-23 -->
 - [FRONP-05] When a screen needs a selectable list of records under the
   "Cálido minimal" theme (spec `sistema-visual`) — e.g.
@@ -239,6 +256,19 @@ frontend domain
 
 ## Gotchas
 <!-- Things that tripped us up -->
+
+<!-- added: 2026-09-23 | feature: perfil-avatar-ui | confidence: high | verified: 2026-09-23 -->
+- The installed `lottie-react@3.1.2`'s real API is a v3 rewrite:
+  named `Lottie` export (no default export), `src` prop (accepts a
+  URL/path OR an already-parsed animation object) instead of the
+  classic v2 `animationData` prop. A design doc or spec written before
+  checking the installed version (e.g. `avatares-economia`'s spec.md
+  D-01) may still describe the old `<Lottie animationData=.../>`
+  shape — always read `LottieAvatar.tsx`'s real, already-built
+  implementation before assuming the library's interface from a design
+  doc's prose. Confirmed working end-to-end (including a live smoke
+  test) by `perfil-avatar-ui`, consuming `LottieAvatar` exactly as it
+  was actually built.
 
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: medium | verified: 2026-09-11 -->
 - The installed `@mui/material@9.4.0` type-checks the `Stack` component

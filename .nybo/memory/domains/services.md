@@ -185,3 +185,23 @@ services domain
   commit, not just after the first. Found in
   `auth_service.registrar_usuario` after adding a second commit for
   `vincular_membresias_pendientes`.
+
+<!-- added: 2026-09-23 | feature: avatares-economia | confidence: high | verified: 2026-09-23 -->
+- [SERVG-03] `tarea_service.completar_tarea` fires MULTIPLE post-commit
+  hooks into other services (`registrar_actividad`, `evaluar_logros`,
+  and now `avatar_service.otorgar_creditos`) — each opens its OWN session
+  via its own module's `get_session()`. Any test fixture that calls
+  `completar_tarea` (directly, or via an API route) must monkeypatch
+  `get_session` on **every** one of those services, and migrate every
+  table each hook touches on that SAME dedicated test engine — omitting
+  one is invisible whenever the test happens to run after some other
+  test in the same `pytest` process already warmed up the shared
+  process-global default sqlite engine (`src/db/base.py`'s module-level
+  singleton), and only surfaces when that same file runs standalone or
+  the collection order shifts. Confirmed live: several pre-existing
+  fixtures were already silently relying on this ordering luck before
+  `avatares-economia` (they passed the documented `pytest tests/`
+  full-suite command, but failed every one of them run standalone).
+  Whenever a NEW hook is added to `completar_tarea` (or any other
+  multi-hook service action), update every existing fixture that calls
+  it, not just the new feature's own test file.
