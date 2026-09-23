@@ -5,9 +5,9 @@
 
 Project memory domains. Each loads as a path-scoped rule only when you touch its area — consult this index up front and READ the matching `.nybo/memory/domains/<name>.md` (or its `.claude/rules/nybo-<name>.md`) before deciding.
 
-- **api** — src/**/api/**/*.ts, src/routes/**/*.ts — [API-01, APIP-01, APIG-01]
+- **api** — src/**/api/**/*.ts, src/routes/**/*.ts — [API-01..02, APIP-01..03, APIG-01]
 - **auth** — src/**/auth/** — [—]
-- **db** — (always) — [DBP-01..02, DBG-01..05, DB-01]
-- **frontend** — src/**/*.tsx, src/components/**/*.tsx — [FRON-01, FRONP-01..03]
+- **db** — (always) — [DBP-01..03, DBG-01..06, DB-01]
+- **frontend** — src/**/*.tsx, src/components/**/*.tsx — [FRON-01..07, FRONP-01..07]
 - **infra** — (always) — [—]
-- **services** — (always) — [SERV-01..03, SERVP-01..08, SERVG-01..02]
+- **services** — (always) — [SERV-01..03, SERVP-01..08, SERVG-01..03]

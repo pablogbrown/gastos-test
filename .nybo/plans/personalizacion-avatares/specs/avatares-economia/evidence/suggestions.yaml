@@ -31,7 +31,8 @@ suggestions:
       value when it consumes LottieAvatar/lottie-react directly — worth a
       one-line note in that spec's own planning pass so it isn't surprised.
     scope: follow-up
-    status: open
+    status: done
+    resolved_by: personalizacion-avatares/specs/perfil-avatar-ui (build cycle 1) — consumed the real LottieAvatar (Lottie named export, src prop) exactly as built, never spec.md D-01's literal description.
   - id: S003
     category: tech-debt
     title: Several pre-existing test fixtures silently depend on pytest full-suite collection order

@@ -87,3 +87,4 @@ Se integra el avatar+accesorios en las 2 pantallas de perfil ya existentes, y se
 | # | Date | Event | Verdict | Summary |
 | --- | --- | --- | --- | --- |
 | 1 | 2026-09-23 | plan | — | Spec created — 2 tasks, 7 test cases. |
+| 2 | 2026-09-23 | build | verified | T1+T2 implementados; verify spec-level en verde (build/lint/tests/live evidence). Ver evidence/1/build-results.md. |

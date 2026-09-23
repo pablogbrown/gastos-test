@@ -36,8 +36,8 @@
 
 ## Suggestions
 - [ ] `[S001]` *(tech-debt)* — Reemplazar los `asset_overlay_url` placeholder del seed de T1 por assets reales verificados.
-- [ ] `[S002]` *(question)* — Confirmar con `perfil-avatar-ui` las rutas reales (anidadas bajo `/casas/{casa_id}/miembros/{miembro_id}/accesorios/...`, catálogo en `.../catalogo`), distintas del contrato literal de spec.md.
-- [ ] `[S003]` *(follow-up)* — Exponer `tienda_service.listar_equipados` (ya implementada) vía una ruta `GET .../accesorios/equipados` antes de que `perfil-avatar-ui` necesite renderizar el estado equipado por slot.
+- [x] `[S002]` *(question)* — Confirmar con `perfil-avatar-ui` las rutas reales (anidadas bajo `/casas/{casa_id}/miembros/{miembro_id}/accesorios/...`, catálogo en `.../catalogo`), distintas del contrato literal de spec.md. *(resuelto por `personalizacion-avatares/specs/perfil-avatar-ui`, build cycle 1 — leyó `tienda.py` directamente.)*
+- [x] `[S003]` *(follow-up)* — Exponer `tienda_service.listar_equipados` (ya implementada) vía una ruta `GET .../accesorios/equipados` antes de que `perfil-avatar-ui` necesite renderizar el estado equipado por slot. *(resuelto por `personalizacion-avatares/specs/perfil-avatar-ui`, build cycle 1 — ver su Judgment J001.)*
 
 #### Evidence Results
 | # | Date | Finding | Status |
