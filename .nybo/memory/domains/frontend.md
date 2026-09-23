@@ -76,8 +76,8 @@ frontend domain
   first. `SECCIONES` itself is the single source of truth for both
   branches — only `GRUPOS_DESKTOP` decides how desktop presents it.
 
-<!-- [FRON-05] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
-- [FRON-05] When applying `sistema-visual`'s restyle (`PageHeader`/
+<!-- [FRON-06] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
+- [FRON-06] When applying `sistema-visual`'s restyle (`PageHeader`/
   `EmptyState`/`Card`) to an EXISTING screen whose test suite already
   asserts a structural accessibility role (e.g.
   `screen.getByRole("table", { name: "Listado de préstamos" })` in
@@ -90,6 +90,28 @@ frontend domain
   all 7 screens in `pantallas-financieras` for consistency, driven by
   the one screen (Préstamos) whose test explicitly depends on
   `role="table"`.
+
+<!-- [FRON-07] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-casa | confidence: medium | verified: 2026-09-23 -->
+- [FRON-07] When a screen restyle converts a table row into a `Card`
+  (e.g. `Miembros.tsx`/`Tareas.tsx`, spec `rediseno-ux-ui/pantallas-casa`
+  REQ-001/REQ-003), give the `Card` `role="group"` and
+  `aria-label="<Entidad> <nombre>"` (e.g. `Miembro Ana`, `Tarea Sacar la
+  basura`) instead of leaving it with no accessible container role. This
+  keeps `within(tarjeta).getByText(...)`/`.getByRole(...)` queries
+  working exactly like `within(fila).getByText(...)` did before —
+  existing tests only need their scoping locator swapped
+  (`.closest("tr")` or `getByRole("cell", ...)` -> `getByRole("group",
+  { name: "..." })`), never the role/label assertions inside. A
+  structural change mandated by the spec (table -> card/feed) can still
+  break a query that was never really about role/label (a DOM-tag
+  `closest` or a `cell` role tied to `<table>` semantics) even when the
+  "queries por rol/label" promise otherwise holds — expect and budget for
+  that, don't treat it as a regression to avoid at all costs. Note this
+  is the OPPOSITE call from `[FRON-06]` (`pantallas-financieras`: keep
+  `<Table>` when an existing test asserts `role="table"`) — the two
+  coexist because each followed what ITS OWN pre-existing test suite
+  already depended on; check the existing test's structural role
+  assertion (if any) before choosing which path applies to a new screen.
 
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-11 -->
 - Frontend tests query the DOM via accessible roles/labels
@@ -145,8 +167,8 @@ frontend domain
   (`pantallas-financieras`/`pantallas-casa`/`auth-onboarding`) already
   depend on that exact contract staying stable.
 
-<!-- [FRONP-05] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
-- [FRONP-05] When a screen's "primary add action" (`PageHeader.action`,
+<!-- [FRONP-06] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
+- [FRONP-06] When a screen's "primary add action" (`PageHeader.action`,
   spec `sistema-visual` REQ-002/`pantallas-financieras` REQ-003) targets
   a form that is ALREADY always rendered inline (never hidden/toggled —
   the common shape in this app: Gastos/Tarjetas/Prestamos/Mantenimiento/

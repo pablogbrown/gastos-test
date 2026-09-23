@@ -98,3 +98,4 @@ Se aplican los componentes de `sistema-visual` a las 4 pantallas, una por task, 
 | # | Date | Event | Verdict | Summary |
 | --- | --- | --- | --- | --- |
 | 1 | 2026-09-23 | plan | — | Spec created — 4 tasks, 7 test cases. |
+| 2 | 2026-09-23 | build | ready | T1–T4 implementados, 168/168 tests verdes, 0 regresión funcional. Coverage diferido (new-dependency, D001). "Meta de la casa" en Ranking omitida (J002). |
