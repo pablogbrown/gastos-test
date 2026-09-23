@@ -1,0 +1,54 @@
+feature: tienda-accesorios
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: Replace T1's placeholder asset_overlay_url values with real, verified assets
+    detail: >-
+      Migration 0024's seed (18 rows) uses plausible placeholder URLs under
+      the assets.lottiefiles.com domain shape, documented explicitly in the
+      migration's own docstring — same criterion already established by
+      avatares-economia's T2 (0022_avatar_catalogo.py) for lottie_url. This
+      build environment had no browser/CDN-file-fetch access to
+      download/verify real files. The data model, migration, and full
+      purchase/equip mechanics are 100% real and verified live (including
+      the Outcome Smoke Test); only the catalog's actual overlay asset
+      content is a placeholder. Curate real icon/badge assets and update the
+      18 asset_overlay_url values (a plain UPDATE against accesorios_avatar,
+      or a small follow-up migration) before this reaches end users.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: question
+    title: perfil-avatar-ui needs the real route shapes this build actually used
+    detail: >-
+      spec.md's own Contracts describe `GET /accesorios?miembro_id=...` and
+      `GET/POST/PUT/DELETE /miembros/{miembro_id}/...` (no casa_id). This
+      build nests all 5 routes under
+      `/casas/{casa_id}/miembros/{miembro_id}/accesorios/...` (same
+      deviation and same reason avatares-economia's avatares.py already
+      established: resolver_actor_en_casa needs casa_id from the URL, and
+      Vite's dev proxy only forwards /casas and /auth) — and renames the
+      purchase catalog to `.../accesorios/catalogo` to avoid colliding with
+      the bare `.../accesorios` inventory GET. perfil-avatar-ui's own
+      planning pass should read tienda.py directly rather than spec.md's
+      literal contract text.
+    scope: follow-up
+    status: open
+  - id: S003
+    category: tech-debt
+    title: Expose tienda_service.listar_equipados via a GET route before perfil-avatar-ui needs it
+    detail: >-
+      spec.md's Contracts list only 5 routes (catalog, inventory, comprar,
+      equipar, desequipar) — none of them return "everything currently
+      equipped across all 3 slots" in one call; the closest is PUT
+      .../equipar's own response, which only echoes the single item just
+      equipped. tienda_service.listar_equipados(miembro_id) already exists
+      (used internally by the equip/unequip test suite) but has no route.
+      perfil-avatar-ui will need exactly this — a single GET returning the
+      active accesorio per slot — to render the avatar's overlays on load;
+      add a thin `GET .../accesorios/equipados` route (schema:
+      list[{slot, accesorio: AccesorioAvatarOut}]) as part of that spec's
+      own T1, or as a small follow-up to this one, rather than
+      reimplementing the same query.
+    scope: follow-up
+    status: open
