@@ -19,6 +19,9 @@ parent:
   feature: rediseno-ux-ui
   branch: feat/rediseno-ux-ui
 branch: feat/rediseno-ux-ui--pantallas-casa
+pr_url: https://github.com/pablogbrown/gastos-test/pull/50
+pr_number: 50
+pr_opened_at: '2026-09-23T16:20:00Z'
 notes: |
   Aplica el sistema visual de sistema-visual a las 4 pantallas
   sociales/de casa (Miembros, Ranking, Tareas, Actividad). Depende
