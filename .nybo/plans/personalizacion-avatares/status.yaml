@@ -1,10 +1,13 @@
 feature: personalizacion-avatares
 kind: multi_spec
-status: approved
+status: shipped
 profile: code
 action_type: ADD
 created_at: '2026-09-23'
 approved_at: '2026-09-23'
+shipped_at: '2026-09-23T20:28:08Z'
+curated_at: '2026-09-23T21:25:00Z'
+curated_duration: 0
 domain: services
 domains_referenced:
   - services.md
@@ -22,11 +25,11 @@ notes: |
   visual. Rationale completo: plan.md.
 specs:
   - id: avatares-economia
-    status: approved
+    status: shipped
     branch: feat/personalizacion-avatares--avatares-economia
   - id: tienda-accesorios
-    status: approved
+    status: shipped
     branch: feat/personalizacion-avatares--tienda-accesorios
   - id: perfil-avatar-ui
-    status: approved
+    status: shipped
     branch: feat/personalizacion-avatares--perfil-avatar-ui
