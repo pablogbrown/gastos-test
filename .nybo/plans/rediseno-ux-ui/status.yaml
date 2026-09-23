@@ -9,6 +9,8 @@ domain: frontend
 domains_referenced:
   - frontend.md
 branch: feat/rediseno-ux-ui
+pr_url: https://github.com/pablogbrown/gastos-test/pull/46
+pr_number: 46
 notes: |
   Rediseño visual/UX completo de las 16 pantallas de taskia, pedido
   por el usuario tras ver la app corriendo (web + Android) y
