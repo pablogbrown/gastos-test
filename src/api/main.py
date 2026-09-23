@@ -22,6 +22,7 @@ from src.api.routes.prestamos import prestamos_router
 from src.api.routes.suscripciones import suscripciones_router
 from src.api.routes.tareas import tareas_router
 from src.api.routes.tarjetas import tarjetas_router
+from src.api.routes.tienda import tienda_router
 from src.db.base import engine
 from src.db.migrate import run_migrations
 
@@ -63,6 +64,7 @@ app.include_router(prestamos_router)
 app.include_router(mantenimiento_router)
 app.include_router(autos_router)
 app.include_router(avatares_router)
+app.include_router(tienda_router)
 
 
 @app.on_event("startup")

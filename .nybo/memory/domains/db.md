@@ -9,6 +9,27 @@ db domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- [DBP-03] added: 2026-09-23 | feature: tienda-accesorios | confidence: medium | verified: 2026-09-23 -->
+- [DBP-03] A pure join/ownership table with no separate `id` column of
+  its own — its entire identity IS the relationship it represents (e.g.
+  `MiembroAccesorioComprado`'s `(miembro_id, accesorio_id)`:  "this
+  member owns this accessory", nothing else; `MiembroAccesorioEquipado`'s
+  `(miembro_id, slot)`: "this member's this slot has this active item")
+  — declares that pair as a COMPOSITE PRIMARY KEY, enforcing "at most one
+  row per pair" as a schema guarantee. This is deliberately DIFFERENT
+  from [SERV-01]'s default (a service-layer uniqueness check, never a DB
+  constraint): [SERV-01]'s example (`Miembro`'s `(casa_id, usuario_id)`)
+  is a business rule layered on an entity that already has its own `id`
+  PK — the constraint is incidental to the entity, not its identity. A
+  join table with no `id` of its own has nothing else to make unique;
+  the composite PK isn't extra ceremony, it's just naming the table's
+  actual primary key. Reach for [DBP-03] (composite PK) when the new
+  table has no reason to have an `id` column at all; reach for [SERV-01]
+  (service-layer check) when the table already needs its own `id` for
+  other reasons (relationships, external references) and the uniqueness
+  rule is a business constraint on top of that identity, not the
+  identity itself.
+
 <!-- [DBP-01] added: 2026-09-15 | feature: gastos-multi-moneda | confidence: high | verified: 2026-09-15 -->
 - [DBP-01] A `NOT NULL` column with a simple default (a single constant,
   not something dynamic) is declared as a plain Python-side

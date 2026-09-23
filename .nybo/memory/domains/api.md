@@ -22,6 +22,22 @@ api domain
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
 
+<!-- [APIP-02] added: 2026-09-23 | feature: tienda-accesorios | confidence: medium | verified: 2026-09-23 -->
+- [APIP-02] `ValidationError` maps to 400 everywhere in this project by
+  default — but a single route MAY map one specific, named condition of
+  that same exception type to a different code when spec.md's own
+  Contracts table documents it explicitly (e.g.
+  `POST .../accesorios/{id}/comprar`, spec `tienda-accesorios`: "402 si
+  saldo insuficiente" — `comprar_accesorio` raises a plain
+  `ValidationError`, and only THIS route's own `except ValidationError`
+  clause maps it to 402, with a comment naming the deviation). This is a
+  per-route override on top of the general convention, never a
+  redefinition of it — every other `ValidationError` in this same route
+  (or any other route) still maps to 400 unless spec.md documents its
+  own distinct code for that specific condition too. Prefer this over
+  inventing a new exception subclass just to carry a status code that
+  only one call site needs.
+
 <!-- added: 2026-09-15 | feature: importar-resumen-tarjeta | confidence: medium | verified: 2026-09-15 -->
 - [APIP-01] First file-upload endpoint in this project
   (`POST .../resumen`, `src/api/routes/tarjetas.py`): a plain FastAPI

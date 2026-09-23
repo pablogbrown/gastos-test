@@ -152,6 +152,32 @@ class CreditosOut(BaseModel):
     saldo: int
 
 
+class AccesorioAvatarOut(BaseModel):
+    """Spec `tienda-accesorios`, REQ-001 — sin alias: mismo criterio que
+    `AvatarPersonajeOut`, snake_case plano."""
+
+    id: UUID
+    nombre: str
+    slot: str
+    rareza: str
+    precio_creditos: int
+    especie_compatible: str
+    asset_overlay_url: str
+    disponible_desde: Optional[date] = None
+    disponible_hasta: Optional[date] = None
+
+    class Config:
+        orm_mode = True
+
+
+class AccesorioEquiparUpdate(BaseModel):
+    """Spec `tienda-accesorios`, Contracts: body `{"accesorio_id": uuid}`
+    — el `slot` a reemplazar se resuelve del propio accesorio
+    (`tienda_service.equipar_accesorio`), nunca enviado por el cliente."""
+
+    accesorio_id: UUID
+
+
 class RankingEntryOut(BaseModel):
     miembro_id: UUID = Field(alias="miembroId")
     puntos: int
