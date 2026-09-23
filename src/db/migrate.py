@@ -38,6 +38,7 @@ _MIGRACIONES = (
     "0024_accesorio_catalogo",
     "0025_accesorio_comprado",
     "0026_accesorio_equipado",
+    "0027_accesorios_assets_reales",
 )
 
 
