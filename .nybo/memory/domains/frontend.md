@@ -12,6 +12,44 @@ frontend domain
   `src/frontend/theme.ts` (exported `theme`, via `createTheme`) — screens
   never define their own ad-hoc palette/typography, they consume this
   theme through `ThemeProvider` (wired once in `main.tsx`).
+
+<!-- [FRON-02] added: 2026-09-23 | feature: rediseno-ux-ui/sistema-visual | confidence: high | verified: 2026-09-23 -->
+- [FRON-02] `theme.ts`'s "Cálido minimal" palette (spec
+  `rediseno-ux-ui/sistema-visual`, D-01): primary is a deep teal/green
+  (`#1b6b5c`), secondary a warm terracota accent (`#c1652f`), background
+  an off-white warm tone (`#faf6f1`), `shape.borderRadius: 16`, and
+  `components.MuiCard.styleOverrides.root` carries a fixed soft
+  `boxShadow` (note: MUI's `variant="outlined"` Paper/Card always
+  overrides this back to `boxShadow: none` at the CSS level regardless of
+  `styleOverrides.root` — outlined cards show a border, not a shadow, by
+  design). Semantic states (pagado/a_pagar/pendiente/rechazado) map onto
+  MUI's own `success`/`warning`/`info`/`error` palette slots rather than
+  ad-hoc per-screen colors. A shared `monetaryValueSx` export
+  (`fontVariantNumeric: "tabular-nums"`) lives alongside `theme` for any
+  screen displaying a monetary figure — use it instead of repeating the
+  style inline.
+- [FRON-03] Three presentational, dependency-free shared components live
+  in `src/frontend/components/` (spec `rediseno-ux-ui/sistema-visual`,
+  REQ-002): `PageHeader` (title/subtitle/optional primary action),
+  `StatCard` (icon/label/value stat, kept intentionally minimal —
+  compound content like a progress bar stays outside it rather than
+  extending its props, see Patterns below), and `EmptyState`
+  (icon/message/optional action, replacing a bare "no data" message).
+  None of the three imports anything from `src/frontend/api/*` — that's
+  what makes them safely reusable across every screen/domain. When
+  swapping an existing plain-text "no data" message for `EmptyState`,
+  pass the EXACT string an existing test already queries via
+  `getByText(...)` — `EmptyState` renders `message` as its own leaf text
+  node, so the query keeps matching with zero test changes.
+- [FRON-04] The active nav item (mobile `BottomNavigation` and desktop
+  `AppBar`/`GRUPOS_DESKTOP`) is highlighted with a filled/pill background
+  using the theme's primary color (`alpha(primary.main, 0.12)` on
+  mobile's `Mui-selected` class, `alpha('#ffffff', 0.18)` on desktop's
+  primary-colored `AppBar`, since desktop buttons use `color="inherit"`
+  and need a light overlay rather than the primary color itself to read
+  against a primary-colored bar) — not just a color/opacity/font-weight
+  cue as before (`nav-agrupada`'s S001 suggestion). `aria-current="true"`
+  is set explicitly on both the mobile and desktop active items.
 - The responsive navigation shell (bottom tab bar on mobile < `sm`
   breakpoint / top `AppBar` on desktop) is its own component,
   `src/frontend/AppNav.tsx` — kept separate from `App.tsx` specifically
@@ -49,6 +87,22 @@ frontend domain
 
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
+
+<!-- [FRONP-04] added: 2026-09-23 | feature: rediseno-ux-ui/sistema-visual | confidence: medium | verified: 2026-09-23 -->
+- [FRONP-04] When a screen wants to reuse a shared presentational
+  component (e.g. `StatCard`) for a section whose content is COMPOUND
+  (a stat value plus something else entirely — here, "Meta de la casa"
+  pairing a value with a `LinearProgress` bar) rather than adding a
+  `children`/slot prop to widen that shared component's contract, keep
+  the compound section as its own local composition and reserve the
+  shared component for the cases that actually fit its original, narrow
+  shape. Same "duplicate a small per-caller shape over widening shared
+  surface" criterion already established for backend-to-backend
+  duplication (`[SERVP-02]` et al.) and the frontend/backend boundary
+  (`[FRONP-03]`), extended here to a shared-component's own prop
+  contract — this matters more than usual when 3 sibling specs
+  (`pantallas-financieras`/`pantallas-casa`/`auth-onboarding`) already
+  depend on that exact contract staying stable.
 
 <!-- added: 2026-09-18 | feature: gamificacion-puntos | confidence: medium | verified: 2026-09-18 -->
 - [FRONP-03] When a backend endpoint returns only an opaque catalog id

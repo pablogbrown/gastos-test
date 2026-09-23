@@ -1,0 +1,42 @@
+feature: rediseno-ux-ui/specs/sistema-visual
+suggestions:
+  - id: S001
+    category: quick-win
+    title: Mobile BottomNavigation overflows with 12 secciones — considerar agrupación o "más"
+    detail: >-
+      Confirmado con evidencia visual en vivo (viewport 390px): las 12
+      `SECCIONES` no entran todas en el ancho de un `BottomNavigation`
+      mobile — varias quedan fuera de la vista sin scroll horizontal
+      evidente. Pre-existente a esta spec (T3 solo restyleó el ítem
+      activo, sin tocar `SECCIONES`/breakpoint por constraint de REQ-003)
+      y ya creció con cada spec que agregó una sección nueva desde
+      `ui-modernization`. Vale la pena evaluar, en una spec futura de
+      navegación (no visual), una agrupación mobile análoga a
+      `GRUPOS_DESKTOP` o un patrón "más" con menú.
+    scope: out-of-spec
+    status: open
+  - id: S002
+    category: tech-debt
+    title: No coverage tool configured for the frontend (aún sin resolver)
+    detail: >-
+      Mismo gap ya reportado en `nav-agrupada`'s S002 —
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool` sigue
+      `null`, así que `nybo.config.yaml`'s `testing.coverage_threshold: 80`
+      no pudo evaluarse mecánicamente en este ciclo tampoco (ver
+      `decisions.yaml` D001, decision class `new-dependency` — siempre
+      difiere a un humano). Remedio: `/nybo-brownfield-bootstrap --quality`.
+    scope: out-of-spec
+    status: open
+  - id: S003
+    category: question
+    title: ¿Aplicar StatCard/EmptyState a "Meta de la casa" en una spec futura?
+    detail: >-
+      Ver Judgment J002 en build-results.md: se dejó "Meta de la casa"
+      fuera de StatCard (mantiene la interfaz de StatCard mínima/estable
+      para las 3 specs dependientes) en vez de extender StatCardProps con
+      un slot de contenido para acomodar la LinearProgress. Si
+      pantallas-financieras/pantallas-casa necesitan un patrón "stat +
+      progreso" recurrente, vale la pena evaluar un componente nuevo
+      (p.ej. `ProgressStatCard`) en vez de sobrecargar `StatCard`.
+    scope: follow-up
+    status: open

@@ -255,6 +255,26 @@ describe("InicioCasa", () => {
     expect(barra).toHaveAttribute("aria-valuenow", "30");
   });
 
+  it("TC-009: sin gastos recientes, la sección muestra EmptyState (ícono + mensaje, sin lista vacía)", async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardVacio()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    await screen.findByText("Todavía no hay gastos registrados.");
+    const seccionGastos = screen.getByRole("region", { name: "Gastos recientes" });
+    expect(seccionGastos.querySelector("ul")).toBeNull();
+    expect(seccionGastos.querySelector("svg")).not.toBeNull();
+  });
+
+  it("TC-004 (sistema-visual): la pantalla muestra un encabezado 'Inicio' vía PageHeader", async () => {
+    vi.stubGlobal("fetch", mockFetch(dashboardVacio()));
+
+    render(<InicioCasa casaId={CASA_ID} miembros={[]} />);
+
+    await screen.findByText("Todavía no hay gastos registrados.");
+    expect(screen.getByRole("heading", { name: "Inicio" })).toBeInTheDocument();
+  });
+
   it("muestra un error devuelto por la API al fallar la carga del dashboard", async () => {
     vi.stubGlobal(
       "fetch",
