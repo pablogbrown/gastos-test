@@ -1,0 +1,59 @@
+{
+  "$schema_version": "2",
+  "feature_id": "rediseno-ux-ui",
+  "tasks": [
+    {
+      "id": "sistema-visual",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/sistema-visual/spec.md",
+      "files_touched": [
+        "src/frontend/theme.ts",
+        "src/frontend/components/PageHeader.tsx",
+        "src/frontend/components/StatCard.tsx",
+        "src/frontend/components/EmptyState.tsx",
+        "src/frontend/AppNav.tsx",
+        "src/frontend/pages/InicioCasa.tsx"
+      ],
+      "deps": [],
+      "est_minutes": 150
+    },
+    {
+      "id": "pantallas-financieras",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-financieras/spec.md",
+      "files_touched": [
+        "src/frontend/pages/Gastos.tsx",
+        "src/frontend/pages/Balance.tsx",
+        "src/frontend/pages/Tarjetas.tsx",
+        "src/frontend/pages/Suscripciones.tsx",
+        "src/frontend/pages/Prestamos.tsx",
+        "src/frontend/pages/Mantenimiento.tsx",
+        "src/frontend/pages/MantenimientoAutos.tsx"
+      ],
+      "deps": ["sistema-visual"],
+      "est_minutes": 180
+    },
+    {
+      "id": "pantallas-casa",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-casa/spec.md",
+      "files_touched": [
+        "src/frontend/pages/Miembros.tsx",
+        "src/frontend/pages/Ranking.tsx",
+        "src/frontend/pages/Tareas.tsx",
+        "src/frontend/pages/HistorialActividad.tsx"
+      ],
+      "deps": ["sistema-visual"],
+      "est_minutes": 150
+    },
+    {
+      "id": "auth-onboarding",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/auth-onboarding/spec.md",
+      "files_touched": [
+        "src/frontend/pages/Login.tsx",
+        "src/frontend/pages/Registro.tsx",
+        "src/frontend/pages/SelectorCasas.tsx",
+        "src/frontend/pages/CrearCasa.tsx"
+      ],
+      "deps": ["sistema-visual"],
+      "est_minutes": 90
+    }
+  ]
+}

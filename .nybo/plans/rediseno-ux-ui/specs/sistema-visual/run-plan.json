@@ -1,0 +1,92 @@
+{
+  "$schema_version": "2",
+  "feature_id": "sistema-visual",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/sistema-visual/feat/01-plan-01-theme-tokens.md",
+      "files_touched": ["src/frontend/theme.ts", "tests/unit/frontend/MuiRestyle.test.tsx"],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [
+        { "name": "theme", "signature": "Theme", "kind": "export" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El tema exportado por theme.ts define una paleta, tipografia, forma y elevacion propias, distintas de los valores por defecto de MUI y de los de ui-modernization.",
+        "postcondition": "palette.primary.main/palette.secondary.main/shape.borderRadius no coinciden con los valores previos; un Card renderizado tiene border-radius >= 12px y sombra de elevacion.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/MuiRestyle.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/sistema-visual/feat/01-plan-02-shared-components.md",
+      "files_touched": [
+        "src/frontend/components/PageHeader.tsx",
+        "src/frontend/components/StatCard.tsx",
+        "src/frontend/components/EmptyState.tsx",
+        "tests/unit/frontend/PageHeader.test.tsx",
+        "tests/unit/frontend/StatCard.test.tsx",
+        "tests/unit/frontend/EmptyState.test.tsx"
+      ],
+      "deps": ["T1"],
+      "est_minutes": 45,
+      "test_cases": ["TC-003", "TC-004", "TC-005"],
+      "interfaces_produced": [
+        { "name": "PageHeader", "signature": "(props: PageHeaderProps) => JSX.Element", "kind": "export" },
+        { "name": "StatCard", "signature": "(props: StatCardProps) => JSX.Element", "kind": "export" },
+        { "name": "EmptyState", "signature": "(props: EmptyStateProps) => JSX.Element", "kind": "export" }
+      ],
+      "interfaces_consumed": [{ "from": "T1", "name": "theme" }],
+      "contract": {
+        "statement": "PageHeader, StatCard y EmptyState son componentes puramente presentacionales reutilizables por las specs de pantallas-financieras/pantallas-casa/auth-onboarding.",
+        "postcondition": "cada componente renderiza sus props correctamente y no importa ningun cliente de src/frontend/api/.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/PageHeader.test.tsx,tests/unit/frontend/StatCard.test.tsx,tests/unit/frontend/EmptyState.test.tsx",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/sistema-visual/feat/01-plan-03-nav-shell.md",
+      "files_touched": ["src/frontend/AppNav.tsx", "tests/unit/frontend/AppShell.test.tsx"],
+      "deps": ["T1"],
+      "est_minutes": 35,
+      "test_cases": ["TC-006", "TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [{ "from": "T1", "name": "theme" }],
+      "contract": {
+        "statement": "AppNav destaca visualmente el item activo con el nuevo tema, sin cambiar el breakpoint responsivo ni el ruteo existente.",
+        "postcondition": "el item de navegacion activo tiene aria-current o selected=true; el suite AppShell.test.tsx pasa sin modificar sus queries.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": "tests/unit/frontend/AppShell.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/sistema-visual/feat/01-plan-04-inicio-flagship.md",
+      "files_touched": ["src/frontend/pages/InicioCasa.tsx", "tests/unit/frontend/InicioCasa.test.tsx"],
+      "deps": ["T1", "T2"],
+      "est_minutes": 50,
+      "test_cases": ["TC-008", "TC-009"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [
+        { "from": "T1", "name": "theme" },
+        { "from": "T2", "name": "PageHeader" },
+        { "from": "T2", "name": "StatCard" },
+        { "from": "T2", "name": "EmptyState" }
+      ],
+      "contract": {
+        "statement": "InicioCasa se reconstruye con el nuevo tema y los componentes compartidos preservando el 100% de su logica y datos actuales.",
+        "postcondition": "InicioCasa.test.tsx pasa sin modificar sus queries; una casa sin gastos recientes muestra EmptyState en vez de una lista vacia.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/unit/frontend/InicioCasa.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

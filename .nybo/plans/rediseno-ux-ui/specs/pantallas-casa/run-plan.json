@@ -1,0 +1,74 @@
+{
+  "$schema_version": "2",
+  "feature_id": "pantallas-casa",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-casa/feat/01-plan-01-miembros.md",
+      "files_touched": ["src/frontend/pages/Miembros.tsx"],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Miembros muestra cada persona como tarjeta de perfil con avatar, nombre y chip de rol/estado.",
+        "postcondition": "un miembro Pendiente tiene un chip visualmente distinto al de un miembro activo; Miembros.test.tsx pasa sin modificar queries.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-casa/feat/01-plan-02-ranking.md",
+      "files_touched": ["src/frontend/pages/Ranking.tsx"],
+      "deps": [],
+      "est_minutes": 45,
+      "test_cases": ["TC-003", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Ranking muestra nivel/racha/logros con jerarquia visual (progreso, chips) en vez de texto plano.",
+        "postcondition": "un miembro a mitad de camino a su proximo nivel muestra un indicador de progreso visual; sus logros se muestran como chips distintos; Ranking.test.tsx pasa sin modificar queries.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Ranking.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-casa/feat/01-plan-03-tareas.md",
+      "files_touched": ["src/frontend/pages/Tareas.tsx"],
+      "deps": [],
+      "est_minutes": 35,
+      "test_cases": ["TC-005"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Tareas distingue visualmente pendiente/completada sin depender solo del texto de estado.",
+        "postcondition": "una tarea completada y una pendiente son distinguibles por color/icono; Tareas.test.tsx pasa sin modificar queries.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Tareas.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-casa/feat/01-plan-04-actividad.md",
+      "files_touched": ["src/frontend/pages/HistorialActividad.tsx"],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-006", "TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Actividad se muestra como feed cronologico con un icono distinto por tipo de evento.",
+        "postcondition": "dos eventos de tipo distinto usan iconos distintos; HistorialActividad.test.tsx pasa sin modificar queries.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/HistorialActividad.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

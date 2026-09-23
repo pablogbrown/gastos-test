@@ -1,0 +1,19 @@
+feature: sistema-visual
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-23'
+approved_at: '2026-09-23'
+task_count: 4
+domain: frontend
+domains_referenced:
+  - frontend.md
+parent:
+  feature: rediseno-ux-ui
+  branch: feat/rediseno-ux-ui
+branch: feat/rediseno-ux-ui--sistema-visual
+notes: |
+  Fundación del rediseño: nuevo tema MUI ("Cálido minimal", ver
+  spec.md Open Decisions D-01), 3 componentes compartidos, y el
+  shell de navegación + Inicio como pantalla bandera. Bloquea a
+  pantallas-financieras/pantallas-casa/auth-onboarding.
