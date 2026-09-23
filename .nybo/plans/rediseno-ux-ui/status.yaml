@@ -1,10 +1,11 @@
 feature: rediseno-ux-ui
 kind: multi_spec
-status: approved
+status: shipped
 profile: code
 action_type: ADD
 created_at: '2026-09-23'
 approved_at: '2026-09-23'
+shipped_at: '2026-09-23T16:32:53Z'
 domain: frontend
 domains_referenced:
   - frontend.md
@@ -19,14 +20,14 @@ notes: |
   consumo) — ver plan.md Split Rationale.
 specs:
   - id: sistema-visual
-    status: approved
+    status: shipped
     branch: feat/rediseno-ux-ui--sistema-visual
   - id: pantallas-financieras
-    status: approved
+    status: shipped
     branch: feat/rediseno-ux-ui--pantallas-financieras
   - id: pantallas-casa
-    status: approved
+    status: shipped
     branch: feat/rediseno-ux-ui--pantallas-casa
   - id: auth-onboarding
-    status: approved
+    status: shipped
     branch: feat/rediseno-ux-ui--auth-onboarding
