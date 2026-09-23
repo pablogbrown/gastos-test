@@ -21,7 +21,13 @@ from src.services.avatar_service import otorgar_creditos
 from src.services.casa_service import crear_casa
 from src.services.exceptions import PermissionDeniedError
 from src.services.miembro_service import agregar_miembro
-from src.services.tienda_service import comprar_accesorio, desequipar_slot, equipar_accesorio, listar_equipados
+from src.services.tienda_service import (
+    comprar_accesorio,
+    desequipar_slot,
+    equipar_accesorio,
+    listar_accesorios_equipados,
+    listar_equipados,
+)
 
 
 @pytest.fixture()
@@ -206,3 +212,33 @@ def test_desequipar_un_slot_vacio_es_no_op(db_session):
     desequipar_slot(ana.id, "cuerpo")  # no debe lanzar
 
     assert listar_equipados(ana.id) == []
+
+
+def test_listar_accesorios_equipados_devuelve_el_detalle_completo_del_accesorio(db_session):
+    """Spec `perfil-avatar-ui`, REQ-001 ([S003] resuelto): a diferencia de
+    `listar_equipados` (fila de join `miembro_id`/`slot`/`accesorio_id`),
+    `listar_accesorios_equipados` devuelve el `AccesorioAvatar` completo
+    — lo que Miembros/Ranking necesitan para pintar el overlay
+    (`asset_overlay_url`)."""
+    casa, ana = _casa_con_miembro(db_session)
+    accesorio_id = _insertar_accesorio(
+        db_session,
+        nombre="Gorro de fiesta",
+        slot="cabeza",
+        asset_overlay_url="https://assets.lottiefiles.com/packages/lf20_gorro.json",
+        precio_creditos=10,
+    )
+    _comprar(db_session, casa, ana, accesorio_id, 10)
+    equipar_accesorio(ana.id, accesorio_id)
+
+    equipados = listar_accesorios_equipados(ana.id)
+
+    assert len(equipados) == 1
+    assert equipados[0].id == accesorio_id
+    assert equipados[0].asset_overlay_url == "https://assets.lottiefiles.com/packages/lf20_gorro.json"
+
+
+def test_listar_accesorios_equipados_vacio_sin_nada_equipado(db_session):
+    casa, ana = _casa_con_miembro(db_session)
+
+    assert listar_accesorios_equipados(ana.id) == []

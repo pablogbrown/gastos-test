@@ -196,6 +196,31 @@ def desequipar_slot(miembro_id: UUID, slot: str) -> None:
         session.close()
 
 
+def listar_accesorios_equipados(miembro_id: UUID) -> List[AccesorioAvatar]:
+    """Detalle completo (`AccesorioAvatar`, no la fila de join) de los
+    accesorios actualmente equipados por `miembro_id` — spec
+    `perfil-avatar-ui`, REQ-001 ([S003] de `tienda-accesorios`, resuelto
+    acá: ese build dejó `listar_equipados` sin exponer vía API porque
+    ningún consumidor lo necesitaba todavía). Mismo criterio de
+    traducción que `listar_inventario`/`listar_catalogo_accesorios`: el
+    caller (Miembros/Ranking) necesita `asset_overlay_url`/`slot` para
+    pintar el overlay, no la fila `(miembro_id, slot, accesorio_id)` de
+    `listar_equipados`."""
+    session = get_session()
+    try:
+        return (
+            session.query(AccesorioAvatar)
+            .join(
+                MiembroAccesorioEquipado,
+                MiembroAccesorioEquipado.accesorio_id == AccesorioAvatar.id,
+            )
+            .filter(MiembroAccesorioEquipado.miembro_id == miembro_id)
+            .all()
+        )
+    finally:
+        session.close()
+
+
 def listar_equipados(miembro_id: UUID) -> List[MiembroAccesorioEquipado]:
     """Accesorios actualmente equipados por `miembro_id`, uno por slot
     como máximo (REQ-003) — usado por la ruta de lectura del estado de

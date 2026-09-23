@@ -3,6 +3,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// Spec `perfil-avatar-ui`: Miembros ahora renderiza `AvatarConAccesorios`
+// (LottieAvatar) — mismo criterio ya establecido por
+// `LottieAvatar.test.tsx`/`Miembros.test.tsx`.
+vi.mock("lottie-react", () => ({
+  Lottie: () => <div data-testid="lottie-mock" />,
+}));
+
 import { TOKEN_STORAGE_KEY } from "../../../src/frontend/api/authClient";
 import { App } from "../../../src/frontend/App";
 import { theme } from "../../../src/frontend/theme";

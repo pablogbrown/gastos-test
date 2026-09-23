@@ -217,6 +217,42 @@ def test_put_equipar_un_accesorio_no_comprado_devuelve_403(client):
     assert resp.status_code == 403, resp.text
 
 
+def test_get_equipados_devuelve_200_vacio_sin_nada_equipado(client):
+    """Spec `perfil-avatar-ui`, REQ-001 ([S003] de `tienda-accesorios`
+    resuelto acá): ruta nueva, no contemplada en el contrato original de
+    esta spec."""
+    casa, usuario_admin_id, admin_id, ana, ana_usuario = _casa_con_miembro(client._session_factory)
+
+    resp = client.get(
+        f"/casas/{casa.id}/miembros/{ana.id}/accesorios/equipados",
+        headers=_bearer(ana_usuario.id),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == []
+
+
+def test_get_equipados_devuelve_el_detalle_del_accesorio_tras_equipar(client):
+    casa, usuario_admin_id, admin_id, ana, ana_usuario = _casa_con_miembro(client._session_factory)
+    otorgar_creditos(casa.id, ana.id, 100, motivo="tarea_completada")
+    accesorio_id = _insertar_accesorio(client._session_factory, slot="cabeza", precio_creditos=20)
+    client.post(
+        f"/casas/{casa.id}/miembros/{ana.id}/accesorios/{accesorio_id}/comprar",
+        headers=_bearer(ana_usuario.id),
+    )
+    client.put(
+        f"/casas/{casa.id}/miembros/{ana.id}/accesorios/equipar",
+        json={"accesorio_id": str(accesorio_id)},
+        headers=_bearer(ana_usuario.id),
+    )
+
+    resp = client.get(
+        f"/casas/{casa.id}/miembros/{ana.id}/accesorios/equipados",
+        headers=_bearer(ana_usuario.id),
+    )
+    assert resp.status_code == 200, resp.text
+    assert [a["id"] for a in resp.json()] == [str(accesorio_id)]
+
+
 def test_delete_equipado_desequipa_el_slot_devuelve_204(client):
     casa, usuario_admin_id, admin_id, ana, ana_usuario = _casa_con_miembro(client._session_factory)
     otorgar_creditos(casa.id, ana.id, 100, motivo="tarea_completada")

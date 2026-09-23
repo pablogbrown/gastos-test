@@ -7,7 +7,7 @@
 ## Checklist
 
 ### Tasks
-- [ ] T1 — Avatar+accesorios en Miembros/Ranking
+- [x] T1 — Avatar+accesorios en Miembros/Ranking
 - [ ] T2 — Pantalla "Mi Avatar" + navegación
 
 ### Verify
@@ -17,9 +17,9 @@
 - [ ] Curación de hallazgos post-verify
 
 #### Test Cases
-- [ ] `[TC-001]` *[UNIT]* — Miembros muestra `LottieAvatar` con accesorios equipados.
-- [ ] `[TC-002]` *[UNIT]* — sin avatar seleccionado, se muestra el `Avatar` con inicial como respaldo.
-- [ ] `[TC-003]` *[UNIT]* — Ranking también muestra el avatar del miembro.
+- [x] `[TC-001]` *[UNIT]* — Miembros muestra `LottieAvatar` con accesorios equipados.
+- [x] `[TC-002]` *[UNIT]* — sin avatar seleccionado, se muestra el `Avatar` con inicial como respaldo.
+- [x] `[TC-003]` *[UNIT]* — Ranking también muestra el avatar del miembro.
 - [ ] `[TC-004]` *[UNIT]* — "Mi Avatar" muestra razas desbloqueadas y bloqueadas con su nivel requerido.
 - [ ] `[TC-005]` *[INTEGRATION]* — seleccionar una raza desbloqueada la aplica de inmediato.
 - [ ] `[TC-006]` *[INTEGRATION]* — comprar/equipar un accesorio actualiza el saldo sin recargar.

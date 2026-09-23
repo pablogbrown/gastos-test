@@ -1,5 +1,4 @@
 import Alert from "@mui/material/Alert";
-import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -21,6 +20,7 @@ import {
   Rol,
 } from "../api/casasClient";
 import { puedeGestionarMiembros } from "../api/permisos";
+import { AvatarConAccesorios } from "../components/AvatarConAccesorios";
 import { PageHeader } from "../components/PageHeader";
 
 // Spec `rediseno-ux-ui/pantallas-casa`, REQ-001: mapa centralizado
@@ -191,9 +191,7 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
               <CardContent
                 sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}
               >
-                <Avatar aria-label={`Avatar de ${miembro.nombre}`}>
-                  {miembro.nombre.charAt(0).toUpperCase()}
-                </Avatar>
+                <AvatarConAccesorios casaId={casaId} miembroId={miembro.id} nombre={miembro.nombre} />
                 <Box sx={{ flexGrow: 1, minWidth: 160 }}>
                   <Typography variant="subtitle1">{miembro.nombre}</Typography>
                   <Typography variant="body2" color="text.secondary">
