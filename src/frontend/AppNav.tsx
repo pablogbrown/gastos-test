@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 
 import ActivityIcon from "@mui/icons-material/History";
 import BalanceIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -27,7 +27,7 @@ import Paper from "@mui/material/Paper";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha, useTheme, type Theme } from "@mui/material/styles";
 
 export type Pantalla =
   | "inicio"
@@ -100,6 +100,52 @@ function seccionPorValue(value: Pantalla) {
   return seccion;
 }
 
+/** Prefijo de los valores sintéticos de `BottomNavigation` que representan
+ * un grupo (nunca una pantalla real) — ver `valorNavMobile`/`onChange` del
+ * `BottomNavigation` mobile más abajo (fix `nav-mobile-agrupada`). */
+const PREFIJO_GRUPO = "grupo:";
+
+/** Ícono por grupo para el bottom nav mobile (fix `nav-mobile-agrupada`,
+ * REQ único: agrupar el bottom nav como ya hace `GRUPOS_DESKTOP`, en vez
+ * de listar las 12 secciones sueltas). Reutiliza íconos ya importados —
+ * ninguno nuevo. El menú superior desktop no necesita esto: sus botones
+ * de grupo son texto sin ícono (`Button` sin `startIcon`). */
+const ICONOS_GRUPO: Record<string, JSX.Element> = {
+  Casa: <PeopleIcon />,
+  Gastos: <GastosIcon />,
+  Tareas: <TareasIcon />,
+};
+
+/** Estilo del ítem seleccionado del `BottomNavigation` mobile — idéntico
+ * para una pantalla suelta o un grupo, hoisteado para no recrear el mismo
+ * objeto en cada iteración del `.map()`. */
+const SX_ITEM_SELECCIONADO = {
+  "&.Mui-selected": {
+    bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.12),
+    borderRadius: 2,
+    "& .MuiBottomNavigationAction-label": {
+      fontWeight: 700,
+    },
+  },
+};
+
+/** Valor que identifica, para el `BottomNavigation` mobile, cuál de sus
+ * botones (una pantalla suelta o un grupo) corresponde a `pantalla` —
+ * mismo criterio "¿la pantalla activa pertenece a este grupo?" que ya usa
+ * el botón de grupo desktop (`activo`), aplicado acá para que MUI resalte
+ * el botón correcto vía su propio `value`/`Mui-selected`. */
+function valorNavMobile(pantalla: Pantalla, grupos: GrupoDesktop[]): string {
+  for (const entrada of grupos) {
+    if (entrada.tipo === "suelta" && entrada.pantalla === pantalla) {
+      return entrada.pantalla;
+    }
+    if (entrada.tipo === "grupo" && entrada.pantallas.includes(pantalla)) {
+      return PREFIJO_GRUPO + entrada.label;
+    }
+  }
+  return pantalla;
+}
+
 export interface AppNavProps {
   pantalla: Pantalla;
   onChange: (pantalla: Pantalla) => void;
@@ -124,8 +170,8 @@ export function AppNav({ pantalla, onChange, onCerrarSesion }: AppNavProps) {
     anchorEl: HTMLElement;
   } | null>(null);
 
-  function abrirMenu(label: string, event: MouseEvent<HTMLElement>) {
-    setMenuAbierto({ label, anchorEl: event.currentTarget });
+  function abrirMenu(label: string, event: SyntheticEvent) {
+    setMenuAbierto({ label, anchorEl: event.currentTarget as HTMLElement });
   }
 
   function cerrarMenu() {
@@ -248,29 +294,69 @@ export function AppNav({ pantalla, onChange, onCerrarSesion }: AppNavProps) {
         sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
       >
         <BottomNavigation
-          value={pantalla}
-          onChange={(_event, value: Pantalla) => onChange(value)}
+          value={valorNavMobile(pantalla, GRUPOS_DESKTOP)}
+          onChange={(event, value: string) => {
+            if (value.startsWith(PREFIJO_GRUPO)) {
+              abrirMenu(value.slice(PREFIJO_GRUPO.length), event);
+            } else {
+              onChange(value as Pantalla);
+            }
+          }}
           showLabels
         >
-          {SECCIONES.map((seccion) => (
-            <BottomNavigationAction
-              key={seccion.value}
-              value={seccion.value}
-              label={seccion.label}
-              icon={seccion.icon}
-              aria-current={pantalla === seccion.value ? "true" : undefined}
-              sx={{
-                "&.Mui-selected": {
-                  bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
-                  borderRadius: 2,
-                  "& .MuiBottomNavigationAction-label": {
-                    fontWeight: 700,
-                  },
-                },
-              }}
-            />
-          ))}
+          {GRUPOS_DESKTOP.map((entrada) => {
+            if (entrada.tipo === "suelta") {
+              const seccion = seccionPorValue(entrada.pantalla);
+              return (
+                <BottomNavigationAction
+                  key={entrada.pantalla}
+                  value={entrada.pantalla}
+                  label={seccion.label}
+                  icon={seccion.icon}
+                  aria-current={pantalla === entrada.pantalla ? "true" : undefined}
+                  sx={SX_ITEM_SELECCIONADO}
+                />
+              );
+            }
+
+            const activo = entrada.pantallas.includes(pantalla);
+            return (
+              <BottomNavigationAction
+                key={entrada.label}
+                value={PREFIJO_GRUPO + entrada.label}
+                label={entrada.label}
+                icon={ICONOS_GRUPO[entrada.label]}
+                aria-current={activo ? "true" : undefined}
+                sx={SX_ITEM_SELECCIONADO}
+              />
+            );
+          })}
         </BottomNavigation>
+        {GRUPOS_DESKTOP.filter((entrada) => entrada.tipo === "grupo").map((entrada) => {
+          if (entrada.tipo !== "grupo") {
+            return null;
+          }
+          const abierto = menuAbierto?.label === entrada.label;
+          return (
+            <Menu
+              key={entrada.label}
+              anchorEl={abierto ? menuAbierto.anchorEl : null}
+              open={abierto}
+              onClose={cerrarMenu}
+              slotProps={{ list: { "aria-label": entrada.label } }}
+            >
+              {entrada.pantallas.map((value) => {
+                const seccion = seccionPorValue(value);
+                return (
+                  <MenuItem key={value} onClick={() => elegirPantalla(value)}>
+                    <ListItemIcon>{seccion.icon}</ListItemIcon>
+                    <ListItemText>{seccion.label}</ListItemText>
+                  </MenuItem>
+                );
+              })}
+            </Menu>
+          );
+        })}
       </Paper>
     </>
   );
