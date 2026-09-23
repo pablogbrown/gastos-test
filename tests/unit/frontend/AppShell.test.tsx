@@ -38,16 +38,59 @@ describe("AppNav (TC-001, TC-002)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("TC-001: viewport angosto (< 600px) muestra BottomNavigation con las 7 secciones", () => {
+  it("TC-001 (fix nav-mobile-agrupada): viewport angosto (< 600px) muestra BottomNavigation agrupado (Inicio, Casa, Gastos, Tareas) — no las 12 secciones sueltas", () => {
     mockMatchMedia(false);
     renderAppNav();
 
     const nav = screen.getByRole("navigation", { name: "Navegación" });
-    SECCIONES.forEach((seccion) => {
-      expect(screen.getByRole("button", { name: seccion.label })).toBeInTheDocument();
+    GRUPOS_DESKTOP.forEach((entrada) => {
+      const nombre =
+        entrada.tipo === "suelta"
+          ? new RegExp(SECCIONES.find((s) => s.value === entrada.pantalla)!.label)
+          : entrada.label;
+      expect(screen.getByRole("button", { name: nombre })).toBeInTheDocument();
     });
+    // Una pantalla que hoy vive dentro de un grupo (ej. "Miembros") ya no
+    // es un botón suelto en el bottom nav — solo aparece al abrir su grupo.
+    expect(screen.queryByRole("button", { name: "Miembros" })).not.toBeInTheDocument();
     expect(nav.querySelector(".MuiBottomNavigation-root")).not.toBeNull();
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+  });
+
+  it('TC-001b (fix nav-mobile-agrupada): tocar "Casa" en mobile despliega Miembros/Ranking/Actividad; elegir una llama a onChange y cierra el menú', () => {
+    mockMatchMedia(false);
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider theme={theme}>
+        <AppNav pantalla="inicio" onChange={onChange} />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Casa" }));
+    ["Miembros", "Ranking", "Actividad"].forEach((label) => {
+      expect(screen.getByRole("menuitem", { name: new RegExp(label) })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /Ranking/ }));
+    expect(onChange).toHaveBeenCalledWith("ranking");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it('TC-001c (fix nav-mobile-agrupada): con pantalla="tarjetas" el botón "Gastos" del bottom nav se muestra activo, "Inicio" no', () => {
+    mockMatchMedia(false);
+    render(
+      <ThemeProvider theme={theme}>
+        <AppNav pantalla="tarjetas" onChange={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const gastos = screen.getByRole("button", { name: "Gastos" });
+    const inicio = screen.getByRole("button", { name: "Inicio" });
+    const gastosActivo =
+      gastos.getAttribute("aria-current") === "true" || gastos.className.includes("Mui-selected");
+    expect(gastosActivo).toBe(true);
+    expect(inicio.getAttribute("aria-current")).not.toBe("true");
+    expect(inicio.className.includes("Mui-selected")).toBe(false);
   });
 
   it("TC-002: viewport ancho (>= 600px) muestra barra superior, no BottomNavigation", () => {
@@ -159,12 +202,16 @@ describe("AppNav — menú agrupado desktop (spec nav-agrupada)", () => {
     ).not.toHaveAttribute("aria-current");
   });
 
-  it("TC-005 (control): mobile sigue mostrando las 9 pantallas sin agrupar, sin cambios", () => {
+  it("TC-005 (superseded por fix nav-mobile-agrupada): mobile también agrupa por GRUPOS_DESKTOP — ver AppShell.test.tsx TC-001/TC-001b/TC-001c para la cobertura completa del nuevo comportamiento", () => {
     mockMatchMedia(false);
     renderCon("inicio");
 
-    SECCIONES.forEach((seccion) => {
-      expect(screen.getByRole("button", { name: seccion.label })).toBeInTheDocument();
+    GRUPOS_DESKTOP.forEach((entrada) => {
+      const nombre =
+        entrada.tipo === "suelta"
+          ? new RegExp(SECCIONES.find((s) => s.value === entrada.pantalla)!.label)
+          : entrada.label;
+      expect(screen.getByRole("button", { name: nombre })).toBeInTheDocument();
     });
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(document.querySelector(".MuiBottomNavigation-root")).not.toBeNull();
@@ -213,7 +260,9 @@ describe("AppNav — restyle con el nuevo tema (TC-006, TC-007)", () => {
     const tieneSelected = boton.className.includes("Mui-selected");
     expect(tieneAriaCurrent || tieneSelected).toBe(true);
 
-    const otro = screen.getByRole("button", { name: "Miembros" });
+    // "Miembros" (fix nav-mobile-agrupada) ya no es un botón suelto en
+    // mobile — vive dentro del grupo "Casa", que no debe verse activo.
+    const otro = screen.getByRole("button", { name: "Casa" });
     expect(otro.getAttribute("aria-current")).not.toBe("true");
     expect(otro.className.includes("Mui-selected")).toBe(false);
   });
