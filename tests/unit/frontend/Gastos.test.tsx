@@ -611,6 +611,74 @@ describe("Gastos", () => {
     expect(await screen.findByText("US$20.00")).toBeInTheDocument();
   });
 
+  it("TC-001 (spec pantallas-financieras): el chip 'Pagado' usa el color semántico success y 'A pagar' warning del tema, no un color hardcodeado", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.split("?")[0].endsWith("/gastos")) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: "44444444-4444-4444-4444-444444444444",
+              casa_id: CASA_ID,
+              descripcion: "Compra pagada",
+              importe: "10.00",
+              fecha: "2026-01-01",
+              pagado_por: ADMIN_ID,
+              categoria_id: CATEGORIA_ID,
+              estado: "pagado",
+            },
+            {
+              id: "55555555-5555-5555-5555-555555555555",
+              casa_id: CASA_ID,
+              descripcion: "Compra a pagar",
+              importe: "20.00",
+              fecha: "2026-01-02",
+              pagado_por: ADMIN_ID,
+              categoria_id: CATEGORIA_ID,
+              estado: "a_pagar",
+            },
+          ],
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <Gastos casaId={CASA_ID} />
+      </ThemeProvider>
+    );
+
+    const chipPagado = await screen.findByRole("button", { name: "Pagado" });
+    const chipAPagar = await screen.findByRole("button", { name: "A pagar" });
+    expect(chipPagado.className).toMatch(/MuiChip-colorSuccess/);
+    expect(chipAPagar.className).toMatch(/MuiChip-colorWarning/);
+  });
+
+  it("TC-004 (spec pantallas-financieras): un mes sin gastos muestra EmptyState en vez de una tabla vacía", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/categorias")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (url.split("?")[0].endsWith("/gastos")) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Gastos casaId={CASA_ID} />);
+
+    expect(await screen.findByText("Todavía no hay gastos para este mes.")).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Historial de gastos" })).not.toBeInTheDocument();
+  });
+
   it("pagina el historial de a 50 resultados", async () => {
     const user = userEvent.setup();
     const gastos = Array.from({ length: 60 }, (_, i) => ({

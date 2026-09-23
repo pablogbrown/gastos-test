@@ -1,14 +1,16 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { BalanceResponse, esApiError, obtenerBalance } from "../api/gastosClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 export interface BalanceProps {
   casaId: string;
@@ -53,11 +55,11 @@ export function Balance({ casaId }: BalanceProps) {
 
   return (
     <Box component="section" aria-label="Balance" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
-        <Typography variant="h5" component="h2">
-          Balance
-        </Typography>
+      {/* Sin `action`: Balance es de solo lectura, no tiene flujo de alta
+       * propio (spec `pantallas-financieras`, T1). */}
+      <PageHeader title="Balance" />
 
+      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
         <TextField
           id="mes-balance"
           label="Mes"
@@ -103,19 +105,22 @@ export function Balance({ casaId }: BalanceProps) {
                     {nombreSeccion(moneda)}
                   </Typography>
 
-                  <Paper variant="outlined" sx={{ p: 2 }}>
+                  {/* Nota (spec `pantallas-financieras`, T1, decisión registrada
+                   * en decisions.yaml): no se usa `StatCard` acá — su layout
+                   * separa `label`/`value` en dos nodos de texto distintos y
+                   * rompería la query exacta ya existente
+                   * `getByText("Total gastado: 500000")` (REQ-004/TC-006:
+                   * cero regresión, queries sin modificar). Se preserva el
+                   * texto combinado, solo restyled a `Card`. */}
+                  <Card variant="outlined" sx={{ p: 2 }}>
                     <Typography variant="subtitle1" component="p">
                       Total gastado: {total?.total_gastos ?? "0"}
                     </Typography>
-                  </Paper>
+                  </Card>
 
-                  <Paper variant="outlined">
+                  <Card variant="outlined">
                     {aportes.length === 0 ? (
-                      <Box sx={{ p: 2 }}>
-                        <Typography color="text.secondary">
-                          Todavía no hay aportes para mostrar.
-                        </Typography>
-                      </Box>
+                      <EmptyState message="Todavía no hay aportes para mostrar." />
                     ) : (
                       <List dense>
                         {aportes.map((aporte) => (
@@ -125,7 +130,7 @@ export function Balance({ casaId }: BalanceProps) {
                         ))}
                       </List>
                     )}
-                  </Paper>
+                  </Card>
                 </Box>
               );
             })}

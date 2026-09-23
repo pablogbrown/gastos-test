@@ -1,0 +1,45 @@
+feature: rediseno-ux-ui/specs/pantallas-financieras
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: Extraer un hook/util compartido para "enfocar el formulario de alta"
+    detail: >-
+      Gastos.tsx, Tarjetas.tsx, Prestamos.tsx, Mantenimiento.tsx y
+      MantenimientoAutos.tsx repiten el mismo patrón puntual
+      `function enfocar...() { document.getElementById(id)?.focus(); }`
+      para que la acción primaria de `PageHeader`/`EmptyState` "abra"
+      (enfoque) un formulario de alta ya siempre visible. Con
+      `pantallas-casa` por delante (mismo patrón lista+alta), vale la
+      pena evaluar un hook compartido (p.ej. `useEnfocarCampo(id)`) en
+      `src/frontend/hooks/` o un helper en `components/` — reduciría 5
+      repeticiones casi idénticas a una sola.
+    scope: follow-up
+    status: open
+  - id: S002
+    category: question
+    title: ¿Suscripciones necesita su propio flujo de alta?
+    detail: >-
+      Hoy una suscripción solo se crea desde Gastos.tsx (tipo "Suscripción
+      mensual") — Suscripciones.tsx es una pantalla de solo
+      lectura+cancelación. TC-005 de esta spec asumía que Suscripciones
+      tenía un flujo de alta propio (ver Judgment J001/decisions.yaml
+      D001); no lo tiene. Vale la pena que un humano confirme si esto es
+      intencional (el flujo de alta vive deliberadamente en Gastos) o si
+      es una oportunidad de producto para agregar un alta directa en
+      Suscripciones en una spec futura — fuera del alcance de un restyle
+      puramente presentacional.
+    scope: out-of-spec
+    status: open
+  - id: S003
+    category: tech-debt
+    title: Coverage tool no configurado (mismo gap que sistema-visual)
+    detail: >-
+      Mismo gap ya reportado por `sistema-visual`'s S002 —
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool` sigue
+      `null`. `nybo.config.yaml`'s `testing.coverage_threshold: 80` no
+      pudo evaluarse mecánicamente en este ciclo tampoco (ver
+      `decisions.yaml` D002, decision class `new-dependency` — siempre
+      difiere a un humano). Remedio: `/nybo-brownfield-bootstrap
+      --quality`.
+    scope: out-of-spec
+    status: open

@@ -92,3 +92,4 @@ Se aplican los componentes de `sistema-visual` a las 7 pantallas, agrupadas en 4
 | # | Date | Event | Verdict | Summary |
 | --- | --- | --- | --- | --- |
 | 1 | 2026-09-23 | plan | — | Spec created — 4 tasks, 6 test cases. |
+| 2 | 2026-09-23 | build | ready | T1–T4 implementados, 170/170 tests verdes, 0 regresión. TC-005 redirigido de Suscripciones (sin flujo de alta propio) a Tarjetas — ver `evidence/decisions.yaml` D001. Coverage y live evidence diferidos (ver D002 y `build-results.md`). |

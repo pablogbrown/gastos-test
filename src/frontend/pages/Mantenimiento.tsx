@@ -3,6 +3,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
 import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
 import FormControl from "@mui/material/FormControl";
@@ -12,7 +13,6 @@ import InputLabel from "@mui/material/InputLabel";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
 import Switch from "@mui/material/Switch";
 import Table from "@mui/material/Table";
@@ -34,9 +34,18 @@ import {
   esApiError,
   listarItems,
 } from "../api/mantenimientoClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 export interface MantenimientoProps {
   casaId: string;
+}
+
+/** Enfoca el primer campo del formulario "Nuevo ítem" ya renderizado
+ * (spec `pantallas-financieras`, REQ-003): el formulario nunca estuvo
+ * oculto, "abrirlo" desde `PageHeader`/`EmptyState` es llevarle el foco. */
+function enfocarFormularioAlta() {
+  document.getElementById("nombre-item")?.focus();
 }
 
 const PERIODICIDADES = ["semanal", "mensual", "trimestral", "semestral", "anual"] as const;
@@ -148,13 +157,14 @@ export function Mantenimiento({ casaId }: MantenimientoProps) {
       aria-label="Mantenimiento"
       sx={{ display: "flex", flexDirection: "column", gap: 3 }}
     >
-      <Typography variant="h5" component="h2">
-        Mantenimiento
-      </Typography>
+      <PageHeader
+        title="Mantenimiento"
+        action={{ label: "Nuevo ítem", onClick: enfocarFormularioAlta }}
+      />
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Card variant="outlined" sx={{ p: 2 }}>
         <Box
           component="form"
           onSubmit={handleCrear}
@@ -280,12 +290,17 @@ export function Mantenimiento({ casaId }: MantenimientoProps) {
             </Button>
           </Box>
         </Box>
-      </Paper>
+      </Card>
 
       {cargando ? (
         <Typography>Cargando mantenimiento...</Typography>
+      ) : items.length === 0 ? (
+        <EmptyState
+          message="Todavía no hay ítems de mantenimiento cargados."
+          action={{ label: "Agregar el primero", onClick: enfocarFormularioAlta }}
+        />
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer component={Card} variant="outlined">
           <Table aria-label="Listado de mantenimiento" sx={{ minWidth: 320 }}>
             <TableHead>
               <TableRow>

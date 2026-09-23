@@ -61,6 +61,16 @@ describe("Suscripciones", () => {
     expect(botonesCancelar).toHaveLength(1);
   });
 
+  it("sin suscripciones registradas, muestra EmptyState", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+
+    render(<Suscripciones casaId={CASA_ID} rolUsuarioActual="admin" />);
+
+    expect(
+      await screen.findByText("Todavía no hay suscripciones para mostrar.")
+    ).toBeInTheDocument();
+  });
+
   it("oculta la acción Cancelar para un rol Miembro", async () => {
     render(<Suscripciones casaId={CASA_ID} rolUsuarioActual="member" />);
 
