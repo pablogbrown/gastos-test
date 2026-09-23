@@ -13,10 +13,10 @@
 - [x] T4 — `InicioCasa.tsx` como pantalla bandera
 
 ### Verify
-- [ ] Verificación (spec-level, una sola pasada tras completar T1–T4)
+- [x] Verificación (spec-level, una sola pasada tras completar T1–T4)
 
 ### Curate
-- [ ] Curación de hallazgos post-verify
+- [x] Curación de hallazgos post-verify
 
 #### Test Cases
 - [x] `[TC-001]` *[UNIT]* — el tema exportado no usa los valores por defecto de MUI ni de ui-modernization.
@@ -32,10 +32,14 @@
 #### Evidence Results
 | # | Date | Finding | Status |
 | --- | --- | --- | --- |
-| — | — | Not yet started. | not started |
+| 1 | 2026-09-23 | Build/lint/tests verdes (163/163, 25 archivos, 0 regresión). | resolved |
+| 2 | 2026-09-23 | Coverage no disponible (sin proveedor instalado) — decision class `new-dependency`, diferida a un humano. Ver `decisions.yaml` D001. | open |
+| 3 | 2026-09-23 | Live evidence capturada vía Playwright (Chrome del sistema) contra un dev server aislado de este worktree: tema nuevo, PageHeader, EmptyState y nav restyled confirmados en desktop y mobile. Ver `evidence/1/screenshots/`. | resolved |
+| 4 | 2026-09-23 | Caso `[HUMAN]` de T4 (smoke visual en emulador Android) no ejecutado por BUILD — queda diferido al checkpoint humano. | open |
 
 ## History
 
 | # | Date | Event | Verdict | Smoke | Summary |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2026-09-23 | plan | — | — | Spec created — 4 tasks, 9 test cases. |
+| 2 | 2026-09-23 | build | ready | live (Playwright, desktop+mobile) | T1–T4 implementados, 163/163 tests verdes, 0 regresión. Coverage diferido (new-dependency, D001). Android `[HUMAN]` smoke diferido al checkpoint. |
