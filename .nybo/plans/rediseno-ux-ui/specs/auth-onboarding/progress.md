@@ -27,6 +27,21 @@
 | --- | --- | --- | --- |
 | 1 | 2026-09-23 | Build/lint/tests en verde (166/166). Coverage no disponible (sin proveedor instalado, ver decisions.yaml D001). Live evidence capturada (Login/Registro/Selector con 2 casas, desktop+mobile). | resolved |
 
+#### Outcome Smoke Test
+Observado en vivo (cycle 1): registro → login → selector vacío → crear
+"Casa del centro" → 2da casa creada vía API con el JWT real de la
+sesión → reload → Selector de casas con 2 tarjetas seleccionables.
+Confirmado en desktop y mobile: tarjeta centrada con "taskia" como
+encabezado en Login/Registro/Crear casa, paleta cálida consistente. Ver
+capturas en `evidence/1/build-results.md` (sección Verification).
+
+## Decisions
+- [ ] `[D001]` Sin proveedor de cobertura instalado (`@vitest/coverage-v8` ausente) — decision class `new-dependency`, siempre difiere a un humano. Remedio: `/nybo-brownfield-bootstrap --quality`.
+
+## Suggestions
+- [ ] `[S001]` No coverage tool configured for the frontend (aún sin resolver) — mismo gap ya reportado por `sistema-visual`.
+- [ ] `[S002]` Un usuario no tiene forma de crear una 2da casa desde dentro del shell — solo desde SelectorCasas antes de elegir una (preexistente, fuera de scope).
+
 ## History
 
 | # | Date | Event | Verdict | Smoke | Summary |
