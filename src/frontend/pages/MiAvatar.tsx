@@ -39,6 +39,19 @@ export interface MiAvatarProps {
   miembroId: string;
 }
 
+/** Fix `avatar-assets-fallback` (continuación): mientras una raza no
+ * tenga una animación Lottie real cargada (`0022_avatar_catalogo`
+ * siembra `lottie_url` con URLs que terminan en `_placeholder.json`,
+ * nunca resolubles a propósito), se muestra como "Próximamente" en vez
+ * de dejarla elegir — sea que su nivel ya esté desbloqueado o no. No
+ * requiere ningún flag nuevo en el esquema: el propio nombre del
+ * placeholder ya es la señal. Reemplazar `lottie_url` por un asset real
+ * (`0028_avatares_reales_parcial` ya hizo esto para 4 de las 10 razas)
+ * es lo único que saca una raza de este estado — nunca código. */
+function esProximamente(raza: AvatarPersonaje): boolean {
+  return raza.lottie_url.includes("_placeholder.json");
+}
+
 /** Pantalla "Mi Avatar" (spec `perfil-avatar-ui`, REQ-002): saldo de
  * créditos, razas desbloqueadas (seleccionables) y bloqueadas (con su
  * nivel requerido visible, TC-004), y la tienda de accesorios filtrada
@@ -171,18 +184,20 @@ export function MiAvatar({ casaId, miembroId }: MiAvatarProps) {
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           {disponibles.map((raza) => {
             const esActual = avatarActual?.id === raza.id;
+            const proximamente = esProximamente(raza);
             return (
               <Card
                 key={raza.id}
                 variant="outlined"
                 role="button"
-                aria-label={`Elegir raza ${raza.raza}`}
-                onClick={() => !esActual && handleElegirRaza(raza.id)}
+                aria-label={proximamente ? `${raza.raza} (próximamente)` : `Elegir raza ${raza.raza}`}
+                onClick={() => !esActual && !proximamente && handleElegirRaza(raza.id)}
                 sx={{
-                  cursor: esActual ? "default" : "pointer",
+                  cursor: esActual || proximamente ? "default" : "pointer",
                   borderColor: esActual ? "primary.main" : undefined,
                   borderWidth: esActual ? 2 : 1,
                   width: 140,
+                  opacity: proximamente ? 0.6 : 1,
                 }}
               >
                 <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
@@ -190,7 +205,9 @@ export function MiAvatar({ casaId, miembroId }: MiAvatarProps) {
                     <LottieAvatar src={raza.lottie_url} loop={false} />
                   </Box>
                   <Typography variant="body2">{raza.raza}</Typography>
-                  {esActual ? (
+                  {proximamente ? (
+                    <Chip label="Próximamente" size="small" variant="outlined" />
+                  ) : esActual ? (
                     <Chip label="Activa" size="small" color="primary" />
                   ) : (
                     accionEnCurso === raza.id && <CircularProgress size={16} />
@@ -199,15 +216,22 @@ export function MiAvatar({ casaId, miembroId }: MiAvatarProps) {
               </Card>
             );
           })}
-          {bloqueadas.map((raza) => (
-            <Card key={raza.id} variant="outlined" sx={{ width: 140, opacity: 0.6 }}>
-              <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                <LockIcon fontSize="small" color="disabled" />
-                <Typography variant="body2">{raza.raza}</Typography>
-                <Chip label={`Nivel ${raza.nivel_requerido}`} size="small" variant="outlined" />
-              </CardContent>
-            </Card>
-          ))}
+          {bloqueadas.map((raza) => {
+            const proximamente = esProximamente(raza);
+            return (
+              <Card key={raza.id} variant="outlined" sx={{ width: 140, opacity: 0.6 }}>
+                <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                  <LockIcon fontSize="small" color="disabled" />
+                  <Typography variant="body2">{raza.raza}</Typography>
+                  <Chip
+                    label={proximamente ? "Próximamente" : `Nivel ${raza.nivel_requerido}`}
+                    size="small"
+                    variant="outlined"
+                  />
+                </CardContent>
+              </Card>
+            );
+          })}
         </Box>
       </Box>
 
