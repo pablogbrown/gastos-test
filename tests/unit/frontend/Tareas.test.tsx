@@ -109,6 +109,18 @@ describe("Tareas", () => {
     expect(screen.getByText("Historial de tareas")).toBeInTheDocument();
   });
 
+  it("distingue visualmente una tarea completada de una pendiente sin depender solo del texto (TC-005)", async () => {
+    const completada = { ...tareaSinResponsable(), id: "gggggggg-gggg-gggg-gggg-gggggggggggg", estado: "completada" };
+    vi.stubGlobal("fetch", mockFetch([tareaSinResponsable(), completada], []));
+
+    render(<Tareas casaId={CASA_ID} miembroIdActual={ADMIN_ID} rolUsuarioActual="admin" />);
+
+    const tarjetas = await screen.findAllByRole("group", { name: "Tarea Sacar la basura" });
+    expect(tarjetas).toHaveLength(2);
+    expect(within(tarjetas[0]).getByText("pendiente")).toBeInTheDocument();
+    expect(within(tarjetas[1]).getByText("completada")).toBeInTheDocument();
+  });
+
   it("el historial muestra el nombre del miembro y de la tarea, no sus UUID (reportado en vivo)", async () => {
     const tarea = tareaConResponsable(ANA_ID);
     const registroHistorial = {
@@ -275,7 +287,12 @@ describe("Tareas", () => {
     expect(body.responsableId).toBe(pablo.id);
 
     expect(await screen.findByText("Pagar servicios")).toBeInTheDocument();
-    expect(await screen.findByRole("cell", { name: "Pablo" })).toBeInTheDocument();
+    // Spec `pantallas-casa` REQ-003: la tarea ahora es una tarjeta
+    // (`role="group"`), no una fila de tabla — ya no hay un `role="cell"`
+    // que consultar; se verifica el mismo dato (responsable "Pablo")
+    // dentro de la tarjeta de esa tarea.
+    const tarjetaTarea = screen.getByRole("group", { name: "Tarea Pagar servicios" });
+    expect(within(tarjetaTarea).getByText("Pablo")).toBeInTheDocument();
   });
 
   it("muestra el error de negocio y no crea la tarea si Puntos queda vacío (TC-001)", async () => {

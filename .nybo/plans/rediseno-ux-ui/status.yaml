@@ -1,0 +1,35 @@
+feature: rediseno-ux-ui
+kind: multi_spec
+status: shipped
+profile: code
+action_type: ADD
+created_at: '2026-09-23'
+approved_at: '2026-09-23'
+shipped_at: '2026-09-23T16:32:53Z'
+curated_at: '2026-09-23T16:13:36Z'
+curated_duration: 0
+domain: frontend
+domains_referenced:
+  - frontend.md
+branch: feat/rediseno-ux-ui
+pr_url: https://github.com/pablogbrown/gastos-test/pull/46
+pr_number: 46
+notes: |
+  Rediseño visual/UX completo de las 16 pantallas de taskia, pedido
+  por el usuario tras ver la app corriendo (web + Android) y
+  calificar el diseño actual de "viejo, poco atractivo". Rationale
+  completo: plan.md. Split en 4 specs (fundación + 3 grupos de
+  consumo) — ver plan.md Split Rationale.
+specs:
+  - id: sistema-visual
+    status: shipped
+    branch: feat/rediseno-ux-ui--sistema-visual
+  - id: pantallas-financieras
+    status: shipped
+    branch: feat/rediseno-ux-ui--pantallas-financieras
+  - id: pantallas-casa
+    status: shipped
+    branch: feat/rediseno-ux-ui--pantallas-casa
+  - id: auth-onboarding
+    status: shipped
+    branch: feat/rediseno-ux-ui--auth-onboarding

@@ -27,7 +27,7 @@ import Paper from "@mui/material/Paper";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 
 export type Pantalla =
   | "inicio"
@@ -159,6 +159,8 @@ export function AppNav({ pantalla, onChange, onCerrarSesion }: AppNavProps) {
                     sx={{
                       opacity: activo ? 1 : 0.75,
                       fontWeight: activo ? 700 : 400,
+                      borderRadius: 999,
+                      bgcolor: activo ? alpha("#ffffff", 0.18) : "transparent",
                     }}
                   >
                     {seccion.label}
@@ -181,6 +183,8 @@ export function AppNav({ pantalla, onChange, onCerrarSesion }: AppNavProps) {
                     sx={{
                       opacity: activo ? 1 : 0.75,
                       fontWeight: activo ? 700 : 400,
+                      borderRadius: 999,
+                      bgcolor: activo ? alpha("#ffffff", 0.18) : "transparent",
                     }}
                   >
                     {entrada.label}
@@ -254,6 +258,16 @@ export function AppNav({ pantalla, onChange, onCerrarSesion }: AppNavProps) {
               value={seccion.value}
               label={seccion.label}
               icon={seccion.icon}
+              aria-current={pantalla === seccion.value ? "true" : undefined}
+              sx={{
+                "&.Mui-selected": {
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+                  borderRadius: 2,
+                  "& .MuiBottomNavigationAction-label": {
+                    fontWeight: 700,
+                  },
+                },
+              }}
             />
           ))}
         </BottomNavigation>

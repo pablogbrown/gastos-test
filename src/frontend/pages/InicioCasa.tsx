@@ -1,3 +1,9 @@
+import BalanceIcon from "@mui/icons-material/AccountBalanceWallet";
+import ChecklistIcon from "@mui/icons-material/Checklist";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import PeopleIcon from "@mui/icons-material/People";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -17,6 +23,9 @@ import {
   esApiError,
   obtenerDashboard,
 } from "../api/dashboardClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+import { StatCard } from "../components/StatCard";
 
 export interface InicioCasaProps {
   casaId: string;
@@ -107,6 +116,8 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
       aria-label="Inicio de la casa"
       sx={{ display: "flex", flexDirection: "column", gap: 2 }}
     >
+      <PageHeader title="Inicio" />
+
       {(dashboard.tarjetasConAlerta ?? []).length > 0 && (
         <Box
           component="section"
@@ -165,7 +176,7 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
             Miembros
           </Typography>
           {dashboard.miembros.length === 0 ? (
-            <Typography color="text.secondary">Todavía no hay miembros activos.</Typography>
+            <EmptyState icon={<PeopleIcon />} message="Todavía no hay miembros activos." />
           ) : (
             <List dense>
               {dashboard.miembros.map((miembro) => (
@@ -184,7 +195,7 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
             Gastos recientes
           </Typography>
           {dashboard.gastosRecientes.length === 0 ? (
-            <Typography color="text.secondary">Todavía no hay gastos registrados.</Typography>
+            <EmptyState icon={<ReceiptLongIcon />} message="Todavía no hay gastos registrados." />
           ) : (
             <List dense>
               {dashboard.gastosRecientes.map((gasto) => (
@@ -197,18 +208,24 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
         </CardContent>
       </Card>
 
-      <Card component="section" aria-label="Balance" variant="outlined">
-        <CardContent>
-          <Typography variant="h6" component="h3" gutterBottom>
-            Balance
-          </Typography>
-          {!totalArs || Number(totalArs.total_gastos) === 0 ? (
-            <Typography color="text.secondary">Todavía no hay balance para mostrar.</Typography>
-          ) : (
-            <Typography>Total gastado: ${totalArs.total_gastos}</Typography>
-          )}
-        </CardContent>
-      </Card>
+      <Box component="section" aria-label="Balance">
+        {!totalArs || Number(totalArs.total_gastos) === 0 ? (
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" component="h3" gutterBottom>
+                Balance
+              </Typography>
+              <EmptyState icon={<BalanceIcon />} message="Todavía no hay balance para mostrar." />
+            </CardContent>
+          </Card>
+        ) : (
+          <StatCard
+            icon={<BalanceIcon />}
+            label="Balance de la casa"
+            value={`Total gastado: $${totalArs.total_gastos}`}
+          />
+        )}
+      </Box>
 
       <Card component="section" aria-label="Tareas pendientes" variant="outlined">
         <CardContent>
@@ -216,7 +233,7 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
             Tareas pendientes
           </Typography>
           {dashboard.tareasPendientes.length === 0 ? (
-            <Typography color="text.secondary">No hay tareas pendientes.</Typography>
+            <EmptyState icon={<ChecklistIcon />} message="No hay tareas pendientes." />
           ) : (
             <List dense>
               {dashboard.tareasPendientes.map((tarea) => (
@@ -235,7 +252,7 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
             Tareas completadas recientes
           </Typography>
           {dashboard.tareasCompletadasRecientes.length === 0 ? (
-            <Typography color="text.secondary">Todavía no se completó ninguna tarea.</Typography>
+            <EmptyState icon={<TaskAltIcon />} message="Todavía no se completó ninguna tarea." />
           ) : (
             <List dense>
               {dashboard.tareasCompletadasRecientes.map((registro) => (
@@ -256,7 +273,7 @@ export function InicioCasa({ casaId, miembros }: InicioCasaProps) {
             Ranking
           </Typography>
           {dashboard.ranking.length === 0 ? (
-            <Typography color="text.secondary">Todavía no hay puntos acumulados.</Typography>
+            <EmptyState icon={<EmojiEventsIcon />} message="Todavía no hay puntos acumulados." />
           ) : (
             <List dense>
               {dashboard.ranking.map((entrada) => (

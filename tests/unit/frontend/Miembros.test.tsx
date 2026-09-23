@@ -75,7 +75,27 @@ describe("Miembros", () => {
     render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
 
     expect(await screen.findByText("Ana")).toBeInTheDocument();
-    expect(screen.getByText("Administrador")).toBeInTheDocument();
+    // "Administrador" aparece dos veces (nombre del fixture + chip de
+    // rol, spec `pantallas-casa` REQ-001) — getAllByText en vez de
+    // getByText porque ahora hay más de una coincidencia.
+    expect(screen.getAllByText("Administrador").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("muestra cada miembro como tarjeta con avatar, nombre y chip de rol (TC-001)", async () => {
+    render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
+
+    const tarjetaAdmin = await screen.findByRole("group", { name: "Miembro Administrador" });
+    const tarjetaAna = screen.getByRole("group", { name: "Miembro Ana" });
+
+    expect(within(tarjetaAdmin).getByLabelText("Avatar de Administrador")).toBeInTheDocument();
+    expect(within(tarjetaAna).getByLabelText("Avatar de Ana")).toBeInTheDocument();
+
+    // Chips de rol distintos entre sí (TC-001): un admin y un miembro
+    // no deben mostrar la misma etiqueta de rol. "Administrador" aparece
+    // dos veces en la tarjeta del admin (nombre + chip de rol, coincide
+    // en este fixture) — se verifica la cantidad en vez de unicidad.
+    expect(within(tarjetaAdmin).getAllByText("Administrador").length).toBeGreaterThanOrEqual(2);
+    expect(within(tarjetaAna).getByText("Miembro")).toBeInTheDocument();
   });
 
   it("muestra la acción Desactivar para un Administrador", async () => {
@@ -123,8 +143,8 @@ describe("Miembros", () => {
 
     render(<Miembros casaId={CASA_ID} rolUsuarioActual="admin" />);
 
-    const nombreCelda = await screen.findByText("Invitado Pendiente");
-    const filaPendiente = nombreCelda.closest("tr") as HTMLElement;
+    await screen.findByText("Invitado Pendiente");
+    const filaPendiente = screen.getByRole("group", { name: "Miembro Invitado Pendiente" });
 
     expect(within(filaPendiente).getByText("Pendiente")).toBeInTheDocument();
     expect(within(filaPendiente).queryByText("Activo")).not.toBeInTheDocument();

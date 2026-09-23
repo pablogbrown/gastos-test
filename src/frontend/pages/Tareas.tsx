@@ -1,6 +1,11 @@
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import Alert from "@mui/material/Alert";
+import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -29,6 +34,16 @@ import {
   listarTareas,
   Tarea,
 } from "../api/tareasClient";
+import { PageHeader } from "../components/PageHeader";
+
+// Spec `rediseno-ux-ui/pantallas-casa`, REQ-003: ícono de estado por
+// tarea (mapa centralizado id-de-estado -> ícono, mismo patrón
+// `NOMBRES_LOGRO`/`FRONP-03`) — nunca hardcodeado inline por tarjeta.
+const ICONO_ESTADO: Record<EstadoTarea, JSX.Element> = {
+  pendiente: <RadioButtonUncheckedIcon fontSize="small" color="warning" />,
+  en_curso: <RadioButtonUncheckedIcon fontSize="small" color="disabled" />,
+  completada: <CheckCircleIcon fontSize="small" color="success" />,
+};
 
 export interface TareasProps {
   casaId: string;
@@ -153,9 +168,7 @@ export function Tareas({ casaId, miembroIdActual, rolUsuarioActual }: TareasProp
 
   return (
     <Box component="section" aria-label="Tareas" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h5" component="h2">
-        Tareas
-      </Typography>
+      <PageHeader title="Tareas" />
 
       {error && <Alert severity="error">{error}</Alert>}
 
@@ -268,42 +281,50 @@ export function Tareas({ casaId, miembroIdActual, rolUsuarioActual }: TareasProp
       {cargando ? (
         <Typography>Cargando tareas...</Typography>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
-          <Table aria-label="Listado de tareas" sx={{ minWidth: 320 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nombre</TableCell>
-                <TableCell>Puntos</TableCell>
-                <TableCell>Estado</TableCell>
-                <TableCell>Responsable</TableCell>
-                <TableCell>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {tareas.map((tarea) => (
-                <TableRow key={tarea.id}>
-                  <TableCell>{tarea.nombre}</TableCell>
-                  <TableCell>{tarea.puntos}</TableCell>
-                  <TableCell>
-                    <Chip label={tarea.estado} color={ESTADO_COLOR[tarea.estado]} size="small" />
-                  </TableCell>
-                  <TableCell>
-                    {tarea.responsableId
-                      ? miembros.find((m) => m.id === tarea.responsableId)?.nombre ?? tarea.responsableId
-                      : "Cualquiera"}
-                  </TableCell>
-                  <TableCell>
-                    {puedeCompletar(tarea, miembroIdActual, rolUsuarioActual) && (
-                      <Button type="button" size="small" onClick={() => handleCompletar(tarea.id)}>
-                        Marcar completada
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {tareas.map((tarea) => {
+            const nombreResponsable = tarea.responsableId
+              ? miembros.find((m) => m.id === tarea.responsableId)?.nombre ?? tarea.responsableId
+              : "Cualquiera";
+            return (
+              <Card
+                key={tarea.id}
+                variant="outlined"
+                role="group"
+                aria-label={`Tarea ${tarea.nombre}`}
+              >
+                <CardContent
+                  sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}
+                >
+                  {ICONO_ESTADO[tarea.estado]}
+                  <Box sx={{ flexGrow: 1, minWidth: 160 }}>
+                    <Typography variant="subtitle1">{tarea.nombre}</Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
+                      <Chip label={tarea.estado} color={ESTADO_COLOR[tarea.estado]} size="small" />
+                      <Chip label={`${tarea.puntos} pts`} size="small" variant="outlined" />
+                      {tarea.responsableId && (
+                        <Avatar
+                          aria-label={`Responsable: ${nombreResponsable}`}
+                          sx={{ width: 24, height: 24, fontSize: 12 }}
+                        >
+                          {nombreResponsable.charAt(0).toUpperCase()}
+                        </Avatar>
+                      )}
+                      <Typography variant="body2" color="text.secondary">
+                        {nombreResponsable}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {puedeCompletar(tarea, miembroIdActual, rolUsuarioActual) && (
+                    <Button type="button" size="small" onClick={() => handleCompletar(tarea.id)}>
+                      Marcar completada
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Box>
       )}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

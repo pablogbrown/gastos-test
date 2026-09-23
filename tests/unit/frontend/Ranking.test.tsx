@@ -95,6 +95,52 @@ describe("Ranking", () => {
     expect(screen.getByText(/4 días/)).toBeInTheDocument();
   });
 
+  it("muestra un indicador de progreso visual hacia el próximo nivel, no solo el número de puntos (TC-003)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockFetch([{ miembroId: ANA_ID, puntos: 60, nivel: "Activo", racha: 0 }])
+    );
+
+    render(<Ranking casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    await screen.findByText("Ana");
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+  });
+
+  it('muestra 2 logros desbloqueados como chips/badges distintos entre sí, no como una lista separada por comas (TC-004)', async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockFetch(
+        [{ miembroId: ANA_ID, puntos: 8, nivel: "Novato", racha: 0 }],
+        [
+          {
+            id: "l1",
+            casa_id: CASA_ID,
+            miembro_id: ANA_ID,
+            logro_id: "primera_tarea",
+            obtenido_en: "2026-09-01T10:00:00",
+          },
+          {
+            id: "l2",
+            casa_id: CASA_ID,
+            miembro_id: ANA_ID,
+            logro_id: "diez_tareas",
+            obtenido_en: "2026-09-02T10:00:00",
+          },
+        ]
+      )
+    );
+
+    render(<Ranking casaId={CASA_ID} miembros={MIEMBROS} />);
+
+    const chipPrimera = await screen.findByText("Primera tarea");
+    const chipDiez = await screen.findByText("10 tareas completadas");
+    expect(chipPrimera).toBeInTheDocument();
+    expect(chipDiez).toBeInTheDocument();
+    // Nunca una lista de texto separada por comas.
+    expect(screen.queryByText("Primera tarea, 10 tareas completadas")).not.toBeInTheDocument();
+  });
+
   it('muestra la sub-sección "Logros" con los logros desbloqueados de cada miembro (TC-007)', async () => {
     vi.stubGlobal(
       "fetch",

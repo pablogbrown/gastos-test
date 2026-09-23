@@ -326,6 +326,35 @@ describe("Tarjetas", () => {
     ).toBeInTheDocument();
   });
 
+  it("TC-003 (spec pantallas-financieras): sin tarjetas registradas, muestra EmptyState con acción para agregar la primera", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({ ok: true, status: 200, json: async () => [] }))
+    );
+
+    render(<Tarjetas casaId={CASA_ID} />);
+
+    expect(
+      await screen.findByText("Todavía no registraste ninguna tarjeta")
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Agregar la primera" })).toBeInTheDocument();
+  });
+
+  it("TC-005 (spec pantallas-financieras): el encabezado es un PageHeader cuyo botón de acción abre (enfoca) el mismo formulario de alta que existe hoy", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({ ok: true, status: 200, json: async () => [] }))
+    );
+    const user = userEvent.setup();
+
+    render(<Tarjetas casaId={CASA_ID} />);
+
+    expect(screen.getByRole("heading", { name: "Tarjetas" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Nueva tarjeta" }));
+
+    expect(screen.getByLabelText("Banco")).toHaveFocus();
+  });
+
   it("elimina una tarjeta y la saca del listado", async () => {
     let eliminada = false;
     vi.stubGlobal(

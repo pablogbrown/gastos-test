@@ -1,0 +1,49 @@
+feature: rediseno-ux-ui/specs/pantallas-casa
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: No coverage tool configured for the frontend (sigue sin resolver)
+    detail: >-
+      Mismo gap ya reportado en `sistema-visual`'s S002/D001 —
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool` sigue
+      `null`, así que `nybo.config.yaml`'s `testing.coverage_threshold: 80`
+      no pudo evaluarse mecánicamente en este ciclo tampoco (ver
+      `decisions.yaml` D001, decision class `new-dependency` — siempre
+      difiere a un humano). Remedio: `/nybo-brownfield-bootstrap --quality`,
+      una sola vez a nivel de proyecto (ya recomendado 2 veces dentro de
+      esta misma feature).
+    scope: out-of-spec
+    status: open
+  - id: S002
+    category: question
+    title: ¿Agregar "Meta de la casa" (progreso agregado) a Ranking en una spec futura?
+    detail: >-
+      El task file de T2 sugería mostrar la meta de puntos mensual de la
+      casa (ya visible en `InicioCasa.tsx` vía `dashboard.metaCasa`) también
+      en `Ranking.tsx`. Se decidió NO agregarla en este ciclo (ver Judgment
+      J002 en build-results.md): ningún REQ/TC de esta spec la pide, y
+      hacerlo requeriría que `Ranking.tsx` empiece a llamar
+      `obtenerDashboard` (un fetch nuevo, fuera del `files_touched` de
+      `run-plan.json` para T2) solo para una sección que ya existe en
+      Inicio. Si se considera valioso mostrarla también acá, vale una spec
+      futura explícita en vez de una adición no testeada dentro de esta.
+    scope: follow-up
+    status: open
+  - id: S003
+    category: question
+    title: TC-007 ("sin modificar queries") no se cumplió literalmente — ¿ajustar la redacción del template de spec?
+    detail: >-
+      REQ-001/REQ-003 piden reemplazar filas de tabla por tarjetas
+      (Miembros, Tareas) — un cambio estructural real, no solo de estilo.
+      Eso rompió 2 queries preexistentes atadas a estructura de tabla
+      (`.closest("tr")` en Miembros, `getByRole("cell", ...)` en Tareas) y
+      1 colisión de texto accidental (nombre de fixture "Administrador"
+      coincidiendo con la etiqueta de rol). Se ajustaron las 3 (ver
+      Judgment J001-J003), preservando toda la semántica de rol/label que
+      SÍ pudo mantenerse sin cambios. Vale la pena que specs futuras que
+      pidan explícitamente un cambio ESTRUCTURAL (tabla -> tarjeta/feed) no
+      prometan "cero cambios de query" en su Verification table — es una
+      garantía que dos requisitos de la misma spec pueden hacer imposible
+      de cumplir a la vez.
+    scope: follow-up
+    status: open

@@ -1,8 +1,10 @@
+import { ThemeProvider } from "@mui/material/styles";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SelectorCasas } from "../../../src/frontend/pages/SelectorCasas";
+import { theme } from "../../../src/frontend/theme";
 
 const CASA_1 = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -36,6 +38,20 @@ describe("SelectorCasas (TC-005)", () => {
     await user.click(screen.getByText("Casa de la playa"));
 
     expect(onCasaElegida).toHaveBeenCalledWith(CASA_2);
+  });
+
+  it("cada casa se muestra como una tarjeta seleccionable, mismo lenguaje visual que Login/Registro (TC-003)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [CASA_1, CASA_2] }));
+
+    render(
+      <ThemeProvider theme={theme}>
+        <SelectorCasas onCasaElegida={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const casaEl = await screen.findByText("Casa del centro");
+    expect(casaEl.closest(".MuiCard-root")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Casa del centro" })).toBeInTheDocument();
   });
 
   it("sin casas, ofrece 'Crear nueva casa' en vez de una lista vacía", async () => {

@@ -1,10 +1,10 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
-import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -28,6 +28,17 @@ import {
   registrarGasto,
 } from "../api/gastosClient";
 import { crearSuscripcion } from "../api/suscripcionesClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+
+/** Enfoca el campo `id` del formulario de alta ya renderizado en la
+ * pantalla (spec `sistema-visual`/`pantallas-financieras`, REQ-003): el
+ * formulario nunca estuvo oculto, así que "abrirlo" desde la acción del
+ * `PageHeader` significa llevarle el foco, sin ningún cambio de estado
+ * ni de comportamiento de envío. */
+function enfocarCampo(id: string) {
+  document.getElementById(id)?.focus();
+}
 
 export interface GastosProps {
   casaId: string;
@@ -185,11 +196,12 @@ export function Gastos({ casaId }: GastosProps) {
 
   return (
     <Box component="section" aria-label="Gastos" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
-        <Typography variant="h5" component="h2">
-          Gastos
-        </Typography>
+      <PageHeader
+        title="Gastos"
+        action={{ label: "Nuevo gasto", onClick: () => enfocarCampo("descripcion-gasto") }}
+      />
 
+      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
         <TextField
           id="mes-gastos"
           label="Mes"
@@ -203,7 +215,7 @@ export function Gastos({ casaId }: GastosProps) {
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Card variant="outlined" sx={{ p: 2 }}>
         <Box
           component="form"
           onSubmit={handleCrearCategoria}
@@ -221,9 +233,9 @@ export function Gastos({ casaId }: GastosProps) {
             Crear categoría
           </Button>
         </Box>
-      </Paper>
+      </Card>
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Card variant="outlined" sx={{ p: 2 }}>
         <Box
           component="form"
           onSubmit={handleRegistrarGasto}
@@ -358,9 +370,12 @@ export function Gastos({ casaId }: GastosProps) {
             </Button>
           </Box>
         </Box>
-      </Paper>
+      </Card>
 
-      <TableContainer component={Paper} variant="outlined">
+      {gastos.length === 0 ? (
+        <EmptyState message="Todavía no hay gastos para este mes." />
+      ) : (
+      <TableContainer component={Card} variant="outlined">
         <Table aria-label="Historial de gastos" sx={{ minWidth: 320 }}>
           <TableHead>
             <TableRow>
@@ -401,6 +416,7 @@ export function Gastos({ casaId }: GastosProps) {
           rowsPerPageOptions={[]}
         />
       </TableContainer>
+      )}
     </Box>
   );
 }

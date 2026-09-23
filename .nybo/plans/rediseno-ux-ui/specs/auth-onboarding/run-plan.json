@@ -1,0 +1,40 @@
+{
+  "$schema_version": "2",
+  "feature_id": "auth-onboarding",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/auth-onboarding/feat/01-plan-01-login-registro.md",
+      "files_touched": ["src/frontend/pages/Login.tsx", "src/frontend/pages/Registro.tsx"],
+      "deps": [],
+      "est_minutes": 35,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Login y Registro muestran una tarjeta centrada con identidad de marca, preservando validaciones y mensajes de error existentes.",
+        "postcondition": "Login.test.tsx y Registro.test.tsx pasan sin modificar queries; un error de login muestra el mismo mensaje que antes.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/unit/frontend/Login.test.tsx,tests/unit/frontend/Registro.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/auth-onboarding/feat/01-plan-02-selector-crear-casa.md",
+      "files_touched": ["src/frontend/pages/SelectorCasas.tsx", "src/frontend/pages/CrearCasa.tsx"],
+      "deps": [],
+      "est_minutes": 30,
+      "test_cases": ["TC-003", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Selector de casas y Crear casa adoptan el mismo layout centrado que Login/Registro.",
+        "postcondition": "SelectorCasas.test.tsx pasa sin modificar queries; cada casa se muestra como tarjeta seleccionable.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/SelectorCasas.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

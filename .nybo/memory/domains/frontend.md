@@ -12,6 +12,55 @@ frontend domain
   `src/frontend/theme.ts` (exported `theme`, via `createTheme`) — screens
   never define their own ad-hoc palette/typography, they consume this
   theme through `ThemeProvider` (wired once in `main.tsx`).
+
+<!-- [FRON-05] added: 2026-09-23 | feature: rediseno-ux-ui/auth-onboarding | confidence: high | verified: 2026-09-23 -->
+- [FRON-05] Every top-level screen container is now `Card` +
+  `CardContent` (spec `rediseno-ux-ui/auth-onboarding` migrated the last
+  4 holdouts — Login/Registro/SelectorCasas/CrearCasa — off `Paper
+  elevation={2}`). `Paper` is retired as a screen-level container
+  project-wide: `theme.ts`'s soft-shadow override
+  (`components.MuiCard.styleOverrides.root`, spec `sistema-visual`
+  FRON-02) only applies to `MuiCard`, so a new screen using `Paper`
+  silently gets MUI's default elevation shadow instead of the theme's
+  own. Default to `Card` for any new screen's outer container.
+
+<!-- [FRON-02] added: 2026-09-23 | feature: rediseno-ux-ui/sistema-visual | confidence: high | verified: 2026-09-23 -->
+- [FRON-02] `theme.ts`'s "Cálido minimal" palette (spec
+  `rediseno-ux-ui/sistema-visual`, D-01): primary is a deep teal/green
+  (`#1b6b5c`), secondary a warm terracota accent (`#c1652f`), background
+  an off-white warm tone (`#faf6f1`), `shape.borderRadius: 16`, and
+  `components.MuiCard.styleOverrides.root` carries a fixed soft
+  `boxShadow` (note: MUI's `variant="outlined"` Paper/Card always
+  overrides this back to `boxShadow: none` at the CSS level regardless of
+  `styleOverrides.root` — outlined cards show a border, not a shadow, by
+  design). Semantic states (pagado/a_pagar/pendiente/rechazado) map onto
+  MUI's own `success`/`warning`/`info`/`error` palette slots rather than
+  ad-hoc per-screen colors. A shared `monetaryValueSx` export
+  (`fontVariantNumeric: "tabular-nums"`) lives alongside `theme` for any
+  screen displaying a monetary figure — use it instead of repeating the
+  style inline.
+- [FRON-03] Three presentational, dependency-free shared components live
+  in `src/frontend/components/` (spec `rediseno-ux-ui/sistema-visual`,
+  REQ-002): `PageHeader` (title/subtitle/optional primary action),
+  `StatCard` (icon/label/value stat, kept intentionally minimal —
+  compound content like a progress bar stays outside it rather than
+  extending its props, see Patterns below), and `EmptyState`
+  (icon/message/optional action, replacing a bare "no data" message).
+  None of the three imports anything from `src/frontend/api/*` — that's
+  what makes them safely reusable across every screen/domain. When
+  swapping an existing plain-text "no data" message for `EmptyState`,
+  pass the EXACT string an existing test already queries via
+  `getByText(...)` — `EmptyState` renders `message` as its own leaf text
+  node, so the query keeps matching with zero test changes.
+- [FRON-04] The active nav item (mobile `BottomNavigation` and desktop
+  `AppBar`/`GRUPOS_DESKTOP`) is highlighted with a filled/pill background
+  using the theme's primary color (`alpha(primary.main, 0.12)` on
+  mobile's `Mui-selected` class, `alpha('#ffffff', 0.18)` on desktop's
+  primary-colored `AppBar`, since desktop buttons use `color="inherit"`
+  and need a light overlay rather than the primary color itself to read
+  against a primary-colored bar) — not just a color/opacity/font-weight
+  cue as before (`nav-agrupada`'s S001 suggestion). `aria-current="true"`
+  is set explicitly on both the mobile and desktop active items.
 - The responsive navigation shell (bottom tab bar on mobile < `sm`
   breakpoint / top `AppBar` on desktop) is its own component,
   `src/frontend/AppNav.tsx` — kept separate from `App.tsx` specifically
@@ -26,6 +75,43 @@ frontend domain
   when the current `pantalla` is any screen in that group, not just its
   first. `SECCIONES` itself is the single source of truth for both
   branches — only `GRUPOS_DESKTOP` decides how desktop presents it.
+
+<!-- [FRON-06] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
+- [FRON-06] When applying `sistema-visual`'s restyle (`PageHeader`/
+  `EmptyState`/`Card`) to an EXISTING screen whose test suite already
+  asserts a structural accessibility role (e.g.
+  `screen.getByRole("table", { name: "Listado de préstamos" })` in
+  `Prestamos.test.tsx`), preserve that exact structure — never migrate
+  `<Table>` to a `Card`-per-row list, even though the "línea de tarjeta"
+  visual language is the design goal. Restyle only the CONTAINER
+  (`Paper` -> `Card`, which is what actually picks up the theme's
+  `boxShadow`/`shape.borderRadius`), keeping every `role`/`aria-label`/
+  text query the pre-existing suite depends on untouched. Applied across
+  all 7 screens in `pantallas-financieras` for consistency, driven by
+  the one screen (Préstamos) whose test explicitly depends on
+  `role="table"`.
+
+<!-- [FRON-07] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-casa | confidence: medium | verified: 2026-09-23 -->
+- [FRON-07] When a screen restyle converts a table row into a `Card`
+  (e.g. `Miembros.tsx`/`Tareas.tsx`, spec `rediseno-ux-ui/pantallas-casa`
+  REQ-001/REQ-003), give the `Card` `role="group"` and
+  `aria-label="<Entidad> <nombre>"` (e.g. `Miembro Ana`, `Tarea Sacar la
+  basura`) instead of leaving it with no accessible container role. This
+  keeps `within(tarjeta).getByText(...)`/`.getByRole(...)` queries
+  working exactly like `within(fila).getByText(...)` did before —
+  existing tests only need their scoping locator swapped
+  (`.closest("tr")` or `getByRole("cell", ...)` -> `getByRole("group",
+  { name: "..." })`), never the role/label assertions inside. A
+  structural change mandated by the spec (table -> card/feed) can still
+  break a query that was never really about role/label (a DOM-tag
+  `closest` or a `cell` role tied to `<table>` semantics) even when the
+  "queries por rol/label" promise otherwise holds — expect and budget for
+  that, don't treat it as a regression to avoid at all costs. Note this
+  is the OPPOSITE call from `[FRON-06]` (`pantallas-financieras`: keep
+  `<Table>` when an existing test asserts `role="table"`) — the two
+  coexist because each followed what ITS OWN pre-existing test suite
+  already depended on; check the existing test's structural role
+  assertion (if any) before choosing which path applies to a new screen.
 
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-11 -->
 - Frontend tests query the DOM via accessible roles/labels
@@ -49,6 +135,53 @@ frontend domain
 
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
+
+<!-- [FRONP-05] added: 2026-09-23 | feature: rediseno-ux-ui/auth-onboarding | confidence: medium | verified: 2026-09-23 -->
+- [FRONP-05] When a screen needs a selectable list of records under the
+  "Cálido minimal" theme (spec `sistema-visual`) — e.g.
+  `SelectorCasas.tsx`'s list of casas — render each item as its own
+  `Card` (`variant="outlined"`) + `CardActionArea` (with the click
+  handler on the `CardActionArea`, not the `Card`) instead of MUI's
+  `List`/`ListItemButton`. This keeps the same rounded/bordered visual
+  language as every other tarjeta in the redesign, and
+  `CardActionArea` renders a native `<button>` — so it already exposes
+  the accessible role (`getByRole("button", { name })`) existing tests
+  need, with zero query changes required when migrating an existing
+  `List`. Note `variant="outlined"` shows a border, not the theme's
+  elevation shadow (FRON-02's gotcha) — expected for a densely-packed
+  selectable list, not a bug.
+
+<!-- [FRONP-04] added: 2026-09-23 | feature: rediseno-ux-ui/sistema-visual | confidence: medium | verified: 2026-09-23 -->
+- [FRONP-04] When a screen wants to reuse a shared presentational
+  component (e.g. `StatCard`) for a section whose content is COMPOUND
+  (a stat value plus something else entirely — here, "Meta de la casa"
+  pairing a value with a `LinearProgress` bar) rather than adding a
+  `children`/slot prop to widen that shared component's contract, keep
+  the compound section as its own local composition and reserve the
+  shared component for the cases that actually fit its original, narrow
+  shape. Same "duplicate a small per-caller shape over widening shared
+  surface" criterion already established for backend-to-backend
+  duplication (`[SERVP-02]` et al.) and the frontend/backend boundary
+  (`[FRONP-03]`), extended here to a shared-component's own prop
+  contract — this matters more than usual when 3 sibling specs
+  (`pantallas-financieras`/`pantallas-casa`/`auth-onboarding`) already
+  depend on that exact contract staying stable.
+
+<!-- [FRONP-06] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
+- [FRONP-06] When a screen's "primary add action" (`PageHeader.action`,
+  spec `sistema-visual` REQ-002/`pantallas-financieras` REQ-003) targets
+  a form that is ALREADY always rendered inline (never hidden/toggled —
+  the common shape in this app: Gastos/Tarjetas/Prestamos/Mantenimiento/
+  MantenimientoAutos), implement "opening" it as FOCUSING its first
+  field (`document.getElementById(id)?.focus()`), not as introducing a
+  new show/hide state for the form. Adding a hide/show toggle would be a
+  real behavior change (a regression risk under a "purely presentational
+  restyle" constraint like `pantallas-financieras`' REQ-004) for zero
+  visual benefit, since the form was already visible. If a future screen
+  genuinely needs its alta form created (not just restyled) with no
+  pre-existing form to focus, treat that as a new capability requiring
+  its own `spec-deviation`/`decisions.yaml` entry rather than inventing
+  one silently (see `pantallas-financieras`' D001, `Suscripciones.tsx`).
 
 <!-- added: 2026-09-18 | feature: gamificacion-puntos | confidence: medium | verified: 2026-09-18 -->
 - [FRONP-03] When a backend endpoint returns only an opaque catalog id

@@ -196,3 +196,45 @@ describe("Theme — BottomNavigationAction (TC-004)", () => {
     expect(boton.className).toContain("MuiBottomNavigationAction-root");
   });
 });
+
+/** Spec `rediseno-ux-ui/sistema-visual`, REQ-003 — restyle del shell de
+ * navegación con el nuevo tema, sin tocar breakpoint ni ruteo. */
+describe("AppNav — restyle con el nuevo tema (TC-006, TC-007)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('TC-006: en mobile, el ítem "Inicio" activo tiene aria-current="true" o el estado selected de MUI activo', () => {
+    mockMatchMedia(false);
+    renderAppNav();
+
+    const boton = screen.getByRole("button", { name: "Inicio" });
+    const tieneAriaCurrent = boton.getAttribute("aria-current") === "true";
+    const tieneSelected = boton.className.includes("Mui-selected");
+    expect(tieneAriaCurrent || tieneSelected).toBe(true);
+
+    const otro = screen.getByRole("button", { name: "Miembros" });
+    expect(otro.getAttribute("aria-current")).not.toBe("true");
+    expect(otro.className.includes("Mui-selected")).toBe(false);
+  });
+
+  it("TC-007: en desktop, la agrupación GRUPOS_DESKTOP sigue funcionando sin regresión (grupo activo, submenú, onChange)", () => {
+    mockMatchMedia(true);
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider theme={theme}>
+        <AppNav pantalla="tarjetas" onChange={onChange} />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByRole("button", { name: "Gastos" })).toHaveAttribute(
+      "aria-current",
+      "true"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Gastos" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Balance/ }));
+    expect(onChange).toHaveBeenCalledWith("balance");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+});

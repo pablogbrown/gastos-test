@@ -1,8 +1,10 @@
+import { ThemeProvider } from "@mui/material/styles";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Prestamos } from "../../../src/frontend/pages/Prestamos";
+import { theme } from "../../../src/frontend/theme";
 
 const CASA_ID = "11111111-1111-1111-1111-111111111111";
 const PRESTAMO_ID = "22222222-2222-2222-2222-222222222222";
@@ -317,5 +319,45 @@ describe("Prestamos", () => {
     expect(await screen.findByText("Rechazado")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Rechazar" })).not.toBeInTheDocument();
+  });
+
+  it("TC-002 (spec pantallas-financieras): un préstamo Rechazado usa palette.error, igual que cualquier otro estado 'error' en las otras pantallas", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          prestamo({
+            confirmado_prestamista: true,
+            confirmado_deudor: false,
+            estado_confirmacion: "rechazado",
+          }),
+        ],
+      }))
+    );
+
+    render(
+      <ThemeProvider theme={theme}>
+        <Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={MACA_ID} />
+      </ThemeProvider>
+    );
+
+    const chip = (await screen.findByText("Rechazado")).closest(".MuiChip-root");
+    expect(chip?.className).toMatch(/MuiChip-colorError/);
+  });
+
+  it("sin préstamos registrados, muestra EmptyState con acción para agregar el primero", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({ ok: true, status: 200, json: async () => [] }))
+    );
+
+    render(<Prestamos casaId={CASA_ID} miembros={MIEMBROS} miembroIdActual={ADMIN_ID} />);
+
+    expect(
+      await screen.findByText("Todavía no registraste ningún préstamo")
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Agregar el primero" })).toBeInTheDocument();
   });
 });

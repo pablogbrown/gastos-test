@@ -1,7 +1,9 @@
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
+import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -15,6 +17,31 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Miembro } from "../api/casasClient";
 import { esApiError, Logro, listarLogros, obtenerRanking, RankingEntry } from "../api/tareasClient";
+import { PageHeader } from "../components/PageHeader";
+
+// Spec `rediseno-ux-ui/pantallas-casa`, REQ-002: los 4 escalones fijos
+// de `ranking_service.NIVELES` (backend) duplicados acá solo para
+// calcular el % de avance visual hacia el próximo nivel — mismo
+// criterio ya establecido para catálogos opacos del backend
+// (`NOMBRES_LOGRO`, `FRONP-03`): la API sigue devolviendo únicamente
+// `nivel` (nombre) y `puntos`, sin cambio de contrato.
+const NIVELES = [
+  { umbral: 0, nombre: "Novato" },
+  { umbral: 50, nombre: "Activo" },
+  { umbral: 150, nombre: "Comprometido" },
+  { umbral: 300, nombre: "Campeón de la casa" },
+];
+
+function progresoNivel(nivelActual: string, puntos: number): { porcentaje: number; siguiente: string | null } {
+  const indice = NIVELES.findIndex((n) => n.nombre === nivelActual);
+  const actual = indice >= 0 ? NIVELES[indice] : NIVELES[0];
+  const siguiente = indice >= 0 ? NIVELES[indice + 1] : NIVELES[1];
+  if (!siguiente) return { porcentaje: 100, siguiente: null };
+  const rango = siguiente.umbral - actual.umbral;
+  const avance = Math.max(0, puntos - actual.umbral);
+  const porcentaje = rango > 0 ? Math.min(100, Math.round((avance / rango) * 100)) : 100;
+  return { porcentaje, siguiente: siguiente.nombre };
+}
 
 export interface RankingProps {
   casaId: string;
@@ -88,11 +115,9 @@ export function Ranking({ casaId, miembros }: RankingProps) {
 
   return (
     <Box component="section" aria-label="Ranking" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
-        <Typography variant="h5" component="h2">
-          Ranking
-        </Typography>
+      <PageHeader title="Ranking" />
 
+      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
         <TextField
           id="mes-ranking"
           label="Mes"
@@ -133,9 +158,25 @@ export function Ranking({ casaId, miembros }: RankingProps) {
                     <Chip label={entrada.puntos} size="small" color={indice === 0 ? "primary" : "default"} />
                   </TableCell>
                   <TableCell>
-                    <Chip label={entrada.nivel} size="small" variant="outlined" />
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, minWidth: 120 }}>
+                      <Chip label={entrada.nivel} size="small" variant="outlined" />
+                      <LinearProgress
+                        variant="determinate"
+                        value={progresoNivel(entrada.nivel, entrada.puntos).porcentaje}
+                        aria-label={`Progreso de nivel de ${nombreDe(entrada.miembroId)}`}
+                        sx={{ borderRadius: 4 }}
+                      />
+                    </Box>
                   </TableCell>
-                  <TableCell>{entrada.racha > 0 ? `🔥 ${entrada.racha} días` : "—"}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <LocalFireDepartmentIcon
+                        fontSize="small"
+                        color={entrada.racha > 0 ? "warning" : "disabled"}
+                      />
+                      {entrada.racha > 0 ? `${entrada.racha} días` : "—"}
+                    </Box>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -150,26 +191,32 @@ export function Ranking({ casaId, miembros }: RankingProps) {
         {logros.length === 0 ? (
           <Typography color="text.secondary">Todavía no se desbloqueó ningún logro.</Typography>
         ) : (
-          <TableContainer component={Paper} variant="outlined">
-            <Table aria-label="Logros desbloqueados" sx={{ minWidth: 320 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Miembro</TableCell>
-                  <TableCell>Logro</TableCell>
-                  <TableCell>Fecha</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {logros.map((logro) => (
-                  <TableRow key={logro.id}>
-                    <TableCell>{nombreDe(logro.miembro_id)}</TableCell>
-                    <TableCell>{nombreLogro(logro.logro_id)}</TableCell>
-                    <TableCell>{logro.obtenido_en}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            {Object.entries(
+              logros.reduce<Record<string, Logro[]>>((porMiembro, logro) => {
+                (porMiembro[logro.miembro_id] ??= []).push(logro);
+                return porMiembro;
+              }, {})
+            ).map(([miembroId, logrosDelMiembro]) => (
+              <Box key={miembroId} sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {nombreDe(miembroId)}
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {logrosDelMiembro.map((logro) => (
+                    <Chip
+                      key={logro.id}
+                      icon={<EmojiEventsIcon fontSize="small" />}
+                      label={nombreLogro(logro.logro_id)}
+                      title={logro.obtenido_en}
+                      size="small"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Box>
+            ))}
+          </Box>
         )}
       </Box>
     </Box>

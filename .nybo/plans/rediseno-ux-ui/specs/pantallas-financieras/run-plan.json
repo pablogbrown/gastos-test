@@ -1,0 +1,74 @@
+{
+  "$schema_version": "2",
+  "feature_id": "pantallas-financieras",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-financieras/feat/01-plan-01-gastos-balance.md",
+      "files_touched": ["src/frontend/pages/Gastos.tsx", "src/frontend/pages/Balance.tsx"],
+      "deps": [],
+      "est_minutes": 50,
+      "test_cases": ["TC-001", "TC-004"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Gastos y Balance usan PageHeader, chips de estado semanticos y EmptyState, preservando su logica y datos actuales.",
+        "postcondition": "Gastos.test.tsx y Balance.test.tsx pasan sin modificar sus queries; un mes sin gastos muestra EmptyState.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/unit/frontend/Gastos.test.tsx,tests/unit/frontend/Balance.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-financieras/feat/01-plan-02-tarjetas-suscripciones.md",
+      "files_touched": ["src/frontend/pages/Tarjetas.tsx", "src/frontend/pages/Suscripciones.tsx"],
+      "deps": [],
+      "est_minutes": 50,
+      "test_cases": ["TC-003", "TC-005"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Tarjetas y Suscripciones usan PageHeader y EmptyState, preservando su logica y datos actuales.",
+        "postcondition": "Tarjetas.test.tsx y Suscripciones.test.tsx pasan sin modificar sus queries; sin tarjetas registradas se muestra EmptyState.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/unit/frontend/Tarjetas.test.tsx,tests/unit/frontend/Suscripciones.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-financieras/feat/01-plan-03-prestamos.md",
+      "files_touched": ["src/frontend/pages/Prestamos.tsx"],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-002"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Prestamos usa PageHeader, chips de estado semanticos (incluyendo Rechazado=error) y EmptyState, preservando su logica y datos actuales.",
+        "postcondition": "Prestamos.test.tsx pasa sin modificar sus queries; un prestamo Rechazado usa palette.error.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/unit/frontend/Prestamos.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/rediseno-ux-ui/specs/pantallas-financieras/feat/01-plan-04-mantenimiento.md",
+      "files_touched": ["src/frontend/pages/Mantenimiento.tsx", "src/frontend/pages/MantenimientoAutos.tsx"],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-006"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Mantenimiento y Mantenimiento Autos usan PageHeader y EmptyState, preservando su logica y datos actuales.",
+        "postcondition": "Mantenimiento.test.tsx y MantenimientoAutos.test.tsx pasan sin modificar sus queries.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/unit/frontend/Mantenimiento.test.tsx,tests/unit/frontend/MantenimientoAutos.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}

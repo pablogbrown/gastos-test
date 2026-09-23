@@ -1,12 +1,26 @@
+import { ThemeProvider } from "@mui/material/styles";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Registro } from "../../../src/frontend/pages/Registro";
+import { theme } from "../../../src/frontend/theme";
 
 describe("Registro (TC-002)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("el formulario está contenido en una tarjeta centrada con 'taskia' como encabezado (auth-onboarding TC-001)", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <Registro onRegistroExitoso={vi.fn()} onIrALogin={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const encabezado = screen.getByRole("heading", { name: "taskia" });
+    expect(encabezado).toBeInTheDocument();
+    expect(encabezado.closest(".MuiCard-root")).not.toBeNull();
   });
 
   it("un registro válido llama a POST /auth/registro y navega a Login", async () => {

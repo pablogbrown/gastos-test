@@ -1,3 +1,5 @@
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import { ThemeProvider } from "@mui/material/styles";
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -137,5 +139,35 @@ describe("TC-003 — las 8 pantallas usan componentes MUI, no HTML nativo sin es
     );
     await findByText("Todavía no hay actividad registrada.");
     assertSoloControlesMui(container);
+  });
+});
+
+/** Spec `rediseno-ux-ui/sistema-visual`, REQ-001 — tema "Cálido minimal":
+ * el tema propio reemplaza el índigo/teal por defecto de MUI y los
+ * valores previos de `ui-modernization`, con esquinas generosas y
+ * sombra suave de elevación. */
+describe("Tema 'Cálido minimal' (TC-001, TC-002)", () => {
+  it("TC-001: la paleta y el radio de esquina no coinciden con los valores por defecto de MUI ni con los de ui-modernization", () => {
+    expect(theme.palette.primary.main).not.toBe("#3f51b5");
+    expect(theme.palette.secondary.main).not.toBe("#00897b");
+    expect(theme.shape.borderRadius).not.toBe(4);
+    expect(theme.shape.borderRadius).toBeGreaterThanOrEqual(12);
+  });
+
+  it("TC-002: un Card renderizado bajo el nuevo tema tiene border-radius >= 12px y una sombra de elevación", () => {
+    const { getByTestId } = render(
+      conTema(
+        <Card data-testid="card-restyled">
+          <CardContent>Contenido</CardContent>
+        </Card>
+      )
+    );
+
+    const card = getByTestId("card-restyled");
+    const estilo = getComputedStyle(card);
+
+    expect(parseInt(estilo.borderRadius, 10)).toBeGreaterThanOrEqual(12);
+    expect(estilo.boxShadow).not.toBe("none");
+    expect(estilo.boxShadow).not.toBe("");
   });
 });

@@ -1,0 +1,29 @@
+feature: rediseno-ux-ui/specs/sistema-visual
+decisions:
+  - id: D001
+    class: new-dependency
+    question: >-
+      No hay ningún proveedor de cobertura instalado (`@vitest/coverage-v8`
+      ausente; `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool`
+      es `null`), y `nybo.config.yaml` declara
+      `testing.coverage_threshold: 80`. ¿Se instala un proveedor de
+      cobertura para poder evaluar el threshold en este ciclo?
+    options:
+      - Instalar `@vitest/coverage-v8` (o `@vitest/coverage-istanbul`) como
+        devDependency y wirearlo en `vite.config.ts`'s `test.coverage`.
+      - No instalar nada este ciclo — reportar coverage como
+        "unavailable — not configured" y diferir la elección de proveedor
+        a un humano.
+    recommendation: >-
+      No instalar — `new-dependency` es una decision class que SIEMPRE
+      difiere a un humano sin importar el trust level (L2 semi-autonomous
+      incluido, por `resolveDecisionAuthority()`). Elegir entre
+      coverage-v8/coverage-istanbul y las implicancias de wirearlo al
+      pipeline de CI es una decisión que corresponde a un humano, no a
+      BUILD.
+    assumed: >-
+      Se reportó coverage como no disponible en `build-results.md`
+      (Verification) y en el checkpoint de handoff; se recomienda
+      `/nybo-brownfield-bootstrap --quality` como remedio pre-próximo-build.
+    blocking: false
+    status: open
