@@ -12,6 +12,8 @@ domains_referenced:
   - api.md
   - frontend.md
 branch: feat/personalizacion-avatares
+pr_url: https://github.com/pablogbrown/gastos-test/pull/52
+pr_number: 52
 notes: |
   Personalización de perfiles con avatares animados de animales
   (perros/gatos, Lottie), créditos ganados en paralelo a los puntos,
