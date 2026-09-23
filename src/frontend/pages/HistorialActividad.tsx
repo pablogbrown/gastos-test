@@ -15,6 +15,8 @@ import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { Actividad, esApiError, obtenerActividad } from "../api/dashboardClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 export interface HistorialActividadProps {
   casaId: string;
@@ -65,15 +67,13 @@ export function HistorialActividad({ casaId }: HistorialActividadProps) {
 
   return (
     <Box component="section" aria-label="Historial de actividad" sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <Typography variant="h5" component="h2">
-        Actividad
-      </Typography>
+      <PageHeader title="Actividad" />
 
       {error && <Alert severity="error">{error}</Alert>}
       {cargando ? (
         <Typography>Cargando historial...</Typography>
       ) : actividad.length === 0 ? (
-        <Typography color="text.secondary">Todavía no hay actividad registrada.</Typography>
+        <EmptyState message="Todavía no hay actividad registrada." />
       ) : (
         <List component={Paper} variant="outlined" sx={{ p: 0 }}>
           {actividad.map((entrada) => (

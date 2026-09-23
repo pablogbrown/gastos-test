@@ -55,6 +55,44 @@ describe("HistorialActividad", () => {
     expect(items[1]).toHaveTextContent("Ana registró un gasto de $10000.");
   });
 
+  it("usa un ícono distinto por tipo de evento en el feed (TC-006)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockFetch([
+        {
+          id: "e1",
+          casa_id: CASA_ID,
+          tipo: "miembro_agregado",
+          miembro_id: "ana",
+          fecha: "2026-01-02T10:00:00",
+          descripcion: "Ana se unió a la casa.",
+        },
+        {
+          id: "e2",
+          casa_id: CASA_ID,
+          tipo: "tarea_completada",
+          miembro_id: "ana",
+          fecha: "2026-01-01T10:00:00",
+          descripcion: "Ana completó una tarea.",
+        },
+      ])
+    );
+
+    render(<HistorialActividad casaId={CASA_ID} />);
+
+    const items = await screen.findAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    // Cada evento usa un ícono propio (svg distinto), no un ícono
+    // genérico compartido — el mapa `ICONOS_TIPO` ya resuelve esto.
+    const iconoAgregado = items[0].querySelector("svg");
+    const iconoCompletada = items[1].querySelector("svg");
+    expect(iconoAgregado).not.toBeNull();
+    expect(iconoCompletada).not.toBeNull();
+    expect(iconoAgregado?.getAttribute("data-testid")).not.toEqual(
+      iconoCompletada?.getAttribute("data-testid")
+    );
+  });
+
   it("renderiza una entrada miembro_desactivado con su propio ícono y etiqueta (TC-004)", async () => {
     vi.stubGlobal(
       "fetch",

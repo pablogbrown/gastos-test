@@ -65,6 +65,23 @@ frontend domain
   first. `SECCIONES` itself is the single source of truth for both
   branches — only `GRUPOS_DESKTOP` decides how desktop presents it.
 
+<!-- [FRON-05] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-casa | confidence: medium | verified: 2026-09-23 -->
+- [FRON-05] When a screen restyle converts a table row into a `Card`
+  (e.g. `Miembros.tsx`/`Tareas.tsx`, spec `rediseno-ux-ui/pantallas-casa`
+  REQ-001/REQ-003), give the `Card` `role="group"` and
+  `aria-label="<Entidad> <nombre>"` (e.g. `Miembro Ana`, `Tarea Sacar la
+  basura`) instead of leaving it with no accessible container role. This
+  keeps `within(tarjeta).getByText(...)`/`.getByRole(...)` queries
+  working exactly like `within(fila).getByText(...)` did before —
+  existing tests only need their scoping locator swapped
+  (`.closest("tr")` or `getByRole("cell", ...)` -> `getByRole("group",
+  { name: "..." })`), never the role/label assertions inside. A
+  structural change mandated by the spec (table -> card/feed) can still
+  break a query that was never really about role/label (a DOM-tag
+  `closest` or a `cell` role tied to `<table>` semantics) even when the
+  "queries por rol/label" promise otherwise holds — expect and budget for
+  that, don't treat it as a regression to avoid at all costs.
+
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-11 -->
 - Frontend tests query the DOM via accessible roles/labels
   (`getByRole`, `getByLabelText`, `getByText`) rather than CSS classes

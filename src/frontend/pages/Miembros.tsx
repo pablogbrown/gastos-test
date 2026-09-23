@@ -1,15 +1,12 @@
 import Alert from "@mui/material/Alert";
+import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Paper from "@mui/material/Paper";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
@@ -24,6 +21,16 @@ import {
   Rol,
 } from "../api/casasClient";
 import { puedeGestionarMiembros } from "../api/permisos";
+import { PageHeader } from "../components/PageHeader";
+
+// Spec `rediseno-ux-ui/pantallas-casa`, REQ-001: mapa centralizado
+// id-de-rol -> etiqueta legible, mismo patrón ya establecido para
+// catálogos opacos (`NOMBRES_LOGRO`, `FRONP-03`) — nunca hardcodeado
+// inline por tarjeta.
+const ETIQUETA_ROL: Record<Rol, string> = {
+  admin: "Administrador",
+  member: "Miembro",
+};
 
 export interface MiembrosProps {
   casaId: string;
@@ -105,9 +112,7 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
 
   return (
     <Box component="section" aria-label="Miembros" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h5" component="h2">
-        Miembros
-      </Typography>
+      <PageHeader title="Miembros" />
 
       {error && <Alert severity="error">{error}</Alert>}
 
@@ -175,53 +180,52 @@ export function Miembros({ casaId, rolUsuarioActual }: MiembrosProps) {
           <Typography>Cargando miembros...</Typography>
         </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
-          <Table sx={{ minWidth: 320 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nombre</TableCell>
-                <TableCell>Identificación</TableCell>
-                <TableCell>Rol</TableCell>
-                <TableCell>Estado</TableCell>
-                {puedeGestionar && <TableCell>Acciones</TableCell>}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {miembros.map((miembro) => (
-                <TableRow key={miembro.id}>
-                  <TableCell>{miembro.nombre}</TableCell>
-                  <TableCell>{miembro.identificacion}</TableCell>
-                  <TableCell>{miembro.rol}</TableCell>
-                  <TableCell>
-                    {miembro.usuario_id == null ? (
-                      <Chip label="Pendiente" color="warning" size="small" />
-                    ) : (
-                      <Chip
-                        label={miembro.activo ? "Activo" : "Inactivo"}
-                        color={miembro.activo ? "success" : "default"}
-                        size="small"
-                      />
-                    )}
-                  </TableCell>
-                  {puedeGestionar && (
-                    <TableCell>
-                      {miembro.usuario_id != null && miembro.activo && (
-                        <Button
-                          type="button"
-                          size="small"
-                          color="error"
-                          onClick={() => handleDesactivar(miembro.id)}
-                        >
-                          Desactivar
-                        </Button>
-                      )}
-                    </TableCell>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {miembros.map((miembro) => (
+            <Card
+              key={miembro.id}
+              variant="outlined"
+              role="group"
+              aria-label={`Miembro ${miembro.nombre}`}
+            >
+              <CardContent
+                sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}
+              >
+                <Avatar aria-label={`Avatar de ${miembro.nombre}`}>
+                  {miembro.nombre.charAt(0).toUpperCase()}
+                </Avatar>
+                <Box sx={{ flexGrow: 1, minWidth: 160 }}>
+                  <Typography variant="subtitle1">{miembro.nombre}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {miembro.identificacion}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Chip label={ETIQUETA_ROL[miembro.rol]} size="small" variant="outlined" />
+                  {miembro.usuario_id == null ? (
+                    <Chip label="Pendiente" color="warning" size="small" />
+                  ) : (
+                    <Chip
+                      label={miembro.activo ? "Activo" : "Inactivo"}
+                      color={miembro.activo ? "success" : "default"}
+                      size="small"
+                    />
                   )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </Box>
+                {puedeGestionar && miembro.usuario_id != null && miembro.activo && (
+                  <Button
+                    type="button"
+                    size="small"
+                    color="error"
+                    onClick={() => handleDesactivar(miembro.id)}
+                  >
+                    Desactivar
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
       )}
     </Box>
   );
