@@ -1,0 +1,22 @@
+feature: avatares-economia
+decisions:
+  - id: D001
+    class: new-dependency
+    blocking: false
+    status: resolved
+    summary: Add lottie-react (^3.1.2) to package.json for T4's LottieAvatar component
+    detail: >-
+      `new-dependency` always defers to a human at every trust level
+      (resolveDecisionAuthority's conservative-by-default table) — recorded
+      here per that rule even though the decision itself was already made
+      and pre-approved during planning (spec.md's Open Decision D-01,
+      "resuelto automáticamente ... sin --discuss") and reconfirmed
+      explicitly in this BUILD dispatch's own instructions ("ya está
+      pre-aprobada por el flujo de planificación"). Installed the real,
+      currently-published version (3.1.2) rather than the older
+      `animationData`-prop API D-01's rationale text describes — see
+      build-results.md's Judgment J003 for the full detail on the version
+      mismatch and how LottieAvatar was implemented against the real,
+      installed API.
+    resolved_by: human (pre-approved at plan time, per spec.md D-01)
+    resolved_at: '2026-09-23'

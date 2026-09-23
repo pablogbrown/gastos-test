@@ -45,11 +45,16 @@ def db_session(monkeypatch):
     migracion_actividad = importlib.import_module("src.db.migrations.0004_historial_actividad")
     migracion_usuarios = importlib.import_module("src.db.migrations.0005_usuarios")
     migracion_gamificacion = importlib.import_module("src.db.migrations.0020_gamificacion")
+    # 0021 (spec `avatares-economia`): `completar_tarea` ahora también
+    # otorga créditos (`avatar_service.otorgar_creditos`), que requiere la
+    # tabla `credito_transacciones`.
+    migracion_creditos = importlib.import_module("src.db.migrations.0021_creditos")
     migracion_casas.upgrade(engine)
     migracion_tareas.upgrade(engine)
     migracion_actividad.upgrade(engine)
     migracion_usuarios.upgrade(engine)
     migracion_gamificacion.upgrade(engine)
+    migracion_creditos.upgrade(engine)
 
     TestSession = sessionmaker(bind=engine)
     monkeypatch.setattr("src.services.casa_service.get_session", lambda: TestSession())
@@ -58,6 +63,7 @@ def db_session(monkeypatch):
     monkeypatch.setattr("src.services.ranking_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.actividad_service.get_session", lambda: TestSession())
     monkeypatch.setattr("src.services.logro_service.get_session", lambda: TestSession())
+    monkeypatch.setattr("src.services.avatar_service.get_session", lambda: TestSession())
     yield TestSession
 
 

@@ -132,3 +132,20 @@ db domain
 
 <!-- added: 2026-09-16 | feature: mantenimiento-casa | confidence: high | verified: 2026-09-16 -->
 - [DBG-05] A model with a `relationship(..., cascade="all, delete-orphan")` (e.g. `ItemMantenimiento.materiales`) that a service function returns to its caller needs its collection EAGERLY loaded before that function's own `session.close()` runs — `SessionLocal` (`src/db/base.py`) has no explicit `expire_on_commit=False`, so the SQLAlchemy default (`True`) expires every attribute, relationships included, after `commit()`; a bare `session.refresh(item)` only re-loads column attributes, not relationships. Accessing the relationship later (e.g. serializing it in a Pydantic response, or asserting on it in a test) raises `sqlalchemy.orm.exc.DetachedInstanceError` once the session is gone. Fix, single-object case: force the load explicitly before returning (`list(item.materiales)`, right after `session.refresh(item)`, while the session is still open) — `mantenimiento_service.crear_item`/`completar_item`. Fix, list case: add `.options(selectinload(Model.relationship))` to the query itself — `mantenimiento_service.listar_items`. First hit here because `ItemMantenimiento.materiales` is this project's first to-many relationship whose contents a caller reads back through the returned ORM object (`Tarea.historial` exists but no caller reads `.historial` off a returned `Tarea`) — check for this whenever a new model relationship is added and a caller (a route's response schema, or a test) touches it after the owning service function returns.
+
+<!-- added: 2026-09-23 | feature: avatares-economia | confidence: high | verified: 2026-09-23 -->
+- [DBG-06] `src/db/models/__init__.py` eagerly imports `Casa`/`Miembro`
+  (but NOT `Usuario`) as a package side-effect. Importing ANYTHING under
+  `src.db.models.*` (e.g. a brand-new model in its own module) therefore
+  always pulls `Miembro` into the SQLAlchemy registry too — and the
+  first ORM query issued anywhere in that process configures ALL
+  pending mappers at once, including `Miembro`'s own
+  `relationship("Usuario", ...)`. If `Usuario` was never imported
+  anywhere in that test's own import chain, this fails with
+  `sqlalchemy.exc.InvalidRequestError: ... failed to locate a name
+  ('Usuario')` — even in a test that never creates or touches a real
+  Usuario row. Every existing fixture already dodges this by importing
+  `Usuario` for its own `_crear_usuario_de_prueba` helper; a test with
+  no need for that helper still needs a defensive
+  `from src.db.models.usuario import Usuario  # noqa: F401` the first
+  time it queries any `src.db.models.*` class.

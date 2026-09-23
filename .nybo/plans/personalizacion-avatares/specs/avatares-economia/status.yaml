@@ -1,10 +1,19 @@
 feature: avatares-economia
-status: approved
+status: ready
 profile: code
 action_type: ADD
 created_at: '2026-09-23'
 approved_at: '2026-09-23'
 task_count: 4
+run_at: '2026-09-23T19:00:00Z'
+run_completed_at: '2026-09-23T19:00:00Z'
+run_duration: 3300
+verified_at: '2026-09-23T19:05:00Z'
+verified_duration: 300
+curated_at: '2026-09-23T19:07:00Z'
+curated_duration: 120
+latest_cycle: 1
+latest_evidence_path: evidence/1/build-results.md
 domain: services
 domains_referenced:
   - services.md
