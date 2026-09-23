@@ -12,7 +12,14 @@ autenticada de este proyecto (`tareas.py`/`casas.py`) — porque
 URL para resolver el actor, y el proxy de Vite (`vite.config.ts`) solo
 reenvía `/casas`/`/auth`, no `/miembros` suelto.
 
-Las 3 rutas GET son legibles por cualquier miembro activo de la casa
+Spec `perfil-avatar-ui` agrega una 4ta ruta GET, `.../avatares-catalogo`
+(catálogo completo, sin filtrar por nivel) — prerrequisito real de su
+REQ-002/TC-004 ("Mi Avatar" muestra razas bloqueadas con el nivel
+requerido visible), que `avatares-economia` nunca expuso (esa spec solo
+expone `avatares-disponibles`, ya filtrado). No figuraba en el
+`run-plan.json` original de esta spec; ver Judgment.
+
+Las 4 rutas GET son legibles por cualquier miembro activo de la casa
 (mismo criterio de apertura ya establecido para Ranking/Historial: nada
 en esta app es privado por miembro). El PUT de selección es self-service:
 solo el propio miembro puede cambiar SU avatar (REQ-004 no menciona
@@ -27,6 +34,7 @@ from src.api.dependencies import resolver_actor_en_casa
 from src.api.schemas import AvatarPersonajeOut, AvatarSeleccionUpdate, CreditosOut
 from src.services.avatar_service import (
     listar_avatares_disponibles,
+    listar_catalogo,
     obtener_avatar_seleccionado,
     obtener_balance_creditos,
     seleccionar_avatar,
@@ -56,6 +64,23 @@ def listar_avatares_disponibles_endpoint(
         return listar_avatares_disponibles(miembro_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@avatares_router.get(
+    "/casas/{casa_id}/miembros/{miembro_id}/avatares-catalogo",
+    response_model=list[AvatarPersonajeOut],
+)
+def listar_avatares_catalogo_endpoint(
+    casa_id: UUID, miembro_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)
+):
+    """Spec `perfil-avatar-ui`, REQ-002/TC-004 — expone `avatar_service.
+    listar_catalogo` (todas las razas en ventana, sin filtrar por nivel),
+    nunca antes expuesto por `avatares-economia` (esa spec solo expone
+    `avatares-disponibles`, YA filtrado por nivel). Prerrequisito real de
+    "Mi Avatar" para mostrar las razas bloqueadas con su nivel requerido
+    — no contemplado en el `run-plan.json` de esta spec; ver Judgment,
+    mismo criterio que el `[S003]` de `tienda.py` en este mismo build."""
+    return listar_catalogo(miembro_id)
 
 
 @avatares_router.get(

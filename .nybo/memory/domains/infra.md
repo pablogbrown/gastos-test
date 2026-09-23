@@ -44,6 +44,28 @@ not the production deploy path (see `.nybo/foundation/stack.yaml`).
 - Docker-compose readiness scripts in this repo poll `127.0.0.1`
   explicitly, never `localhost` — see Gotchas.
 
+<!-- added: 2026-09-23 | feature: perfil-avatar-ui | confidence: high | verified: 2026-09-23 -->
+- With many parallel spec worktrees in flight (`git worktree list`),
+  the repo root's own `docker-compose up` (`make up`) is almost always
+  already running against a DIFFERENT worktree/branch's checkout —
+  `docker ps` showing `gastos-test-backend-1`/`gastos-test-frontend-1`
+  as "already up" does NOT mean it's safe to treat as this cycle's live
+  environment; it's serving whatever code is checked out wherever `make
+  up` was last run, not this branch's diff. To verify THIS worktree's
+  own change live without disturbing that shared stack: bring up an
+  ISOLATED project (`docker-compose -p <unique-name> -f
+  docker-compose.yml -f <override>.yml up -d`) from inside the target
+  worktree, with an override file that REPLACES (not appends) the
+  `ports:` list on `backend`/`frontend` to different host ports —
+  Compose's default list-merge behavior is to concatenate ports across
+  `-f` files, so a naive override adding a new port mapping without
+  replacing the old one tries to bind BOTH and fails with "port is
+  already allocated" against the shared stack. Use the Compose Spec
+  `!override` tag on the `ports:` key to force a real replace:
+  `ports: !override\n  - "8010:8000"`. Tear the isolated stack down with
+  `docker-compose -p <unique-name> ... down -v` when done, and delete
+  the (untracked) override file — never leave it in the working tree.
+
 ## Gotchas
 <!-- Things that tripped us up -->
 

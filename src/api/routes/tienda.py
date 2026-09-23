@@ -16,7 +16,14 @@ filtrado (antes `GET /accesorios?miembro_id=...`) pasa a
 `GET /miembros/{miembro_id}/accesorios`, ahora la misma ruta bare
 `GET .../accesorios`).
 
-Las 2 rutas GET son legibles por cualquier miembro activo de la casa
+Spec `perfil-avatar-ui` agrega una 3ra ruta GET, `.../accesorios/equipados`
+([S003] pendiente de `tienda-accesorios`: `tienda_service.
+listar_equipados` existía pero sin exponer vía API) — prerrequisito real
+de REQ-001 de esa spec (Miembros/Ranking necesitan pintar el overlay de
+los accesorios equipados), agregado aunque no figuraba en su
+`run-plan.json` original.
+
+Las 3 rutas GET son legibles por cualquier miembro activo de la casa
 (mismo criterio de apertura ya establecido para Ranking/Historial/
 Avatares — nada en esta app es privado por miembro). El POST de compra,
 el PUT de equipar y el DELETE de desequipar son self-service: solo el
@@ -35,6 +42,7 @@ from src.services.tienda_service import (
     comprar_accesorio,
     desequipar_slot,
     equipar_accesorio,
+    listar_accesorios_equipados,
     listar_catalogo_accesorios,
     listar_inventario,
 )
@@ -80,6 +88,22 @@ def listar_inventario_endpoint(
     casa_id: UUID, miembro_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)
 ):
     return listar_inventario(miembro_id)
+
+
+@tienda_router.get(
+    "/casas/{casa_id}/miembros/{miembro_id}/accesorios/equipados",
+    response_model=list[AccesorioAvatarOut],
+)
+def listar_accesorios_equipados_endpoint(
+    casa_id: UUID, miembro_id: UUID, actor: UUID = Depends(resolver_actor_en_casa)
+):
+    """Spec `perfil-avatar-ui`, REQ-001 — expone `tienda_service.
+    listar_accesorios_equipados` (nunca `listar_equipados`, que devuelve
+    la fila de join sin los datos de presentación). [S003] de
+    `tienda-accesorios` resuelto acá: prerrequisito real de esta spec
+    (Miembros/Ranking necesitan el overlay de cada accesorio equipado),
+    no contemplado en su `run-plan.json` original — ver Judgment."""
+    return listar_accesorios_equipados(miembro_id)
 
 
 @tienda_router.post(

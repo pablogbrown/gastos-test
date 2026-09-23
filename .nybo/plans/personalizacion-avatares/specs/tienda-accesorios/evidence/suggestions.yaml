@@ -33,7 +33,8 @@ suggestions:
       planning pass should read tienda.py directly rather than spec.md's
       literal contract text.
     scope: follow-up
-    status: open
+    status: done
+    resolved_by: personalizacion-avatares/specs/perfil-avatar-ui (build cycle 1) — read tienda.py directly before writing tiendaClient.ts, per Judgment.
   - id: S003
     category: tech-debt
     title: Expose tienda_service.listar_equipados via a GET route before perfil-avatar-ui needs it
@@ -51,4 +52,5 @@ suggestions:
       own T1, or as a small follow-up to this one, rather than
       reimplementing the same query.
     scope: follow-up
-    status: open
+    status: done
+    resolved_by: personalizacion-avatares/specs/perfil-avatar-ui (build cycle 1) — added tienda_service.listar_accesorios_equipados + GET .../accesorios/equipados (see Judgment J001).

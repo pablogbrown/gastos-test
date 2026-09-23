@@ -128,6 +128,24 @@ def test_get_avatares_disponibles_solo_expone_razas_del_nivel_actual(client):
     assert all(raza["nivel_requerido"] == "Novato" for raza in razas)
 
 
+def test_get_avatares_catalogo_incluye_razas_bloqueadas_para_el_nivel_actual(client):
+    """Spec `perfil-avatar-ui`, REQ-002/TC-004 — ruta nueva, no expuesta
+    por `avatares-economia` (esa spec solo expone `avatares-disponibles`,
+    ya filtrado por nivel). Un miembro Novato debe ver en el catálogo
+    completo razas de nivel superior (bloqueadas), no solo las suyas."""
+    casa, usuario_admin_id, admin_id, ana, ana_usuario = _casa_con_miembro(client._session_factory)
+
+    resp = client.get(
+        f"/casas/{casa.id}/miembros/{ana.id}/avatares-catalogo",
+        headers=_bearer(ana_usuario.id),
+    )
+    assert resp.status_code == 200, resp.text
+    razas = resp.json()
+    niveles = {raza["nivel_requerido"] for raza in razas}
+    assert "Novato" in niveles
+    assert len(niveles) > 1, "el catálogo completo debe incluir niveles superiores al actual (bloqueados)"
+
+
 def test_get_avatar_sin_seleccion_devuelve_null(client):
     casa, usuario_admin_id, admin_id, ana, ana_usuario = _casa_con_miembro(client._session_factory)
 

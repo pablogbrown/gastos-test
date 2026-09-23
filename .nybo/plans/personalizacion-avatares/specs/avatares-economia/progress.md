@@ -39,7 +39,7 @@
 
 ## Suggestions
 - [ ] `[S001]` *(tech-debt)* — Reemplazar los `lottie_url` placeholder de T2 por assets reales verificados de LottieFiles.
-- [ ] `[S002]` *(question)* — La API real de `lottie-react` difiere de la descripción de D-01; avisar a `perfil-avatar-ui`.
+- [x] `[S002]` *(question)* — La API real de `lottie-react` difiere de la descripción de D-01; avisar a `perfil-avatar-ui`. *(resuelto por `personalizacion-avatares/specs/perfil-avatar-ui`, build cycle 1 — consumió `LottieAvatar` tal como quedó implementado, no como D-01 lo describía.)*
 - [ ] `[S003]` *(tech-debt)* — Varios fixtures de test pre-existentes dependen silenciosamente del orden de recolección de la suite completa.
 - [ ] `[S004]` *(tech-debt)* — Correr un `nybo doctor --fix` acotado para regenerar `nybo-services.md`/`nybo-db.md` (revertido en este build por tocar specs no relacionadas).
 

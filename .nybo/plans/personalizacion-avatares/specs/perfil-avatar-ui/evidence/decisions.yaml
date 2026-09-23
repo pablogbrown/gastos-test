@@ -1,0 +1,24 @@
+feature: perfil-avatar-ui
+decisions:
+  - id: D001
+    class: execution-observation
+    status: open
+    blocking: false
+    question: >-
+      No coverage tool is configured for this project
+      (.nybo/foundation/stack.yaml's quality_tools.coverage.tool is null,
+      confirmed by a bounded discovery attempt — no pytest-cov/
+      @vitest/coverage-v8 found in package.json or requirements). This
+      cycle's verify pass could not report a numeric coverage percentage
+      against nybo.config.yaml's testing.coverage_threshold (80); test-case
+      completeness (7/7 TC resolved by a real test) was confirmed by direct
+      inspection instead.
+    options:
+      - Run /nybo-brownfield-bootstrap --quality to pick and validate a
+        coverage tool for both the Python (pytest-cov) and TypeScript
+        (vitest --coverage) sides.
+      - Leave coverage unconfigured and continue relying on direct
+        test-case-completeness inspection per cycle.
+    recommendation: Run /nybo-brownfield-bootstrap --quality once, project-wide — this gap will recur on every future cycle otherwise.
+    assumed: Proceeded without a numeric coverage numbers this cycle (test-case completeness verified directly); recorded here for a human to resolve when convenient, not blocking this cycle's ready verdict.
+    source: curate (build cycle 1)

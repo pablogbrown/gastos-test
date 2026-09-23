@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Miembro } from "../api/casasClient";
 import { esApiError, Logro, listarLogros, obtenerRanking, RankingEntry } from "../api/tareasClient";
+import { AvatarConAccesorios } from "../components/AvatarConAccesorios";
 import { PageHeader } from "../components/PageHeader";
 
 // Spec `rediseno-ux-ui/pantallas-casa`, REQ-002: los 4 escalones fijos
@@ -148,6 +149,12 @@ export function Ranking({ casaId, miembros }: RankingProps) {
                 <TableRow key={entrada.miembroId}>
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <AvatarConAccesorios
+                        casaId={casaId}
+                        miembroId={entrada.miembroId}
+                        nombre={nombreDe(entrada.miembroId)}
+                        size={32}
+                      />
                       {indice < 3 && (
                         <EmojiEventsIcon fontSize="small" sx={{ color: MEDALLAS[indice] }} />
                       )}
