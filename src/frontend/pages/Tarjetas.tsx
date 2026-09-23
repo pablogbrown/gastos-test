@@ -1,8 +1,8 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
-import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -25,9 +25,19 @@ import {
   pagarResumen,
   actualizarTarjeta,
 } from "../api/tarjetasClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 export interface TarjetasProps {
   casaId: string;
+}
+
+/** Enfoca el primer campo del formulario "Nueva tarjeta" ya renderizado
+ * (spec `pantallas-financieras`, REQ-003/TC-005): el formulario nunca
+ * estuvo oculto, "abrirlo" desde `PageHeader`/`EmptyState` es llevarle
+ * el foco, sin cambiar su comportamiento de envío. */
+function enfocarFormularioAlta() {
+  document.getElementById("banco-tarjeta")?.focus();
 }
 
 interface EdicionFila {
@@ -184,14 +194,15 @@ export function Tarjetas({ casaId }: TarjetasProps) {
       aria-label="Tarjetas"
       sx={{ display: "flex", flexDirection: "column", gap: 3 }}
     >
-      <Typography variant="h5" component="h2">
-        Tarjetas
-      </Typography>
+      <PageHeader
+        title="Tarjetas"
+        action={{ label: "Nueva tarjeta", onClick: enfocarFormularioAlta }}
+      />
 
       {error && <Alert severity="error">{error}</Alert>}
       {mensajeImportacion && <Alert severity="success">{mensajeImportacion}</Alert>}
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Card variant="outlined" sx={{ p: 2 }}>
         <Box
           component="form"
           onSubmit={handleCrearTarjeta}
@@ -242,9 +253,15 @@ export function Tarjetas({ casaId }: TarjetasProps) {
             Registrar tarjeta
           </Button>
         </Box>
-      </Paper>
+      </Card>
 
-      <TableContainer component={Paper} variant="outlined">
+      {tarjetas.length === 0 ? (
+        <EmptyState
+          message="Todavía no registraste ninguna tarjeta"
+          action={{ label: "Agregar la primera", onClick: enfocarFormularioAlta }}
+        />
+      ) : (
+      <TableContainer component={Card} variant="outlined">
         <Table aria-label="Listado de tarjetas" sx={{ minWidth: 320 }}>
           <TableHead>
             <TableRow>
@@ -395,6 +412,7 @@ export function Tarjetas({ casaId }: TarjetasProps) {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
     </Box>
   );
 }

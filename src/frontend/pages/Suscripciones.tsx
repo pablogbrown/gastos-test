@@ -1,15 +1,14 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
-import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
 
 import { Rol } from "../api/casasClient";
@@ -19,6 +18,8 @@ import {
   esApiError,
   listarSuscripciones,
 } from "../api/suscripcionesClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
 export interface SuscripcionesProps {
   casaId: string;
@@ -72,13 +73,20 @@ export function Suscripciones({ casaId, rolUsuarioActual }: SuscripcionesProps) 
       aria-label="Suscripciones"
       sx={{ display: "flex", flexDirection: "column", gap: 3 }}
     >
-      <Typography variant="h5" component="h2">
-        Suscripciones
-      </Typography>
+      {/* Sin `action` (spec `pantallas-financieras`, T2, decisión
+       * registrada en decisions.yaml): esta pantalla no tiene un flujo de
+       * alta propio hoy — una suscripción se crea desde `Gastos.tsx`
+       * (tipo de gasto "Suscripción mensual"). Inventar un formulario de
+       * alta acá violaría REQ-004 (cero regresión funcional, restyle
+       * puramente de presentación). */}
+      <PageHeader title="Suscripciones" />
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      <TableContainer component={Paper} variant="outlined">
+      {suscripciones.length === 0 ? (
+        <EmptyState message="Todavía no hay suscripciones para mostrar." />
+      ) : (
+      <TableContainer component={Card} variant="outlined">
         <Table aria-label="Listado de suscripciones" sx={{ minWidth: 320 }}>
           <TableHead>
             <TableRow>
@@ -119,6 +127,7 @@ export function Suscripciones({ casaId, rolUsuarioActual }: SuscripcionesProps) 
           </TableBody>
         </Table>
       </TableContainer>
+      )}
     </Box>
   );
 }
