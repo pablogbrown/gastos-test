@@ -1,0 +1,114 @@
+{
+  "$schema_version": "2",
+  "feature_id": "avatares-economia",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/avatares-economia/feat/01-plan-01-creditos.md",
+      "files_touched": [
+        "src/db/models/credito_transaccion.py",
+        "src/db/migrate.py",
+        "src/db/migrations/0021_creditos.py",
+        "src/services/tarea_service.py",
+        "src/services/avatar_service.py",
+        "tests/integration/services/creditos.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002"],
+      "interfaces_produced": [
+        { "name": "obtener_balance_creditos", "signature": "(session, miembro_id) -> int", "kind": "function" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Completar una tarea crea una CreditoTransaccion por el mismo importe que los puntos otorgados, a nombre del beneficiario, sin duplicar en un recompletado.",
+        "postcondition": "obtener_balance_creditos(miembro) refleja la suma de sus CreditoTransaccion; recompletar una tarea ya completada no crea una nueva transaccion.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/creditos.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/avatares-economia/feat/01-plan-02-catalogo-razas.md",
+      "files_touched": [
+        "src/db/models/avatar_personaje.py",
+        "src/db/migrate.py",
+        "src/db/migrations/0022_avatar_catalogo.py",
+        "src/services/avatar_service.py",
+        "tests/integration/services/avatar_catalogo.test.py"
+      ],
+      "deps": [],
+      "est_minutes": 40,
+      "test_cases": ["TC-003", "TC-004"],
+      "interfaces_produced": [
+        { "name": "listar_catalogo", "signature": "(session, miembro_id) -> list[AvatarPersonaje]", "kind": "function" }
+      ],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "El catalogo de razas de avatar existe con especie/nombre/nivel_requerido/rareza/asset y respeta su ventana de disponibilidad al listarse para un miembro.",
+        "postcondition": "listar_catalogo devuelve toda raza dentro de su ventana de disponibilidad, mas cualquier raza ya seleccionada por ese miembro aunque este fuera de ventana.",
+        "verifiability": "UNIT",
+        "test_file": "tests/integration/services/avatar_catalogo.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T3",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/avatares-economia/feat/01-plan-03-seleccion-avatar.md",
+      "files_touched": [
+        "src/db/models/miembro_avatar_seleccionado.py",
+        "src/db/migrate.py",
+        "src/db/migrations/0023_avatar_seleccionado.py",
+        "src/services/avatar_service.py",
+        "src/api/routes/avatares.py",
+        "src/api/main.py",
+        "tests/integration/services/avatar_seleccion.test.py"
+      ],
+      "deps": ["T1", "T2"],
+      "est_minutes": 55,
+      "test_cases": ["TC-005", "TC-006", "TC-007", "TC-008"],
+      "interfaces_produced": [
+        { "name": "listar_avatares_disponibles", "signature": "(session, miembro_id) -> list[AvatarPersonaje]", "kind": "function" },
+        { "name": "seleccionar_avatar", "signature": "(session, miembro_id, avatar_personaje_id) -> MiembroAvatarSeleccionado", "kind": "function" },
+        { "name": "obtener_avatar_seleccionado", "signature": "(session, miembro_id) -> Optional[AvatarPersonaje]", "kind": "function" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T2", "name": "listar_catalogo" }
+      ],
+      "contract": {
+        "statement": "Un miembro solo puede seleccionar una raza cuyo nivel_requerido sea <= su nivel actual (derivado en el momento via ranking_service), y puede cambiar su seleccion entre razas ya desbloqueadas.",
+        "postcondition": "seleccionar_avatar rechaza una raza de nivel superior al actual; obtener_avatar_seleccionado devuelve null sin seleccion previa, y la ultima seleccion valida tras un cambio.",
+        "verifiability": "INTEGRATION",
+        "test_file": "tests/integration/services/avatar_seleccion.test.py",
+        "is_regression_gate": false
+      }
+    },
+    {
+      "id": "T4",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/avatares-economia/feat/01-plan-04-lottie-avatar.md",
+      "files_touched": [
+        "package.json",
+        "src/frontend/components/LottieAvatar.tsx",
+        "src/frontend/api/avatarClient.ts",
+        "tests/unit/frontend/LottieAvatar.test.tsx"
+      ],
+      "deps": ["T3"],
+      "est_minutes": 30,
+      "test_cases": ["TC-009"],
+      "interfaces_produced": [
+        { "name": "LottieAvatar", "signature": "(props: LottieAvatarProps) => JSX.Element", "kind": "export" }
+      ],
+      "interfaces_consumed": [
+        { "from": "T3", "name": "obtener_avatar_seleccionado" }
+      ],
+      "contract": {
+        "statement": "LottieAvatar reproduce la animacion Lottie de la URL/path recibida por props, sin logica de negocio ni imports de src/frontend/api/*.",
+        "postcondition": "el reproductor Lottie subyacente recibe la URL pasada como prop src.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/LottieAvatar.test.tsx",
+        "is_regression_gate": false
+      }
+    }
+  ]
+}

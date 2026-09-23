@@ -1,0 +1,30 @@
+feature: personalizacion-avatares
+kind: multi_spec
+status: approved
+profile: code
+action_type: ADD
+created_at: '2026-09-23'
+approved_at: '2026-09-23'
+domain: services
+domains_referenced:
+  - services.md
+  - db.md
+  - api.md
+  - frontend.md
+branch: feat/personalizacion-avatares
+notes: |
+  Personalización de perfiles con avatares animados de animales
+  (perros/gatos, Lottie), créditos ganados en paralelo a los puntos,
+  desbloqueo de razas por nivel, y tienda de accesorios con rareza y
+  disponibilidad por tiempo. Pedido por el usuario tras el rediseño
+  visual. Rationale completo: plan.md.
+specs:
+  - id: avatares-economia
+    status: approved
+    branch: feat/personalizacion-avatares--avatares-economia
+  - id: tienda-accesorios
+    status: approved
+    branch: feat/personalizacion-avatares--tienda-accesorios
+  - id: perfil-avatar-ui
+    status: approved
+    branch: feat/personalizacion-avatares--perfil-avatar-ui

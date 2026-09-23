@@ -1,0 +1,46 @@
+{
+  "$schema_version": "2",
+  "feature_id": "perfil-avatar-ui",
+  "tasks": [
+    {
+      "id": "T1",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/perfil-avatar-ui/feat/01-plan-01-avatar-en-perfiles.md",
+      "files_touched": ["src/frontend/pages/Miembros.tsx", "src/frontend/pages/Ranking.tsx"],
+      "deps": [],
+      "est_minutes": 45,
+      "test_cases": ["TC-001", "TC-002", "TC-003"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "Miembros y Ranking muestran LottieAvatar con accesorios equipados cuando existe seleccion, y el Avatar con inicial como respaldo cuando no.",
+        "postcondition": "Miembros.test.tsx y Ranking.test.tsx pasan; un miembro sin avatar seleccionado no rompe el render.",
+        "verifiability": "UNIT",
+        "test_file": "tests/unit/frontend/Miembros.test.tsx,tests/unit/frontend/Ranking.test.tsx",
+        "is_regression_gate": true
+      }
+    },
+    {
+      "id": "T2",
+      "task_file": ".nybo/plans/personalizacion-avatares/specs/perfil-avatar-ui/feat/01-plan-02-pantalla-mi-avatar.md",
+      "files_touched": [
+        "src/frontend/pages/MiAvatar.tsx",
+        "src/frontend/App.tsx",
+        "src/frontend/AppNav.tsx",
+        "tests/unit/frontend/MiAvatar.test.tsx",
+        "tests/unit/frontend/AppShell.test.tsx"
+      ],
+      "deps": [],
+      "est_minutes": 50,
+      "test_cases": ["TC-004", "TC-005", "TC-006", "TC-007"],
+      "interfaces_produced": [],
+      "interfaces_consumed": [],
+      "contract": {
+        "statement": "La pantalla Mi Avatar permite elegir raza desbloqueada y comprar/equipar accesorios, agregada dentro del grupo Casa sin nuevo item de primer nivel en el bottom nav.",
+        "postcondition": "MiAvatar.test.tsx pasa; AppShell.test.tsx sigue confirmando 4 items de primer nivel en mobile.",
+        "verifiability": "UNIT+INTEGRATION",
+        "test_file": "tests/unit/frontend/MiAvatar.test.tsx,tests/unit/frontend/AppShell.test.tsx",
+        "is_regression_gate": true
+      }
+    }
+  ]
+}
