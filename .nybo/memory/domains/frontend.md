@@ -13,6 +13,17 @@ frontend domain
   never define their own ad-hoc palette/typography, they consume this
   theme through `ThemeProvider` (wired once in `main.tsx`).
 
+<!-- [FRON-05] added: 2026-09-23 | feature: rediseno-ux-ui/auth-onboarding | confidence: high | verified: 2026-09-23 -->
+- [FRON-05] Every top-level screen container is now `Card` +
+  `CardContent` (spec `rediseno-ux-ui/auth-onboarding` migrated the last
+  4 holdouts — Login/Registro/SelectorCasas/CrearCasa — off `Paper
+  elevation={2}`). `Paper` is retired as a screen-level container
+  project-wide: `theme.ts`'s soft-shadow override
+  (`components.MuiCard.styleOverrides.root`, spec `sistema-visual`
+  FRON-02) only applies to `MuiCard`, so a new screen using `Paper`
+  silently gets MUI's default elevation shadow instead of the theme's
+  own. Default to `Card` for any new screen's outer container.
+
 <!-- [FRON-02] added: 2026-09-23 | feature: rediseno-ux-ui/sistema-visual | confidence: high | verified: 2026-09-23 -->
 - [FRON-02] `theme.ts`'s "Cálido minimal" palette (spec
   `rediseno-ux-ui/sistema-visual`, D-01): primary is a deep teal/green
@@ -87,6 +98,21 @@ frontend domain
 
 ## Patterns
 <!-- Reusable patterns specific to this domain -->
+
+<!-- [FRONP-05] added: 2026-09-23 | feature: rediseno-ux-ui/auth-onboarding | confidence: medium | verified: 2026-09-23 -->
+- [FRONP-05] When a screen needs a selectable list of records under the
+  "Cálido minimal" theme (spec `sistema-visual`) — e.g.
+  `SelectorCasas.tsx`'s list of casas — render each item as its own
+  `Card` (`variant="outlined"`) + `CardActionArea` (with the click
+  handler on the `CardActionArea`, not the `Card`) instead of MUI's
+  `List`/`ListItemButton`. This keeps the same rounded/bordered visual
+  language as every other tarjeta in the redesign, and
+  `CardActionArea` renders a native `<button>` — so it already exposes
+  the accessible role (`getByRole("button", { name })`) existing tests
+  need, with zero query changes required when migrating an existing
+  `List`. Note `variant="outlined"` shows a border, not the theme's
+  elevation shadow (FRON-02's gotcha) — expected for a densely-packed
+  selectable list, not a bug.
 
 <!-- [FRONP-04] added: 2026-09-23 | feature: rediseno-ux-ui/sistema-visual | confidence: medium | verified: 2026-09-23 -->
 - [FRONP-04] When a screen wants to reuse a shared presentational
