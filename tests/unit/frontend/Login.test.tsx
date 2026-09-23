@@ -1,9 +1,11 @@
+import { ThemeProvider } from "@mui/material/styles";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TOKEN_STORAGE_KEY } from "../../../src/frontend/api/authClient";
 import { Login } from "../../../src/frontend/pages/Login";
+import { theme } from "../../../src/frontend/theme";
 
 describe("Login (TC-001, TC-003)", () => {
   afterEach(() => {
@@ -16,6 +18,18 @@ describe("Login (TC-001, TC-003)", () => {
 
     expect(screen.getByLabelText("Iniciar sesión")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ingresar" })).toBeInTheDocument();
+  });
+
+  it("el formulario está contenido en una tarjeta centrada con 'taskia' como encabezado (auth-onboarding TC-001)", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <Login onLoginExitoso={vi.fn()} onIrARegistro={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const encabezado = screen.getByRole("heading", { name: "taskia" });
+    expect(encabezado).toBeInTheDocument();
+    expect(encabezado.closest(".MuiCard-root")).not.toBeNull();
   });
 
   it("un login exitoso guarda el JWT y notifica onLoginExitoso", async () => {

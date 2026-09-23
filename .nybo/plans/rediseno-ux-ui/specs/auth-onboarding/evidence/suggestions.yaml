@@ -1,0 +1,33 @@
+feature: rediseno-ux-ui/specs/auth-onboarding
+suggestions:
+  - id: S001
+    category: tech-debt
+    title: No coverage tool configured for the frontend (aún sin resolver)
+    detail: >-
+      Mismo gap ya reportado por `sistema-visual` (D001/S002) —
+      `.nybo/foundation/stack.yaml`'s `quality_tools.coverage.tool`
+      sigue `null`, así que `nybo.config.yaml`'s
+      `testing.coverage_threshold: 80` no pudo evaluarse mecánicamente
+      en este ciclo tampoco. Remedio: `/nybo-brownfield-bootstrap
+      --quality`.
+    scope: out-of-spec
+    status: open
+  - id: S002
+    category: question
+    title: >-
+      Un usuario no tiene forma de crear una 2da casa desde dentro del
+      shell — solo desde SelectorCasas antes de elegir una
+    detail: >-
+      Al armar la evidencia visual de TC-003 (selector con más de una
+      casa) se confirmó que `CrearCasa.tsx` solo es alcanzable desde
+      `SelectorCasas.tsx` (antes de elegir una casa) — una vez dentro
+      del shell (`casaActual` elegida), no hay ningún punto de entrada
+      en la navegación existente para crear una casa adicional; la
+      única forma de llegar a "2 casas" para un mismo usuario hoy es
+      volver a loguearse sin elegir casa. Esto es preexistente a esta
+      spec (fuera del scope de REQ-001/002/003, que son puramente de
+      presentación) y no es un bug — pero vale la pena que un humano
+      confirme si es el comportamiento deseado o si falta un punto de
+      entrada (p.ej. desde Miembros o un menú de cuenta).
+    scope: follow-up
+    status: open
