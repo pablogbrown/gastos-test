@@ -43,6 +43,19 @@ export async function listarAvataresDisponibles(
   return parseJsonOrThrow<AvatarPersonaje[]>(resp);
 }
 
+// Spec `perfil-avatar-ui`, REQ-002/TC-004 (ver Judgment de `avatares.py`,
+// backend): catálogo completo (locked+unlocked), nunca expuesto por
+// `avatares-economia` — "Mi Avatar" lo necesita para mostrar las razas
+// bloqueadas con su nivel requerido, no solo las ya desbloqueadas de
+// `listarAvataresDisponibles`.
+export async function listarAvataresCatalogo(
+  casaId: string,
+  miembroId: string
+): Promise<AvatarPersonaje[]> {
+  const resp = await fetchAutenticado(`${apiBase(casaId, miembroId)}/avatares-catalogo`);
+  return parseJsonOrThrow<AvatarPersonaje[]>(resp);
+}
+
 export async function obtenerAvatarSeleccionado(
   casaId: string,
   miembroId: string

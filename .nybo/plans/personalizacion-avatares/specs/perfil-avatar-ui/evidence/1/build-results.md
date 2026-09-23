@@ -2,7 +2,7 @@
 feature: personalizacion-avatares/specs/perfil-avatar-ui
 schema: build-results/2
 cycle: 1
-updated: '2026-09-23T19:50:00.144Z'
+updated: '2026-09-23T19:55:57.148Z'
 exit: in-progress
 verdict: pending
 judgment:
@@ -14,6 +14,6 @@ Implementar T1 (avatar+accesorios en Miembros/Ranking) y T2 (pantalla Mi Avatar 
 
 ### Judgment
 
-- **J001** T1 necesitaba un endpoint para leer los accesorios equipados de un miembro con su detalle completo (asset_overlay_url) para pintar el overlay en Miembros/Ranking (TC-001). `tienda_service.listar_equipados` existía pero devuelve la fila de join, no el `AccesorioAvatar` — agregado `tienda_service.listar_accesorios_equipados` + `GET .../accesorios/equipados` en `tienda.py` (resuelve el [S003] pendiente de tienda-accesorios). Decision-class: spec-deviation, settleable a nivel semi-autonomous — tomada y documentada, no diferida.
-- **J002** Ninguna spec anterior expone el catálogo COMPLETO de razas de avatar (locked+unlocked) — avatares-economia solo expone /avatares-disponibles, ya filtrado por nivel. REQ-002/TC-004 de esta spec (mostrar razas bloqueadas con su nivel requerido) lo necesita para T2 — agregado GET .../avatares-catalogo en avatares.py, exponiendo avatar_service.listar_catalogo (ya existía, sin ruta). Mismo criterio/decision-class que J001.
 - **J003** Miembros.test.tsx/Ranking.test.tsx (y App.test.tsx/MuiRestyle.test.tsx, que renderizan esas pantallas) usaban mocks de fetch por índice/orden de invocación (mockImplementationOnce encadenado) — incompatible con el nuevo fetch por fila (avatar+equipados) que se intercala. Se creó tests/unit/frontend/helpers/mockFetchRouter.ts (dispatch por URL/método) y se reescribieron los mocks afectados; 3 asserts basados en calls[N]/toHaveBeenCalledTimes(N) se cambiaron a buscar la llamada por URL/método — el comportamiento verificado (body del POST/PATCH) no cambió, solo cómo se lo localiza.
+- **J004** MiAvatar.tsx no deshabilita el botón Comprar cuando el saldo es insuficiente — el rechazo (402) queda del lado del backend, mismo criterio ya establecido para el rechazo de nivel en razas (403, sin gate del lado del cliente). Solo baja la opacidad de la tarjeta como affordance visual.
+- **J005** tienda_service.listar_catalogo_accesorios no excluye accesorios ya comprados del catálogo (ver su propio docstring) — MiAvatar.tsx dedupe por id contra el inventario (idsComprados) para no mostrar 'Comprar' y 'Equipar' para el mismo accesorio a la vez.
