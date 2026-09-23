@@ -1,10 +1,10 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
-import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -13,7 +13,6 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { Miembro } from "../api/casasClient";
@@ -25,6 +24,15 @@ import {
   esApiError,
   listarPrestamos,
 } from "../api/prestamosClient";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+
+/** Enfoca el primer campo del formulario "Nuevo préstamo" ya renderizado
+ * (spec `pantallas-financieras`, REQ-003): el formulario nunca estuvo
+ * oculto, "abrirlo" desde `PageHeader`/`EmptyState` es llevarle el foco. */
+function enfocarFormularioAlta() {
+  document.getElementById("prestamista-prestamo")?.focus();
+}
 
 export interface PrestamosProps {
   casaId: string;
@@ -152,13 +160,14 @@ export function Prestamos({ casaId, miembros, miembroIdActual }: PrestamosProps)
       aria-label="Préstamos"
       sx={{ display: "flex", flexDirection: "column", gap: 3 }}
     >
-      <Typography variant="h5" component="h2">
-        Préstamos
-      </Typography>
+      <PageHeader
+        title="Préstamos"
+        action={{ label: "Nuevo préstamo", onClick: enfocarFormularioAlta }}
+      />
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Card variant="outlined" sx={{ p: 2 }}>
         <Box
           component="form"
           onSubmit={handleRegistrarPrestamo}
@@ -254,9 +263,15 @@ export function Prestamos({ casaId, miembros, miembroIdActual }: PrestamosProps)
             </Button>
           </Box>
         </Box>
-      </Paper>
+      </Card>
 
-      <TableContainer component={Paper} variant="outlined">
+      {prestamos.length === 0 ? (
+        <EmptyState
+          message="Todavía no registraste ningún préstamo"
+          action={{ label: "Agregar el primero", onClick: enfocarFormularioAlta }}
+        />
+      ) : (
+      <TableContainer component={Card} variant="outlined">
         <Table aria-label="Listado de préstamos" sx={{ minWidth: 320 }}>
           <TableHead>
             <TableRow>
@@ -300,7 +315,10 @@ export function Prestamos({ casaId, miembros, miembroIdActual }: PrestamosProps)
                         </Button>
                       </Box>
                     ) : (
-                      <Chip label="Pendiente de confirmación" color="default" size="small" />
+                      // Color semántico consistente con "a_pagar"/"pendiente"
+                      // en Gastos/Tarjetas (spec `pantallas-financieras`,
+                      // REQ-001, T3 Design Rationale): warning, no "default".
+                      <Chip label="Pendiente de confirmación" color="warning" size="small" />
                     )
                   ) : (
                     <Chip
@@ -316,6 +334,7 @@ export function Prestamos({ casaId, miembros, miembroIdActual }: PrestamosProps)
           </TableBody>
         </Table>
       </TableContainer>
+      )}
     </Box>
   );
 }

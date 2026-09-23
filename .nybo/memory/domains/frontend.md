@@ -65,6 +65,21 @@ frontend domain
   first. `SECCIONES` itself is the single source of truth for both
   branches — only `GRUPOS_DESKTOP` decides how desktop presents it.
 
+<!-- [FRON-05] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
+- [FRON-05] When applying `sistema-visual`'s restyle (`PageHeader`/
+  `EmptyState`/`Card`) to an EXISTING screen whose test suite already
+  asserts a structural accessibility role (e.g.
+  `screen.getByRole("table", { name: "Listado de préstamos" })` in
+  `Prestamos.test.tsx`), preserve that exact structure — never migrate
+  `<Table>` to a `Card`-per-row list, even though the "línea de tarjeta"
+  visual language is the design goal. Restyle only the CONTAINER
+  (`Paper` -> `Card`, which is what actually picks up the theme's
+  `boxShadow`/`shape.borderRadius`), keeping every `role`/`aria-label`/
+  text query the pre-existing suite depends on untouched. Applied across
+  all 7 screens in `pantallas-financieras` for consistency, driven by
+  the one screen (Préstamos) whose test explicitly depends on
+  `role="table"`.
+
 <!-- added: 2026-09-11 | feature: ui-modernization | confidence: high | verified: 2026-09-11 -->
 - Frontend tests query the DOM via accessible roles/labels
   (`getByRole`, `getByLabelText`, `getByText`) rather than CSS classes
@@ -103,6 +118,22 @@ frontend domain
   contract — this matters more than usual when 3 sibling specs
   (`pantallas-financieras`/`pantallas-casa`/`auth-onboarding`) already
   depend on that exact contract staying stable.
+
+<!-- [FRONP-05] added: 2026-09-23 | feature: rediseno-ux-ui/pantallas-financieras | confidence: high | verified: 2026-09-23 -->
+- [FRONP-05] When a screen's "primary add action" (`PageHeader.action`,
+  spec `sistema-visual` REQ-002/`pantallas-financieras` REQ-003) targets
+  a form that is ALREADY always rendered inline (never hidden/toggled —
+  the common shape in this app: Gastos/Tarjetas/Prestamos/Mantenimiento/
+  MantenimientoAutos), implement "opening" it as FOCUSING its first
+  field (`document.getElementById(id)?.focus()`), not as introducing a
+  new show/hide state for the form. Adding a hide/show toggle would be a
+  real behavior change (a regression risk under a "purely presentational
+  restyle" constraint like `pantallas-financieras`' REQ-004) for zero
+  visual benefit, since the form was already visible. If a future screen
+  genuinely needs its alta form created (not just restyled) with no
+  pre-existing form to focus, treat that as a new capability requiring
+  its own `spec-deviation`/`decisions.yaml` entry rather than inventing
+  one silently (see `pantallas-financieras`' D001, `Suscripciones.tsx`).
 
 <!-- added: 2026-09-18 | feature: gamificacion-puntos | confidence: medium | verified: 2026-09-18 -->
 - [FRONP-03] When a backend endpoint returns only an opaque catalog id

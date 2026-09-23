@@ -1,0 +1,83 @@
+feature: rediseno-ux-ui/specs/pantallas-financieras
+decisions:
+  - id: D001
+    class: spec-deviation
+    question: >-
+      TC-005 en spec.md pide que el PageHeader de la pantalla Suscripciones
+      tenga una acción que "abra el mismo formulario de alta que existe
+      hoy" — pero Suscripciones.tsx no tiene, hoy, ningún formulario de
+      alta propio (se crea desde Gastos.tsx, tipo "Suscripción mensual").
+      ¿Se inventa un formulario de alta nuevo en Suscripciones para
+      satisfacer la letra de TC-005, o se redirige su verificación a una
+      pantalla que sí tenga un formulario preexistente?
+    options:
+      - Agregar un formulario de alta de suscripción inline en
+        Suscripciones.tsx (duplicando el flujo de crearSuscripcion que
+        hoy solo vive en Gastos.tsx).
+      - Agregar navegación cruzada Suscripciones -> Gastos (requiere
+        tocar App.tsx, fuera del files_touched de T2 en run-plan.json).
+      - No agregar acción a PageHeader en Suscripciones (pantalla sin
+        flujo de alta propio) y redirigir la verificación de TC-005 a
+        Tarjetas.tsx, que sí tiene un formulario "Nueva tarjeta"
+        preexistente.
+    recommendation: >-
+      Tercera opción — las otras dos violan REQ-004 (cero regresión
+      funcional / restyle puramente de presentación) y/o exceden el
+      scope de archivos de T2. Ver Judgment J001/J002 en
+      evidence/1/build-results.md.
+    assumed: >-
+      Se implementó la tercera opción: Suscripciones' PageHeader sin
+      action; TC-005 verificado en Tarjetas.test.tsx.
+    blocking: false
+    status: open
+  - id: D002
+    class: new-dependency
+    question: >-
+      No hay ningún proveedor de cobertura instalado
+      (`@vitest/coverage-v8` ausente; `.nybo/foundation/stack.yaml`'s
+      `quality_tools.coverage.tool` es `null`), y `nybo.config.yaml`
+      declara `testing.coverage_threshold: 80`. Mismo gap ya registrado
+      por la spec `sistema-visual` (su propio D001). ¿Se instala un
+      proveedor de cobertura para poder evaluar el threshold en este
+      ciclo?
+    options:
+      - Instalar `@vitest/coverage-v8` (o `@vitest/coverage-istanbul`)
+        como devDependency y wirearlo en `vite.config.ts`'s
+        `test.coverage`.
+      - No instalar nada este ciclo — reportar coverage como
+        "unavailable — not configured" y diferir la elección de
+        proveedor a un humano (ya diferido una vez por `sistema-visual`).
+    recommendation: >-
+      No instalar — `new-dependency` es una decision class que SIEMPRE
+      difiere a un humano sin importar el trust level. Ver
+      `/nybo-brownfield-bootstrap --quality` como remedio, recomendado
+      ya en `sistema-visual`'s D001 y todavía sin resolver.
+    assumed: >-
+      Se reportó coverage como no disponible en `build-results.md`
+      (Verification) y en el checkpoint de handoff.
+    blocking: false
+    status: open
+  - id: D003
+    class: spec-deviation
+    question: >-
+      ¿Se migra la estructura de listado de las 7 pantallas de `<Table>`
+      (semántica `role="table"`) a una lista de `Card`s ("tarjetas de
+      línea"), como sugiere la Intención de spec.md, o se preserva
+      `<Table>` y se restylea solo el contenedor?
+    options:
+      - Migrar a lista de Cards (más fiel a la Intención textual de la
+        spec).
+      - Preservar `<Table>` (rol semántico), restyleando el contenedor
+        (`Paper` -> `Card`) para el lenguaje visual de esquinas
+        redondeadas/sombra.
+    recommendation: >-
+      Preservar `<Table>` — `Prestamos.test.tsx` depende explícitamente
+      de `screen.getByRole("table", { name: "Listado de préstamos" })`
+      (con `within(tabla)`); migrar a Cards habría roto esa query,
+      prohibido por REQ-004/TC-006. Ver Judgment J005.
+    assumed: >-
+      Se preservó `<Table>` en las 7 pantallas; el contenedor pasó de
+      `Paper` a `Card` para heredar `boxShadow`/`shape.borderRadius`
+      del tema de `sistema-visual`.
+    blocking: false
+    status: open
