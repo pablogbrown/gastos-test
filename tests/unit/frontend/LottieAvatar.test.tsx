@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // `lottie-react`'s real `<Lottie src=.../>` fetchea/parsea la animación
@@ -32,5 +32,11 @@ describe("LottieAvatar (TC-009)", () => {
       <LottieAvatar src="https://assets.lottiefiles.com/packages/lf20_otro.json" loop={false} />
     );
     expect(LottieMock.mock.calls.at(-1)?.[0]).toMatchObject({ loop: false });
+  });
+
+  it("fix avatar-assets-fallback: siempre renderiza un ícono de fallback debajo del reproductor, visible mientras la animación no cubra el cuadro (ej. lottie_url placeholder no resoluble)", () => {
+    render(<LottieAvatar src="https://assets.lottiefiles.com/packages/lf20_placeholder_no_existe.json" />);
+
+    expect(screen.getByTestId("lottie-avatar-fallback")).toBeInTheDocument();
   });
 });

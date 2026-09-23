@@ -192,6 +192,52 @@ describe("MiAvatar", () => {
     expect(screen.queryByRole("button", { name: "Comprar" })).not.toBeInTheDocument();
   });
 
+  it("fix avatar-assets-fallback: una raza desbloqueada cuya animación sigue siendo placeholder se muestra como 'Próximamente', nunca seleccionable", async () => {
+    const RAZA_PLACEHOLDER = {
+      id: "avatar-placeholder",
+      especie: "gato",
+      raza: "Gato atigrado",
+      lottie_url: "https://assets.lottiefiles.com/packages/lf20_avatares_gato_atigrado_placeholder.json",
+      nivel_requerido: "Novato",
+      rareza: "común",
+    };
+    const { fetchMock } = mockBackend();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const metodo = (init?.method ?? "GET").toUpperCase();
+      if (metodo === "GET" && url.endsWith("/avatares-disponibles")) {
+        return { ok: true, json: async () => [LABRADOR, RAZA_PLACEHOLDER] };
+      }
+      if (metodo === "GET" && url.endsWith("/avatares-catalogo")) {
+        return { ok: true, json: async () => [LABRADOR, RAZA_PLACEHOLDER] };
+      }
+      if (metodo === "GET" && url.endsWith("/creditos")) return { ok: true, json: async () => ({ saldo: 40 }) };
+      if (metodo === "GET" && url.endsWith("/avatar")) return { ok: true, json: async () => LABRADOR };
+      if (metodo === "GET" && url.endsWith("/accesorios/catalogo")) return { ok: true, json: async () => [] };
+      if (metodo === "GET" && (url.endsWith("/accesorios/equipados") || url.endsWith("/accesorios"))) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => null };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<MiAvatar casaId={CASA_ID} miembroId={MIEMBRO_ID} />);
+    await screen.findByRole("button", { name: "Elegir raza Labrador" });
+
+    const tarjeta = screen.getByRole("button", { name: "Gato atigrado (próximamente)" });
+    expect(within(tarjeta).getByText("Próximamente")).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(tarjeta);
+
+    // Nunca dispara la selección — la única llamada PUT /avatar debe
+    // seguir ausente tras el click.
+    const putAvatar = fetchMock.mock.calls.find(
+      ([input, init]) => String(input).endsWith("/avatar") && (init as RequestInit | undefined)?.method === "PUT"
+    );
+    expect(putAvatar).toBeUndefined();
+  });
+
   it("muestra un error devuelto por la API al intentar comprar sin saldo suficiente", async () => {
     const { fetchMock, estado } = mockBackend({ saldo: 5 });
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
