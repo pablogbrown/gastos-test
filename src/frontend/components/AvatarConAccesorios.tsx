@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { AvatarPersonaje, obtenerAvatarSeleccionado } from "../api/avatarClient";
 import { AccesorioAvatar, listarAccesoriosEquipados } from "../api/tiendaClient";
+import { AccesorioOverlayIcon } from "./AccesorioOverlayIcon";
 import { LottieAvatar } from "./LottieAvatar";
 
 export interface AvatarConAccesoriosProps {
@@ -74,13 +75,13 @@ export function AvatarConAccesorios({ casaId, miembroId, nombre, size = 40 }: Av
     >
       <LottieAvatar src={avatar.lottie_url} />
       {equipados.map((accesorio) => (
-        <Box
-          key={accesorio.id}
-          component="img"
-          src={accesorio.asset_overlay_url}
-          alt={accesorio.nombre}
-          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-        />
+        <Box key={accesorio.id} sx={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          <AccesorioOverlayIcon
+            src={accesorio.asset_overlay_url}
+            alt={accesorio.nombre}
+            size="100%"
+          />
+        </Box>
       ))}
     </Box>
   );

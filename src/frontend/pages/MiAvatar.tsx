@@ -29,6 +29,7 @@ import {
   listarCatalogoAccesorios,
   listarInventario,
 } from "../api/tiendaClient";
+import { AccesorioOverlayIcon } from "../components/AccesorioOverlayIcon";
 import { LottieAvatar } from "../components/LottieAvatar";
 import { PageHeader } from "../components/PageHeader";
 import { StatCard } from "../components/StatCard";
@@ -220,11 +221,11 @@ export function MiAvatar({ casaId, miembroId }: MiAvatarProps) {
             return (
               <Card key={accesorio.id} variant="outlined" sx={{ width: 160 }}>
                 <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                  <Box
-                    component="img"
+                  <AccesorioOverlayIcon
                     src={accesorio.asset_overlay_url}
                     alt={accesorio.nombre}
-                    sx={{ width: 40, height: 40, alignSelf: "center" }}
+                    size={40}
+                    sx={{ alignSelf: "center" }}
                   />
                   <Typography variant="body2">{accesorio.nombre}</Typography>
                   <Chip label={accesorio.slot} size="small" variant="outlined" sx={{ alignSelf: "flex-start" }} />
@@ -255,11 +256,11 @@ export function MiAvatar({ casaId, miembroId }: MiAvatarProps) {
             return (
               <Card key={accesorio.id} variant="outlined" sx={{ width: 160, opacity: alcanza ? 1 : 0.7 }}>
                 <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                  <Box
-                    component="img"
+                  <AccesorioOverlayIcon
                     src={accesorio.asset_overlay_url}
                     alt={accesorio.nombre}
-                    sx={{ width: 40, height: 40, alignSelf: "center" }}
+                    size={40}
+                    sx={{ alignSelf: "center" }}
                   />
                   <Typography variant="body2">{accesorio.nombre}</Typography>
                   <Chip label={`${accesorio.precio_creditos} créditos`} size="small" variant="outlined" />
