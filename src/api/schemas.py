@@ -1,5 +1,5 @@
-"""Esquemas Pydantic de request/response para las rutas de casas/miembros
-y de tareas/puntos."""
+"""Esquemas Pydantic de request/response para las rutas de casas/miembros,
+tareas/puntos y avatares/créditos."""
 from datetime import date, datetime
 from typing import List, Optional
 from uuid import UUID
@@ -121,6 +121,35 @@ class LogroObtenidoOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class AvatarPersonajeOut(BaseModel):
+    """Spec `avatares-economia`, REQ-002 — sin alias: mismo criterio que
+    `HistorialTareaOut`/`LogroObtenidoOut`, snake_case plano."""
+
+    id: UUID
+    especie: str
+    raza: str
+    lottie_url: str
+    nivel_requerido: str
+    rareza: str
+    disponible_desde: Optional[date] = None
+    disponible_hasta: Optional[date] = None
+
+    class Config:
+        orm_mode = True
+
+
+class AvatarSeleccionUpdate(BaseModel):
+    """Spec `avatares-economia`, Contracts: body `{"avatar_personaje_id":
+    uuid}` — snake_case tal cual documentado en spec.md, sin alias
+    (mismo criterio que `HistorialTareaOut`/`LogroObtenidoOut`)."""
+
+    avatar_personaje_id: UUID
+
+
+class CreditosOut(BaseModel):
+    saldo: int
 
 
 class RankingEntryOut(BaseModel):

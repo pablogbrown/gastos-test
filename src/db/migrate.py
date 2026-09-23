@@ -32,6 +32,9 @@ _MIGRACIONES = (
     "0018_mantenimiento_autos",
     "0019_resumen_tarjeta",
     "0020_gamificacion",
+    "0021_creditos",
+    "0022_avatar_catalogo",
+    "0023_avatar_seleccionado",
 )
 
 
